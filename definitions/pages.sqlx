@@ -2,6 +2,8 @@ config {
     type: "incremental",
 }
 
+INSERT INTO
+  `all.pages`
 SELECT
   *
 FROM
@@ -10,6 +12,8 @@ WHERE
   date = '2024-06-01'
   AND client = 'desktop'
   AND is_root_page;
+INSERT INTO
+  `all.pages`
 SELECT
   *
 FROM
@@ -22,8 +26,7 @@ WHERE
 pre_operations {
   DELETE
   FROM
-    `all.pages`
+    ${self()}
   WHERE
-    date = '2024-06-01'
-    AND client = 'desktop';
+    date = '2024-06-01';
 }
