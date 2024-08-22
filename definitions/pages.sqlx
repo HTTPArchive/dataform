@@ -9,9 +9,10 @@ SELECT
 FROM
   `test.pages`
 WHERE
-  date = '2024-06-01'
+  date = '${constants.date}'
   AND client = 'desktop'
   AND is_root_page;
+
 INSERT INTO
   `all.pages`
 SELECT
@@ -19,7 +20,7 @@ SELECT
 FROM
   `test.pages`
 WHERE
-  date = '2024-06-01'
+  date = '${constants.date}'
   AND client = 'desktop'
   AND is_root_page = FALSE
 
@@ -28,5 +29,5 @@ pre_operations {
   FROM
     ${self()}
   WHERE
-    date = '2024-06-01';
+    date = '${constants.date}';
 }

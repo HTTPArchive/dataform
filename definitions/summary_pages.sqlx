@@ -97,7 +97,7 @@ SELECT
 FROM
   ${ref('pages')}
 WHERE
-  date = '2024-06-01'
+  date = '${constants.date}'
   AND client = 'desktop'
   AND is_root_page
   AND summary IS NOT NULL
