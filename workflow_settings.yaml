@@ -2,4 +2,6 @@ defaultProject: max-ostapenko
 defaultLocation: US
 defaultDataset: all
 defaultAssertionDataset: dataform_assertions
-dataformCoreVersion: 3.0.0
+
+vars:
+    date: 2024-07-01

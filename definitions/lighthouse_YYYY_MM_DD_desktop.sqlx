@@ -1,0 +1,13 @@
+config {
+    type: "operations",
+    schema: "lighthouse",
+    name: "2024_06_01_desktop"
+}
+
+SELECT page AS url, lighthouse AS report
+FROM ${ref('pages')}
+WHERE date = '2024-06-01' AND
+client = 'desktop' AND
+is_root_page AND
+lighthouse IS NOT NULL AND
+LENGTH(lighthouse) <= 2 * 1024 * 1024; -- legacy tables have a different limit
