@@ -2,22 +2,28 @@ config {
     type: "incremental",
 }
 
-pre_operations {
-  DELETE FROM `all.pages`
-  WHERE date = '2024-06-01' AND client = 'desktop';
-}
-
-
-SELECT *
-FROM `test.pages`
+SELECT
+  *
+FROM
+  `test.pages`
 WHERE
   date = '2024-06-01'
   AND client = 'desktop'
   AND is_root_page;
-
-SELECT *
-FROM `test.pages`
+SELECT
+  *
+FROM
+  `test.pages`
 WHERE
   date = '2024-06-01'
   AND client = 'desktop'
   AND is_root_page = FALSE
+
+pre_operations {
+  DELETE
+  FROM
+    `all.pages`
+  WHERE
+    date = '2024-06-01'
+    AND client = 'desktop';
+}
