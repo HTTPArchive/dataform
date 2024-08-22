@@ -6,7 +6,7 @@ config { type: "view" }
 CREATE TABLE `httparchive.lighthouse.2024_06_01_desktop`
 AS
 SELECT page AS url, lighthouse AS report
-FROM $(ref('all_pages'))
+FROM ${ref('all_pages')}
 WHERE date = '2024-06-01' AND
 client = 'desktop' AND
 is_root_page AND
