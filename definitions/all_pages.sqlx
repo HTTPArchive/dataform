@@ -1,0 +1,25 @@
+config {
+    type: "table",
+    columns: {
+        test: "A description for the test column", // Column descriptions are pushed to BigQuery.
+    }
+}
+
+DELETE FROM `httparchive.all.pages`
+WHERE date = '2024-06-01' AND client = 'desktop';
+
+INSERT INTO `all.pages`
+SELECT *
+FROM `test.pages`
+WHERE
+  date = '2024-06-01'
+  AND client = 'desktop'
+  AND is_root_page;
+
+INSERT INTO `all.pages`
+SELECT *
+FROM `test.pages`
+WHERE
+  date = '2024-06-01'
+  AND client = 'desktop'
+  AND is_root_page = FALSE

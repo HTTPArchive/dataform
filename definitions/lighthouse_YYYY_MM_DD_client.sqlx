@@ -1,0 +1,14 @@
+config { type: "view" }
+
+-- Use the ref() function to manage dependencies.
+-- Learn more about ref() and other built in functions here: https://cloud.google.com/dataform/docs/dataform-core
+
+CREATE TABLE `httparchive.lighthouse.2024_06_01_desktop`
+AS
+SELECT page AS url, lighthouse AS report
+FROM $(ref('all_pages'))
+WHERE date = '2024-06-01' AND
+client = 'desktop' AND
+is_root_page AND
+lighthouse IS NOT NULL AND
+LENGTH(lighthouse) <= 2 * 1024 * 1024; -- legacy tables have a different limit
