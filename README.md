@@ -30,8 +30,8 @@ Schedule: same as `all` dataset
 - [x] httparchive.core_web_vitals.technologies
 
 Tag: `before_crawl`
-Schedule: 2nd Tuesday of the month (following the month of data).
-> `0 16 8-14 * 2`
+Schedule: 20:00 UTC on 2nd Tuesday of the month.
+> `0 20 8-14 * 2`
 
 ## Contributing
 
