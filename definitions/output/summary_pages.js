@@ -1,5 +1,5 @@
 constants.clients.forEach(client => {
-    publish(constants.date_underscored + "_" + client, {
+    publish(constants.current_month_underscored + "_" + client, {
             type: "table",
             schema: "summary_pages",
             tags: ["after_crawl"],
@@ -104,7 +104,7 @@ constants.clients.forEach(client => {
     FROM
       ${ctx.ref("all", "pages")}
     WHERE
-      date = '${constants.date}'
+      date = '${constants.current_month}'
       AND client = '${client}'
       AND is_root_page
       AND summary IS NOT NULL

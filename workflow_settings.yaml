@@ -4,4 +4,5 @@ defaultDataset: all
 defaultAssertionDataset: dataform_assertions
 
 vars:
-    date: 2024-07-01
+    test_var: test
+    current_month: 2024-07-01

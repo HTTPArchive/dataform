@@ -9,7 +9,7 @@ constants.clients.forEach(client => {
                 DELETE FROM
                   ${ctx.ref("all", "pages")}
                 WHERE
-                  date = '${constants.date}'
+                  date = '${constants.current_month}'
                   AND client = '${client}'
                   AND is_root_page = ${boolean};
                 
@@ -19,7 +19,7 @@ constants.clients.forEach(client => {
                 FROM
                   \`crawl_staging.pages\`
                 WHERE
-                  date = '${constants.date}'
+                  date = '${constants.current_month}'
                   AND client = '${client}'
                   AND is_root_page = ${boolean};
             `
