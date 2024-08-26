@@ -1,9 +1,16 @@
 constants.clients.forEach(client => {
     publish(constants.date_underscored + "_" + client, {
-        type: "table",
-        schema: "summary_pages",
-        tags: ["after_crawl"]
-    }).query(ctx => `
+            type: "table",
+            schema: "summary_pages",
+            tags: ["after_crawl"],
+            dependencies: [
+              "all/pages client=desktop,is_root_page=TRUE",
+              "all/pages client=desktop,is_root_page=FALSE",
+              "all/pages client=mobile,is_root_page=TRUE",
+              "all/pages client=mobile,is_root_page=FALSE"
+            ]
+        })
+        .query(ctx => `
     SELECT
       SAFE_CAST(JSON_EXTRACT_SCALAR(METADATA, '$.page_id') AS INTEGER) AS pageid,
       SAFE_CAST(JSON_EXTRACT_SCALAR(summary, '$.createDate') AS INTEGER) AS createDate,
