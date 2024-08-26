@@ -2,6 +2,7 @@ publish(
     "technologies", {
         schema: "core_web_vitals",
         type: "incremental",
+        protected: true,
         bigquery: {
           partitionBy: "date",
           clusterBy: ["geo", "app", "rank", "client"],
