@@ -1,38 +1,43 @@
-operate(
+publish(
     "technologies", {
-        hasOutput: true
+        schema: "core_web_vitals",
+        type: "incremental",
+        tags: ["before_crawl"],
     }
-).queries(
+).preOps(
+  ctx => `
+      DELETE FROM
+        ${ctx.self()}
+      WHERE
+        date = '${constants.date}';
+      
+      CREATE TEMP FUNCTION IS_GOOD(good FLOAT64, needs_improvement FLOAT64, poor FLOAT64) RETURNS BOOL AS (
+        SAFE_DIVIDE(good, good + needs_improvement + poor) >= 0.75
+      );
+
+      CREATE TEMP FUNCTION IS_NON_ZERO(good FLOAT64, needs_improvement FLOAT64, poor FLOAT64) RETURNS BOOL AS (
+        good + needs_improvement + poor > 0
+      );
+
+      CREATE TEMP FUNCTION GET_LIGHTHOUSE_CATEGORY_SCORES(categories STRING)
+      RETURNS STRUCT<accessibility NUMERIC, best_practices NUMERIC, performance NUMERIC, pwa NUMERIC, seo NUMERIC> 
+      LANGUAGE js AS '''
+      try {
+        const $ = JSON.parse(categories);
+        return {
+          accessibility: $.accessibility?.score,
+          best_practices: $['best-practices']?.score,
+          performance: $.performance?.score,
+          pwa: $.pwa?.score,
+          seo: $.seo?.score
+        };
+      } catch (e) {
+        return {};
+      }
+      ''';
+  `
+).query(
     ctx => `
-        DECLARE _YYYYMMDD DATE DEFAULT '${constants.date}';
-
-        CREATE TEMP FUNCTION IS_GOOD(good FLOAT64, needs_improvement FLOAT64, poor FLOAT64) RETURNS BOOL AS (
-          SAFE_DIVIDE(good, good + needs_improvement + poor) >= 0.75
-        );
-
-        CREATE TEMP FUNCTION IS_NON_ZERO(good FLOAT64, needs_improvement FLOAT64, poor FLOAT64) RETURNS BOOL AS (
-          good + needs_improvement + poor > 0
-        );
-
-        CREATE TEMP FUNCTION GET_LIGHTHOUSE_CATEGORY_SCORES(categories STRING)
-        RETURNS STRUCT<accessibility NUMERIC, best_practices NUMERIC, performance NUMERIC, pwa NUMERIC, seo NUMERIC> 
-        LANGUAGE js AS '''
-        try {
-          const $ = JSON.parse(categories);
-          return {
-            accessibility: $.accessibility?.score,
-            best_practices: $['best-practices']?.score,
-            performance: $.performance?.score,
-            pwa: $.pwa?.score,
-            seo: $.seo?.score
-          };
-        } catch (e) {
-          return {};
-        }
-        ''';
-
-        INSERT INTO ${ctx.ref("core_web_vitals", "technologies")}
-
         WITH geo_summary AS (
           SELECT
             CAST(REGEXP_REPLACE(CAST(yyyymm AS STRING), r'(\\d{4})(\\d{2})', r'\\1-\\2-01') AS DATE) AS date,
@@ -41,7 +46,7 @@ operate(
           FROM
             ${ctx.ref("chrome-ux-report", "materialized", "country_summary")}
           WHERE
-            yyyymm = CAST(FORMAT_DATE('%Y%m', _YYYYMMDD) AS INT64) AND
+            yyyymm = CAST(FORMAT_DATE('%Y%m', '${constants.date}') AS INT64) AND
             device IN ('desktop', 'phone')
         UNION ALL
           SELECT
@@ -50,7 +55,7 @@ operate(
           FROM
             ${ctx.ref("chrome-ux-report", "materialized", "device_summary")}
           WHERE
-            date = _YYYYMMDD AND
+            date = '${constants.date}' AND
             device IN ('desktop', 'phone')
         ),
 
@@ -107,7 +112,7 @@ operate(
             ${ctx.ref("all", "pages")},
             UNNEST(technologies) AS technology
           WHERE
-            date = _YYYYMMDD AND
+            date = '${constants.date}' AND
             technology.technology IS NOT NULL AND
             technology.technology != ''
         UNION ALL
@@ -118,7 +123,7 @@ operate(
           FROM
             ${ctx.ref("all", "pages")}
           WHERE
-            date = _YYYYMMDD
+            date = '${constants.date}'
         ),
 
         categories AS (
@@ -130,7 +135,7 @@ operate(
             UNNEST(technologies) AS technology,
             UNNEST(technology.categories) AS category
           WHERE
-            date = _YYYYMMDD
+            date = '${constants.date}'
           GROUP BY
             app
         UNION ALL
@@ -142,7 +147,7 @@ operate(
             UNNEST(technologies) AS technology,
             UNNEST(technology.categories) AS category
           WHERE
-            date = _YYYYMMDD AND
+            date = '${constants.date}' AND
             client = 'mobile'
         ),
 
@@ -158,7 +163,7 @@ operate(
           FROM
             ${ctx.ref("all", "pages")}
           WHERE
-            date = _YYYYMMDD
+            date = '${constants.date}'
         ),
 
         lab_data AS (
@@ -191,9 +196,8 @@ operate(
             app
         )
 
-
         SELECT
-          _YYYYMMDD AS date,
+          DATE('${constants.date}') AS date,
           geo,
           rank,
           ANY_VALUE(category) AS category,
