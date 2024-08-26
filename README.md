@@ -4,8 +4,8 @@
 
 - [x] all.pages
 - [x] core_web_vitals.technologies
-- [x] lighthouse.YYYYMM_client
-- [x] summary_pages.YYYYMM_client
+- [x] lighthouse.YYYY_MM_DD_client
+- [x] summary_pages.YYYY_MM_DD_client
 
 ## Contributing
 
