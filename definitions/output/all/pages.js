@@ -4,7 +4,9 @@ constants.clients.forEach(client => {
             "all/pages client=" + client + ",is_root_page=" + boolean, {
                 hasOutput: true,
             }
-        ).queries(
+        ).tags([
+            "after_crawl_all"
+        ]).queries(
             ctx => `
                 DELETE FROM
                   ${ctx.ref("all", "pages")}

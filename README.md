@@ -8,9 +8,9 @@
 - [ ] httparchive.all.requests
 - [ ] httparchive.all.parsed_css
 
-Using tag `after_crawl` and scheduled
-
 Schedule: no defined schedule
+
+Manual run: execute `after_crawl_all` tag
 
 ### The legacy tables
 
@@ -23,18 +23,18 @@ Schedule: no defined schedule
 - [ ] httparchive.technologies.YYYY_MM_DD_client 
 - [ ] httparchive.lighthouse.YYYY_MM_DD_client 
 
-Tag: `after_crawl`
+Schedule: no defined schedule
 
-Schedule: same as `all` dataset
+Manual run: execute `after_crawl_legacy` tag
 
 ### Core Web Vitals Technology Report
 
 - [x] httparchive.core_web_vitals.technologies
 
-Tag: `before_crawl`
-
 Schedule: 20:00 UTC on 2nd Tuesday of the month.
 > `0 20 8-14 * 2`
+
+Manual run: execute `before_crawl_cwv` tag
 
 ## Contributing
 

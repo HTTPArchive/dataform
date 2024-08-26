@@ -8,7 +8,8 @@ publish(
           clusterBy: ["geo", "app", "rank", "client"],
           requirePartitionFilter: true
         },
-        tags: ["before_crawl"],
+        tags: ["before_crawl_cwv"],
+        dependOnDependencyAssertions: true
     }
 ).preOps(
   ctx => `
