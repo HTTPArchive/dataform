@@ -2,7 +2,7 @@ constants.clients.forEach(client => {
     publish(constants.date_underscored + "_" + client, {
         type: "table",
         schema: "summary_pages",
-        dependencies: ['pages']
+        tags: ["after_crawl"]
     }).query(ctx => `
     SELECT
       SAFE_CAST(JSON_EXTRACT_SCALAR(METADATA, '$.page_id') AS INTEGER) AS pageid,
@@ -95,7 +95,7 @@ constants.clients.forEach(client => {
       SAFE_CAST(JSON_EXTRACT_SCALAR(summary, '$.usertiming') AS INTEGER) AS usertiming,
       METADATA
     FROM
-      \`all.pages\`
+      ${ctx.ref("all", "pages")}
     WHERE
       date = '${constants.date}'
       AND client = '${client}'

@@ -2,13 +2,14 @@ constants.clients.forEach(client => {
     publish(constants.date_underscored + "_" + client, {
         type: "table",
         schema: "lighthouse",
+        tags: ["after_crawl"],
     }).query(
         ctx => `
           SELECT
             page AS url,
             lighthouse AS report
           FROM
-            ${ctx.ref("pages")}
+            ${ctx.ref("all", "pages")}
           WHERE
             date = '${constants.date}'
             AND client = '${client}'
