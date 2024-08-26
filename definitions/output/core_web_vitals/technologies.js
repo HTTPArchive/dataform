@@ -9,7 +9,7 @@ publish(
           requirePartitionFilter: true
         },
         tags: ["before_crawl_cwv"],
-        dependOnDependencyAssertions: true
+        dependOnDependencyAssertions: true,
     }
 ).preOps(
   ctx => `
