@@ -1,4 +1,4 @@
-defaultProject: max-ostapenko  -- TODO change before merging
+defaultProject: max-ostapenko
 defaultLocation: US
 defaultDataset: all
 defaultAssertionDataset: dataform_assertions
