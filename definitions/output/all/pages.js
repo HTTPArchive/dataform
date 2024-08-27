@@ -1,5 +1,5 @@
 publish("pages", {
-    type: "table",
+    type: "incremental",
     schema: "all",
     tags: ["after_crawl_all"],
 }).preOps(
@@ -10,14 +10,11 @@ WHERE
   date = '${constants.current_month}';
 `).query(
     ctx => `
-SELECT NULL AS no_rows LIMIT 0
-`).postOps(
-    ctx => `
-INSERT INTO ${ctx.self()}
 SELECT *
 FROM ${ctx.ref("crawl_staging", "pages")}
-WHERE date = '${constants.current_month}' AND client = 'desktop' AND is_root_page = TRUE;
-
+WHERE date = '${constants.current_month}' AND client = 'desktop' AND is_root_page = TRUE
+`).postOps(
+    ctx => `
 INSERT INTO ${ctx.self()}
 SELECT *
 FROM ${ctx.ref("crawl_staging", "pages")}
