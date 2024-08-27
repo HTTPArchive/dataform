@@ -3,8 +3,7 @@ constants.clients.forEach(client => {
         constants.current_month_underscored + "_" + client, {
             type: "table",
             schema: "lighthouse",
-            tags: ["after_crawl_legacy"],
-            disabled: true
+            tags: ["after_crawl_legacy"]
         }
     ).query(
         ctx => `

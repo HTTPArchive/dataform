@@ -2,8 +2,7 @@ constants.clients.forEach(client => {
     publish(constants.current_month_underscored + "_" + client, {
             type: "table",
             schema: "summary_pages",
-            tags: ["after_crawl_legacy"],
-            disabled: true
+            tags: ["after_crawl_legacy"]
         })
         .query(ctx => `
 SELECT
