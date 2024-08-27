@@ -1,14 +1,20 @@
-declare({
-    schema: "all",
-    name: "pages"
-});
+const staging_tables = ["pages", "requests", "parsed_css"]
+for (const table of staging_tables) {
+    declare({
+        schema: "crawl_staging",
+        name: table,
+    });
+}
 
-// Third party data
-declare({
-    database: "chrome-ux-report",
-    schema: "materialized",
-    name: "device_summary",
-});
+const crux_tables = ["country_summary", "device_summary"];
+for (const table of crux_tables) {
+    declare({
+        database: "chrome-ux-report",
+        schema: "materialized",
+        name: table,
+    });
+}
+
 assert(
     "device_summary_not_empty"
 ).query(
@@ -21,11 +27,6 @@ assert(
     HAVING COUNT(1) = 0
 `);
 
-declare({
-    database: "chrome-ux-report",
-    schema: "materialized",
-    name: "country_summary",
-});
 assert(
     "country_summary_not_empty"
 ).query(

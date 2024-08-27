@@ -5,4 +5,4 @@ defaultAssertionDataset: dataform_assertions
 
 vars:
     test_var: test
-    # current_month: 2024-07-01 # must be commented in main branch, only for manual executions
+    current_month: 2024-07-01 # must be commented in main branch, only for manual executions
