@@ -1,6 +1,11 @@
 publish("parsed_css", {
     type: "incremental",
+    protected: true,
     schema: "all",
+    bigquery: {
+        partitionBy: "date",
+        requirePartitionFilter: true
+    },
     tags: ["after_crawl_all"],
 }).preOps(
     ctx => `

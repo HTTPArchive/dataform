@@ -1,6 +1,12 @@
 publish("requests", {
     type: "incremental",
+    protected: true,
     schema: "all",
+    bigquery: {
+        partitionBy: "date",
+        clusterBy: ["client", "is_root_page", "is_main_document", "type"],
+        requirePartitionFilter: true
+    },
     tags: ["after_crawl_all"],
 }).preOps(
     ctx => `
