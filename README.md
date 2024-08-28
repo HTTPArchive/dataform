@@ -5,8 +5,8 @@
 ### Tables in `all` dataset
 
 - [x] httparchive.all.pages
-- [ ] httparchive.all.requests
-- [ ] httparchive.all.parsed_css
+- [x] httparchive.all.requests
+- [x] httparchive.all.parsed_css
 
 Schedule: no defined schedule
 
