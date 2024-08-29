@@ -1,5 +1,5 @@
-defaultProject: max-ostapenko
+defaultProject: httparchive
 defaultLocation: US
-defaultDataset: dataform
+defaultDataset: all
 defaultAssertionDataset: dataform_assertions
 dataformCoreVersion: 3.0.0
