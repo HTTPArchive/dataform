@@ -1,20 +1,20 @@
 const past_month = constants.fn_past_month(constants.current_month);
 
 publish("technologies", {
-    schema: "core_web_vitals",
-    type: "incremental",
-    protected: true,
-    bigquery: {
-        partitionBy: "date",
-        clusterBy: ["geo", "app", "rank", "client"],
-        requirePartitionFilter: true
-    },
-    tags: ["before_crawl_cwv"],
-    dependOnDependencyAssertions: true,
-    dependencies: [
-        "device_summary_not_empty",
-        "country_summary_not_empty"
-    ]
+  schema: "core_web_vitals",
+  type: "incremental",
+  protected: true,
+  bigquery: {
+    partitionBy: "date",
+    clusterBy: ["geo", "app", "rank", "client"],
+    requirePartitionFilter: true
+  },
+  tags: ["before_crawl_cwv"],
+  dependOnDependencyAssertions: true,
+  dependencies: [
+    "device_summary_not_empty",
+    "country_summary_not_empty"
+  ]
 }).preOps(ctx => `
 DELETE FROM ${ctx.self()}
 WHERE date = '${past_month}';
@@ -43,7 +43,7 @@ try {
   return {};
 }
 ''';
-  `).query(ctx => `
+`).query(ctx => `
 WITH geo_summary AS (
   SELECT
     CAST(REGEXP_REPLACE(CAST(yyyymm AS STRING), r'(\\d{4})(\\d{2})', r'\\1-\\2-01') AS DATE) AS date,
@@ -255,4 +255,4 @@ GROUP BY
   geo,
   rank,
   client
-    `)
+`)

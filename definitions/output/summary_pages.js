@@ -1,11 +1,11 @@
 const current_month_underscored = constants.fn_date_underscored(constants.current_month);
 
 constants.clients.forEach(client => {
-    publish(current_month_underscored + "_" + client, {
-        type: "table",
-        schema: "summary_pages",
-        tags: ["after_crawl_legacy"]
-    }).query(ctx => `
+  publish(current_month_underscored + "_" + client, {
+    type: "table",
+    schema: "summary_pages",
+    tags: ["after_crawl_legacy"]
+  }).query(ctx => `
 SELECT
   SAFE_CAST(JSON_EXTRACT_SCALAR(METADATA, '$.page_id') AS INTEGER) AS pageid,
   SAFE_CAST(JSON_EXTRACT_SCALAR(summary, '$.createDate') AS INTEGER) AS createDate,
@@ -104,5 +104,5 @@ WHERE
   summary IS NOT NULL AND
   JSON_EXTRACT_SCALAR(METADATA, '$.page_id') IS NOT NULL AND
   JSON_EXTRACT_SCALAR(METADATA, '$.page_id') != ''
-`);
+  `);
 });

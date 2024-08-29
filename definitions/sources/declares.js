@@ -17,7 +17,7 @@ for (const table of crux_tables) {
 
     assert(`${table}_not_empty`).query(ctx => `
 SELECT 
-    'No data for the specified date' AS error_message
+  'No data for the specified date' AS error_message
 FROM ${ctx.ref("chrome-ux-report", "materialized", table)}
 WHERE yyyymm = ${past_month}
 GROUP BY yyyymm
