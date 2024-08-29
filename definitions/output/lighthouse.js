@@ -7,8 +7,7 @@ constants.clients.forEach(client => {
             schema: "lighthouse",
             tags: ["after_crawl_legacy"]
         }
-    ).query(
-        ctx => `
+    ).query(ctx => `
 SELECT
   page AS url,
   lighthouse AS report

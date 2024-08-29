@@ -2,11 +2,10 @@ const current_month_underscored = constants.fn_date_underscored(constants.curren
 
 constants.clients.forEach(client => {
     publish(current_month_underscored + "_" + client, {
-            type: "table",
-            schema: "summary_pages",
-            tags: ["after_crawl_legacy"]
-        })
-        .query(ctx => `
+        type: "table",
+        schema: "summary_pages",
+        tags: ["after_crawl_legacy"]
+    }).query(ctx => `
 SELECT
   SAFE_CAST(JSON_EXTRACT_SCALAR(METADATA, '$.page_id') AS INTEGER) AS pageid,
   SAFE_CAST(JSON_EXTRACT_SCALAR(summary, '$.createDate') AS INTEGER) AS createDate,

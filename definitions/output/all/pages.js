@@ -8,19 +8,14 @@ publish("pages", {
         requirePartitionFilter: true
     },
     tags: ["after_crawl_all"],
-}).preOps(
-    ctx => `
-DELETE FROM
-  ${ctx.self()}
-WHERE
-  date = '${constants.current_month}';
-`).query(
-    ctx => `
+}).preOps(ctx => `
+DELETE FROM ${ctx.self()}
+WHERE date = '${constants.current_month}';
+`).query(ctx => `
 SELECT *
 FROM ${ctx.ref("crawl_staging", "pages")} ${constants.dev_TABLESAMPLE}
 WHERE date = '${constants.current_month}' AND client = 'desktop' AND is_root_page = TRUE
-`).postOps(
-    ctx => `
+`).postOps(ctx => `
 INSERT INTO ${ctx.self()}
 SELECT *
 FROM ${ctx.ref("crawl_staging", "pages")} ${constants.dev_TABLESAMPLE}
