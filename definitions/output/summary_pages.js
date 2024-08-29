@@ -96,14 +96,13 @@ SELECT
   SAFE_CAST(JSON_EXTRACT_SCALAR(summary, '$.num_scripts_sync') AS INTEGER) AS num_scripts_sync,
   SAFE_CAST(JSON_EXTRACT_SCALAR(summary, '$.usertiming') AS INTEGER) AS usertiming,
   METADATA
-FROM
-  ${ctx.ref("all", "pages")}
+FROM ${ctx.ref("all", "pages")}
 WHERE
-  date = '${constants.current_month}'
-  AND client = '${client}'
-  AND is_root_page
-  AND summary IS NOT NULL
-  AND JSON_EXTRACT_SCALAR(METADATA, '$.page_id') IS NOT NULL
-  AND JSON_EXTRACT_SCALAR(METADATA, '$.page_id') != ''
+  date = '${constants.current_month}' AND
+  client = '${client}' AND
+  is_root_page AND
+  summary IS NOT NULL AND
+  JSON_EXTRACT_SCALAR(METADATA, '$.page_id') IS NOT NULL AND
+  JSON_EXTRACT_SCALAR(METADATA, '$.page_id') != ''
 `);
 });
