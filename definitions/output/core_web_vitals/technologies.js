@@ -10,11 +10,7 @@ publish("technologies", {
     requirePartitionFilter: true
   },
   tags: ["before_crawl_cwv"],
-  dependOnDependencyAssertions: true,
-  dependencies: [
-    "device_summary_not_empty",
-    "country_summary_not_empty"
-  ]
+  dependOnDependencyAssertions: true
 }).preOps(ctx => `
 DELETE FROM ${ctx.self()}
 WHERE date = '${past_month}';
@@ -115,7 +111,7 @@ technologies AS (
     client,
     page AS url
   FROM
-    ${ctx.ref("all", "pages")},
+    ${ctx.resolve("all", "pages")},
     UNNEST(technologies) AS technology
   WHERE
     date = '${past_month}' AND
@@ -127,7 +123,7 @@ UNION ALL
     client,
     page AS url
   FROM
-    ${ctx.ref("all", "pages")}
+    ${ctx.resolve("all", "pages")}
   WHERE
     date = '${past_month}'
 ),
@@ -137,7 +133,7 @@ categories AS (
     technology.technology AS app,
     ARRAY_TO_STRING(ARRAY_AGG(DISTINCT category IGNORE NULLS ORDER BY category), ', ') AS category
   FROM
-    ${ctx.ref("all", "pages")},
+    ${ctx.resolve("all", "pages")},
     UNNEST(technologies) AS technology,
     UNNEST(technology.categories) AS category
   WHERE
@@ -149,7 +145,7 @@ UNION ALL
     'ALL' AS app,
     ARRAY_TO_STRING(ARRAY_AGG(DISTINCT category IGNORE NULLS ORDER BY category), ', ') AS category
   FROM
-    ${ctx.ref("all", "pages")},
+    ${ctx.resolve("all", "pages")},
     UNNEST(technologies) AS technology,
     UNNEST(technology.categories) AS category
   WHERE
@@ -167,7 +163,7 @@ summary_stats AS (
     CAST(JSON_VALUE(summary, '$.bytesImg') AS INT64) AS bytesImg,
     GET_LIGHTHOUSE_CATEGORY_SCORES(JSON_QUERY(lighthouse, '$.categories')) AS lighthouse_category
   FROM
-    ${ctx.ref("all", "pages")}
+    ${ctx.resolve("all", "pages")}
   WHERE
     date = '${past_month}'
 ),
