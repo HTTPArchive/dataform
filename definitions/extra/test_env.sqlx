@@ -1,14 +1,13 @@
 config {
     type: "operations",
     hasOutput: true,
-    // disabled: true  // MUST NOT be commented in main branch
+    disabled: true  // MUST NOT be commented in main branch
 }
 
 CREATE OR REPLACE TABLE ${ref("all", "pages")} AS
 SELECT *
-FROM `httparchive.all.pages`
-WHERE date = '${constants.past_month}'
-${constants.dev_rank5000_filter};
+FROM `httparchive.all.pages` ${constants.dev_TABLESAMPLE}
+WHERE date = '${constants.past_month}';
 
 CREATE OR REPLACE TABLE ${ref("all", "requests")} AS
 SELECT *

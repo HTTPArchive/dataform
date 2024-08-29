@@ -16,12 +16,12 @@ WHERE
 `).query(
     ctx => `
 SELECT *
-FROM ${ctx.ref("crawl_staging", "parsed_css")}
+FROM ${ctx.ref("crawl_staging", "parsed_css")} ${constants.dev_TABLESAMPLE}
 WHERE date = '${constants.current_month}' AND client = 'desktop'
 `).postOps(
     ctx => `
 INSERT INTO ${ctx.self()}
 SELECT *
-FROM ${ctx.ref("crawl_staging", "parsed_css")}
+FROM ${ctx.ref("crawl_staging", "parsed_css")} ${constants.dev_TABLESAMPLE}
 WHERE date = '${constants.current_month}' AND client = 'mobile'
 `)
