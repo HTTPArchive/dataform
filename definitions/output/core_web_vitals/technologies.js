@@ -1,22 +1,24 @@
+const past_month = constants.fn_past_month(constants.current_month);
+
 publish(
     "technologies", {
         schema: "core_web_vitals",
         type: "incremental",
         protected: true,
         bigquery: {
-          partitionBy: "date",
-          clusterBy: ["geo", "app", "rank", "client"],
-          requirePartitionFilter: true
+            partitionBy: "date",
+            clusterBy: ["geo", "app", "rank", "client"],
+            requirePartitionFilter: true
         },
         tags: ["before_crawl_cwv"],
         dependOnDependencyAssertions: true,
     }
 ).preOps(
-  ctx => `
+    ctx => `
       DELETE FROM
         ${ctx.self()}
       WHERE
-        date = '${constants.past_month}';
+        date = '${past_month}';
       
       CREATE TEMP FUNCTION IS_GOOD(good FLOAT64, needs_improvement FLOAT64, poor FLOAT64) RETURNS BOOL AS (
         SAFE_DIVIDE(good, good + needs_improvement + poor) >= 0.75
@@ -53,7 +55,7 @@ publish(
           FROM
             ${ctx.ref("chrome-ux-report", "materialized", "country_summary")}
           WHERE
-            yyyymm = CAST(FORMAT_DATE('%Y%m', '${constants.past_month}') AS INT64) AND
+            yyyymm = CAST(FORMAT_DATE('%Y%m', '${past_month}') AS INT64) AND
             device IN ('desktop', 'phone')
         UNION ALL
           SELECT
@@ -62,7 +64,7 @@ publish(
           FROM
             ${ctx.ref("chrome-ux-report", "materialized", "device_summary")}
           WHERE
-            date = '${constants.past_month}' AND
+            date = '${past_month}' AND
             device IN ('desktop', 'phone')
         ),
 
@@ -119,7 +121,7 @@ publish(
             ${ctx.ref("all", "pages")},
             UNNEST(technologies) AS technology
           WHERE
-            date = '${constants.past_month}' AND
+            date = '${past_month}' AND
             technology.technology IS NOT NULL AND
             technology.technology != ''
         UNION ALL
@@ -130,7 +132,7 @@ publish(
           FROM
             ${ctx.ref("all", "pages")}
           WHERE
-            date = '${constants.past_month}'
+            date = '${past_month}'
         ),
 
         categories AS (
@@ -142,7 +144,7 @@ publish(
             UNNEST(technologies) AS technology,
             UNNEST(technology.categories) AS category
           WHERE
-            date = '${constants.past_month}'
+            date = '${past_month}'
           GROUP BY
             app
         UNION ALL
@@ -154,7 +156,7 @@ publish(
             UNNEST(technologies) AS technology,
             UNNEST(technology.categories) AS category
           WHERE
-            date = '${constants.past_month}' AND
+            date = '${past_month}' AND
             client = 'mobile'
         ),
 
@@ -170,7 +172,7 @@ publish(
           FROM
             ${ctx.ref("all", "pages")}
           WHERE
-            date = '${constants.past_month}'
+            date = '${past_month}'
         ),
 
         lab_data AS (
@@ -204,7 +206,7 @@ publish(
         )
 
         SELECT
-          DATE('${constants.past_month}') AS date,
+          DATE('${past_month}') AS date,
           geo,
           rank,
           ANY_VALUE(category) AS category,
