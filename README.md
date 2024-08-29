@@ -7,27 +7,26 @@
 Tag: `after_crawl_all`
 
 - [x] httparchive.all.pages
-- [x] httparchive.all.requests
 - [x] httparchive.all.parsed_css
-
-### Legacy crawl tables
-
-Tag: `after_crawl_legacy`
-
-- [ ] httparchive.pages.YYYY_MM_DD_client
-- [ ] httparchive.requests.YYYY_MM_DD_client
-- [x] httparchive.summary_pages.YYYY_MM_DD_client
-- [ ] httparchive.summary_requests.YYYY_MM_DD_client
-- [ ] httparchive.response_bodies.YYYY_MM_DD_client
-- [x] httparchive.lighthouse.YYYY_MM_DD_client
-- [ ] httparchive.technologies.YYYY_MM_DD_client
-- [ ] httparchive.lighthouse.YYYY_MM_DD_client
+- [x] httparchive.all.requests
 
 ### Core Web Vitals Technology Report
 
 Tag: `before_crawl_cwv`
 
 - [x] httparchive.core_web_vitals.technologies
+
+### Legacy crawl tables (to be deprecated)
+
+Tag: `after_crawl_legacy`
+
+- [x] httparchive.lighthouse.YYYY_MM_DD_client
+- [x] httparchive.pages.YYYY_MM_DD_client
+- [x] httparchive.requests.YYYY_MM_DD_client
+- [x] httparchive.response_bodies.YYYY_MM_DD_client
+- [x] httparchive.summary_pages.YYYY_MM_DD_client
+- [x] httparchive.summary_requests.YYYY_MM_DD_client
+- [x] httparchive.technologies.YYYY_MM_DD_client
 
 ## Schedules
 
