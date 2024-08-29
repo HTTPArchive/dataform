@@ -13,8 +13,14 @@ const
     past_month = fn_past_month(month_date),
     past_month_underscored = fn_date_underscored(past_month),
     clients = ['mobile', 'desktop'],
-    booleans = ['TRUE', 'FALSE']
-    dev_TABLESAMPLE = dataform.projectConfig.vars.env_name == "dev" ? "TABLESAMPLE SYSTEM (0.001 PERCENT)" : "";
+    booleans = ['TRUE', 'FALSE'],
+    [
+        dev_TABLESAMPLE,
+        dev_rank5000_filter
+    ] = dataform.projectConfig.vars.env_name == "dev" ? [
+        "TABLESAMPLE SYSTEM (0.001 PERCENT)",
+        "AND rank = 5000"
+    ] : ["", ""];
 
 module.exports = {
     current_month,
@@ -23,5 +29,6 @@ module.exports = {
     past_month_underscored,
     clients,
     booleans,
-    dev_TABLESAMPLE
+    dev_TABLESAMPLE,
+    dev_rank5000_filter
 };

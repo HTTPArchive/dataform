@@ -122,6 +122,7 @@ publish(
             date = '${constants.past_month}' AND
             technology.technology IS NOT NULL AND
             technology.technology != ''
+            ${constants.dev_rank5000_filter}
         UNION ALL
           SELECT
             'ALL' AS app,
@@ -131,6 +132,7 @@ publish(
             ${ctx.ref("all", "pages")}
           WHERE
             date = '${constants.past_month}'
+            ${constants.dev_rank5000_filter}
         ),
 
         categories AS (
@@ -143,6 +145,7 @@ publish(
             UNNEST(technology.categories) AS category
           WHERE
             date = '${constants.past_month}'
+            ${constants.dev_rank5000_filter}
           GROUP BY
             app
         UNION ALL
@@ -156,6 +159,7 @@ publish(
           WHERE
             date = '${constants.past_month}' AND
             client = 'mobile'
+            ${constants.dev_rank5000_filter}
         ),
 
         summary_stats AS (
@@ -171,6 +175,7 @@ publish(
             ${ctx.ref("all", "pages")}
           WHERE
             date = '${constants.past_month}'
+            ${constants.dev_rank5000_filter}
         ),
 
         lab_data AS (
