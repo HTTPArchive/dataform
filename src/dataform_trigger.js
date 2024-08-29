@@ -1,3 +1,5 @@
+// this script is not used anywhere (I decided to use Workflows), but may be helpful later for GitHub PR checks
+
 const { DataformClient } = require('@google-cloud/dataform').v1beta1;
 
 const df_client = new DataformClient();
