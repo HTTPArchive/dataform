@@ -1,37 +1,21 @@
 config {
     type: "operations",
     hasOutput: true,
-    disabled: true
+    // disabled: true  // MUST NOT be commented in main branch
 }
 
 CREATE OR REPLACE TABLE ${ref("all", "pages")} AS
 SELECT *
 FROM `httparchive.all.pages`
 WHERE date = '${constants.past_month}'
-AND rank = 5000;
+${constants.dev_rank5000_filter};
 
 CREATE OR REPLACE TABLE ${ref("all", "requests")} AS
 SELECT *
-FROM `httparchive.all.requests` TABLESAMPLE SYSTEM (0.01 PERCENT)
+FROM `httparchive.all.requests` ${constants.dev_TABLESAMPLE}
 WHERE date = '${constants.past_month}';
 
 CREATE OR REPLACE TABLE ${ref("all", "parsed_css")} AS
 SELECT *
-FROM `httparchive.all.parsed_css` TABLESAMPLE SYSTEM (0.01 PERCENT)
-WHERE date = '${constants.past_month}';
-
-CREATE OR REPLACE TABLE ${ref("crawl_staging", "pages")} AS
-SELECT *
-FROM `httparchive.all.pages`
-WHERE date = '${constants.current_month}'
-AND rank = 5000;
-
-CREATE OR REPLACE TABLE ${ref("crawl_staging", "requests")} AS
-SELECT *
-FROM `httparchive.all.requests` TABLESAMPLE SYSTEM (0.01 PERCENT)
-WHERE date = '${constants.current_month}';
-
-CREATE OR REPLACE TABLE ${ref("crawl_staging", "parsed_css")} AS
-SELECT *
-FROM `httparchive.all.parsed_css` TABLESAMPLE SYSTEM (0.01 PERCENT)
-WHERE date = '${constants.current_month}'
+FROM `httparchive.all.parsed_css` ${constants.dev_TABLESAMPLE}
+WHERE date = '${constants.past_month}'

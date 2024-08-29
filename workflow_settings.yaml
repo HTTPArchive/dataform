@@ -1,8 +1,9 @@
-defaultProject: max-ostapenko
+defaultProject: httparchive
 defaultLocation: US
 defaultDataset: all
 defaultAssertionDataset: dataform_assertions
 
 vars:
-    test_var: test
-    current_month: 2024-07-01 # must be commented in main branch, only for manual executions
+    placeholder: value  # keeping it to avoid 'empty vars' error
+    env_name: dev  # MUST be commented in main branch
+    #current_month: 2024-07-01  # MUST be commented in main branch

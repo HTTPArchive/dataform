@@ -5,7 +5,14 @@ let
         let month_date = new Date(month_ISOstring);
         month_date.setMonth(month_date.getMonth() - 1)
         return month_date.toISOString().substring(0, 10);
-    };
+    },
+    [
+        dev_TABLESAMPLE,
+        dev_rank5000_filter
+    ] = dataform.projectConfig.vars.env_name == "dev" ? [
+        "TABLESAMPLE SYSTEM (0.001 PERCENT)",
+        "AND rank = 5000"
+    ] : ["", ""];
 
 const
     current_month = month_date,
@@ -21,5 +28,7 @@ module.exports = {
     past_month,
     past_month_underscored,
     clients,
-    booleans
+    booleans,
+    dev_TABLESAMPLE,
+    dev_rank5000_filter
 };
