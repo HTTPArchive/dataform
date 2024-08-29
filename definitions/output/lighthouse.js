@@ -1,6 +1,8 @@
+const current_month_underscored = constants.fn_date_underscored(constants.current_month);
+
 constants.clients.forEach(client => {
     publish(
-        constants.current_month_underscored + "_" + client, {
+        current_month_underscored + "_" + client, {
             type: "table",
             schema: "lighthouse",
             tags: ["after_crawl_legacy"]
