@@ -4,7 +4,7 @@ constants.clients.forEach(client => {
     publish(current_month_underscored + "_" + client, {
         type: "table",
         schema: "summary_requests",
-        tags: ["after_crawl_legacy"]
+        tags: ["crawl_results_legacy"]
     }).query(ctx => `
 SELECT
   SAFE_CAST(JSON_EXTRACT_SCALAR(summary, '$.requestid') AS INTEGER) AS requestid,

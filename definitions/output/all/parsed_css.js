@@ -6,7 +6,7 @@ publish("parsed_css", {
         partitionBy: "date",
         requirePartitionFilter: true
     },
-    tags: ["after_crawl_all"],
+    tags: ["crawl_results_all"],
 }).preOps(ctx => `
 DELETE FROM ${ctx.self()}
 WHERE date = '${constants.current_month}';

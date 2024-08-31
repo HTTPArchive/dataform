@@ -9,7 +9,7 @@ publish("technologies", {
     clusterBy: ["geo", "app", "rank", "client"],
     requirePartitionFilter: true
   },
-  tags: ["before_crawl_cwv"],
+  tags: ["cwv_tech_report"],
   dependOnDependencyAssertions: true
 }).preOps(ctx => `
 DELETE FROM ${ctx.self()}

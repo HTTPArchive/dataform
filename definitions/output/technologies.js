@@ -5,7 +5,7 @@ constants.clients.forEach(client => {
         current_month_underscored + "_" + client, {
         type: "table",
         schema: "technologies",
-        tags: ["after_crawl_legacy"]
+        tags: ["crawl_results_legacy"]
     }
     ).query(ctx => `
 SELECT DISTINCT

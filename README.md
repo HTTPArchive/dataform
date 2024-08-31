@@ -4,7 +4,7 @@
 
 ### Crawl tables in `all` dataset
 
-Tag: `after_crawl_all`
+Tag: `crawl_results_all`
 
 - [x] httparchive.all.pages
 - [x] httparchive.all.parsed_css
@@ -12,13 +12,13 @@ Tag: `after_crawl_all`
 
 ### Core Web Vitals Technology Report
 
-Tag: `before_crawl_cwv`
+Tag: `cwv_tech_report`
 
 - [x] httparchive.core_web_vitals.technologies
 
 ### Legacy crawl tables (to be deprecated)
 
-Tag: `after_crawl_legacy`
+Tag: `crawl_results_legacy`
 
 - [x] httparchive.lighthouse.YYYY_MM_DD_client
 - [x] httparchive.pages.YYYY_MM_DD_client
@@ -30,18 +30,18 @@ Tag: `after_crawl_legacy`
 
 ## Schedules
 
-1. [crawl-complete](https://console.cloud.google.com/cloudpubsub/topic/detail/crawl-complete?authuser=7&project=httparchive&supportedpurview=project&tab=subscriptions) PubSub topic + [crawl-complete](https://console.cloud.google.com/workflows/workflow/us-central1/crawl-complete/metrics?authuser=7&project=httparchive&supportedpurview=project) Workflow
+1. [crawl-complete](https://console.cloud.google.com/cloudpubsub/topic/detail/crawl-complete?authuser=7&project=httparchive&supportedpurview=project&tab=subscriptions) PubSub topic + [dataform-trigger](https://console.cloud.google.com/functions/details/us-central1/dataform-trigger?env=gen2&authuser=7&project=httparchive&tab=source&cloudshell=true) Function
 
     Tags:
 
-   - after_crawl_all
-   - after_crawl_legacy
+   - crawl_results_all
+   - crawl_results_legacy
 
-2. [???](https://console.cloud.google.com/cloudpubsub/topic/list?authuser=7&project=httparchive&supportedpurview=project) PubSub topic + [cwv-tech-report](https://console.cloud.google.com/workflows/workflow/us-central1/cwv-tech-report/executions?authuser=7&project=httparchive&supportedpurview=project) Workflow
+2. [bq-poller-cwv-tech-report](https://console.cloud.google.com/cloudscheduler/jobs/edit/us-east4/bq-poller-cwv-tech-report?authuser=7&project=httparchive) Scheduler + [dataform-trigger](https://console.cloud.google.com/functions/details/us-central1/dataform-trigger?env=gen2&authuser=7&project=httparchive&tab=source&cloudshell=true) Function
 
     Tags:
 
-    - before_crawl_cwv
+    - cwv_tech_report
 
 ## Contributing
 
