@@ -30,14 +30,14 @@ Tag: `crawl_results_legacy`
 
 ## Schedules
 
-1. [crawl-complete](https://console.cloud.google.com/cloudpubsub/topic/detail/crawl-complete?authuser=7&project=httparchive&supportedpurview=project&tab=subscriptions) PubSub topic + [dataform-trigger](https://console.cloud.google.com/functions/details/us-central1/dataform-trigger?env=gen2&authuser=7&project=httparchive&tab=source&cloudshell=true) Function
+1. [crawl-complete](https://console.cloud.google.com/cloudpubsub/subscription/detail/dataformTrigger?authuser=7&project=httparchive) PubSub subscription + [dataformTrigger](https://console.cloud.google.com/functions/details/us-central1/dataformTrigger?env=gen2&authuser=7&project=httparchive) Function
 
     Tags:
 
    - crawl_results_all
    - crawl_results_legacy
 
-2. [bq-poller-cwv-tech-report](https://console.cloud.google.com/cloudscheduler/jobs/edit/us-east4/bq-poller-cwv-tech-report?authuser=7&project=httparchive) Scheduler + [dataform-trigger](https://console.cloud.google.com/functions/details/us-central1/dataform-trigger?env=gen2&authuser=7&project=httparchive&tab=source&cloudshell=true) Function
+2. [bq-poller-cwv-tech-report](https://console.cloud.google.com/cloudscheduler/jobs/edit/us-east4/bq-poller-cwv-tech-report?authuser=7&project=httparchive) Scheduler + [dataformTrigger](https://console.cloud.google.com/functions/details/us-central1/dataformTrigger?env=gen2&authuser=7&project=httparchive) Function
 
     Tags:
 
