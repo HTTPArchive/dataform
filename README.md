@@ -45,12 +45,18 @@ Tag: `crawl_results_legacy`
 
 ## Contributing
 
+### Dataform development
+
 1. [Create new dev workspace](https://cloud.google.com/dataform/docs/quickstart-dev-environments) in Dataform.
 2. Make adjustments to the dataform configuration files and manually run a workflow to verify.
 3. Push all your changes to a dev branch & open a PR with the link to the BigQuery artifacts generated in the test workflow.
 
-Development workspace hints:
+### Dataform development workspace hints
 
 1. In workflow settings vars set `dev_name: dev` to process sampled data in dev workspace.
 2. Change `current_month` variable to a month in the past. May be helpful for testing pipelines based on `chrome-ux-report` data.
 3. `definitions/extra/test_env.sqlx` script helps to setup the tables required to run pipelines when in dev workspace. It's disabled by default.
+
+### Triggering Dataform workflows
+
+[see here](./src/README.md)
