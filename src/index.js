@@ -1,94 +1,101 @@
 const functions = require('@google-cloud/functions-framework');
-const { BigQuery } = require('@google-cloud/bigquery');
-const { get_compilation_results, run_workflow } = require('./dataform');
 
+const current_date = new Date().toISOString().substring(0, 10);
 const TRIGGERS = {
-  pollers: {
-    "cwv_tech_report": {
-      query: `
+  "cwv_tech_report": {
+    type: "poller",
+    query: `
 SELECT LOGICAL_AND(row_count)
 FROM (
   SELECT TOTAL_ROWS > 0 AS row_count
   FROM \`chrome-ux-report.materialized.INFORMATION_SCHEMA.PARTITIONS\`
   WHERE TABLE_NAME = 'device_summary'
-    AND PARTITION_ID = '20240701'
+    AND PARTITION_ID = FORMAT_DATE('%Y%m%d', DATE_SUB(DATE_TRUNC(DATE '${current_date}', MONTH), INTERVAL 1 MONTH))
   UNION ALL
   SELECT TOTAL_ROWS > 0 AS row_count
   FROM \`chrome-ux-report.materialized.INFORMATION_SCHEMA.PARTITIONS\`
   WHERE TABLE_NAME = 'device_summary'
-    AND PARTITION_ID = '20240701'
-)
-      `,
-      action: "runDataformRepo",
-      actionArgs: {
-        repoName: "crawl-data",
-        tags: ["cwv_tech_report"]
-      }
+    AND PARTITION_ID = FORMAT_DATE('%Y%m%d', DATE_SUB(DATE_TRUNC(DATE '${current_date}', MONTH), INTERVAL 1 MONTH))
+);
+    `,
+    action: "runDataformRepo",
+    actionArgs: {
+      repoName: "crawl-data",
+      tags: ["cwv_tech_report"]
     }
   },
-  events: {
-    "crawl-complete": {
-      action: "runDataformRepo",
-      actionArgs: {
-        repoName: "crawl-data",
-        tags: ["crawl_results_all", "crawl_results_legacy"]
-      }
+  "crawl_complete": {
+    type: "event",
+    action: "runDataformRepo",
+    actionArgs: {
+      repoName: "crawl-data",
+      tags: ["crawl_results_all", "crawl_results_legacy"]
     }
   }
 };
 
-async function pubsubHandler(req, res) {
+/**
+ * Handle incoming message and trigger the appropriate action.
+ *
+ * @param {object} req Cloud Function request context.
+ * @param {object} res Cloud Function response context.
+ */
+async function messageHandler(req, res) {
   try {
-    const pubsubMessage = req.body.data.message;
-    if (!pubsubMessage) {
-      res.status(400).send("Bad Request: No Pub/Sub message received");
+    if (!req.body) {
+      const msg = 'no message received';
+      console.error(`error: ${msg}`);
+      res.status(400).send(`Bad Request: ${msg}`);
+      return;
+    }
+    let message = req?.body?.message;
+    if (!message) {
+      res.status(400).send("Bad Request: invalid message format");
       return;
     }
 
-    const messageData = Buffer.from(pubsubMessage.data, 'base64').toString('utf-8');
-    const messageName = JSON.parse(messageData).name;
-
-    if (TRIGGERS.events[messageName]) {
-      const eventTrigger = TRIGGERS.events[messageName];
-      const actionName = eventTrigger.action;
-      const actionArgs = eventTrigger.actionArgs;
-      await executeAction(actionName, actionArgs);
-      console.log(`Executed action for event: ${messageName}`);
-      res.status(200).send(`Processed event: ${messageName}`);
-    } else {
-      console.log(`No action defined for event: ${messageName}`);
-      res.status(200).send(`No action for event: ${messageName}`);
+    message = message.data ? JSON.parse(Buffer.from(message.data, 'base64').toString('utf-8')) : message;
+    const eventName = message.name;
+    if (!eventName) {
+      res.status(400).send("Bad Request: no trigger name found");
+      return;
     }
-  } catch (error) {
-    console.error("Error processing Pub/Sub message:", error);
-    res.status(500).send("Internal Server Error");
-  }
-}
 
-async function schedulerHandler(req, res) {
-  try {
-    console.log(`Executing scheduler-triggered action: ${req.query.name}`);
-    if (req.query.name in TRIGGERS.pollers) {
-      const trigger = TRIGGERS.pollers[req.query.name];
-      const result = await runQuery(trigger.query);
-
-      if (result) {
+    if (TRIGGERS[eventName]) {
+      const trigger = TRIGGERS[eventName];
+      if (trigger.type === "poller") {
+        console.log(`Poller action ${eventName}`);
+        const result = await runQuery(trigger.query);
+        console.log(`Query result: ${result}`);
+        if (result) {
+          await executeAction(trigger.action, trigger.actionArgs);
+        }
+      } else if (trigger.type === "event") {
+        console.log(`Event action ${eventName}`);
         await executeAction(trigger.action, trigger.actionArgs);
+      } else {
+        console.log(`No action found for event: ${eventName}`);
+        res.status(404).send(`No action found for event: ${eventName}`);
       }
-
-      res.status(200).send("Scheduler-triggered actions executed successfully.");
+      res.status(200).send('Event processed sucessfully');
     } else {
-      res.status(404).send("Scheduler-triggered action not found.");
+      console.log(`No action found for event: ${eventName}`);
+      res.status(404).send(`No action found for event: ${eventName}`);
     }
-
   } catch (error) {
-    console.error("Error executing scheduler-triggered actions:", error);
+    console.error("Error processing message:", error);
     res.status(500).send("Internal Server Error");
   }
 }
 
-// Function to run a BigQuery query
+/**
+ * Run BigQuery poll query.
+ *
+ * @param {string} query Polling query.
+ * @returns {boolean} Query result.
+ */
 async function runQuery(query) {
+  const { BigQuery } = require('@google-cloud/bigquery');
   const bigquery = new BigQuery();
 
   try {
@@ -103,42 +110,53 @@ async function runQuery(query) {
   }
 }
 
-// Function to execute an action based on the trigger configuration
+/**
+ * Execute action based on the trigger configuration.
+ *
+ * @param {string} actionName Action to execute.
+ * @param {object} actionArgs Action arguments.
+ */
 async function executeAction(actionName, actionArgs) {
   if (actionName === "runDataformRepo") {
+    console.log(`Executing action: ${actionName}`);
     await runDataformRepo(actionArgs);
   }
 }
 
 // Example function to simulate running a Dataform repo action
+/**
+ * Run Dataform repo action.
+ *
+ * @param {object} args Action arguments.
+ */
 async function runDataformRepo(args) {
+  const { get_compilation_results, run_workflow } = require('./dataform');
   const project = 'httparchive';
   const location = 'us-central1';
   try {
     const { repoName, tags } = args;
-    console.log(`Triggering Dataform repo ${repoName} with tag ${tags}.`);
+    console.log(`Triggering Dataform repo ${repoName} with tags: [${tags}].`);
     const repoURI = `projects/${project}/locations/${location}/repositories/${repoName}`;
 
     const compilationResult = await get_compilation_results(repoURI);
-    const workflowInvocation = await run_workflow(repoURI, compilationResult, tags);
-    return `${workflowInvocation.name} complete`;
+    await run_workflow(repoURI, compilationResult, tags);
   } catch (error) {
     console.error("Error triggering Dataform repo:", error);
   }
 }
 
-// The main entry point for the Cloud Function
-functions.http('dataformTrigger', (req, res) => {
-  switch (req.path) {
-    case '/':
-      console.log('PubSub handler');
-      pubsubHandler(req, res);
-      break;
-    case '/scheduler':
-      console.log('Scheduler handler');
-      schedulerHandler(req, res)
-      break;
-    default:
-      res.status(404).send("Handler not found");
-  }
-});
+
+/**
+ * Trigger function for Dataform workflows.
+ *
+ * @param {object} req Cloud Function request context.
+ * @param {object} res Cloud Function response context.
+ *
+ * Example request payload:
+ * {
+ *  "message": {
+ *     "name": "cwv_tech_report"
+ *   }
+ * }
+ */
+functions.http('dataformTrigger', (req, res) => messageHandler(req, res));
