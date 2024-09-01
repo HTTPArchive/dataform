@@ -1,5 +1,7 @@
 # Cloud function for triggering Dataform workflows
 
+[dataformTrigger](https://console.cloud.google.com/functions/details/us-central1/dataformTrigger?env=gen2&authuser=7&project=httparchive) Cloud Run Function
+
 This function may be triggered by a PubSub message or Cloud Scheduler and triggers a Dataform workflow based on the trigger configuration provided.
 
 ## Configuration
