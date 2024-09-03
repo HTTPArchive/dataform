@@ -65,32 +65,32 @@ OPTIONS(
 );
     `).query(ctx => `
 SELECT
-  t0.date,
-  t0.client,
-  t0.page,
-  t0.is_root_page,
-  t0.root_page,
-  t1.rank,
-  t0.url,
-  t0.is_main_document,
-  t0.type,
-  t0.index,
-  t0.payload,
-  t0.summary,
-  t0.request_headers,
-  t0.response_headers
+  requests.date,
+  requests.client,
+  requests.page,
+  requests.is_root_page,
+  requests.root_page,
+  crux.rank,
+  requests.url,
+  requests.is_main_document,
+  requests.type,
+  requests.index,
+  requests.payload,
+  requests.summary,
+  requests.request_headers,
+  requests.response_headers
 FROM (
   SELECT *
-  FROM ${ctx.ref("all", "requests")} TABLESAMPLE SYSTEM (0.01 PERCENT)
-  WHERE date = '${month}') AS t0
+  FROM ${ctx.ref("all", "requests")} ${constants.dev_TABLESAMPLE}
+  WHERE date = '${month}') AS requests
 LEFT JOIN (
   SELECT
     CONCAT(origin, '/') AS page,
     experimental.popularity.rank AS rank
   FROM ${ctx.ref("chrome-ux-report", "experimental", "global")}
   WHERE yyyymm = ${month_YYYYMM}
-) AS t1
-ON t0.root_page = t1.page
+) AS crux
+ON requests.root_page = crux.page
 `)
 
 month = constants.fn_past_month(month)
@@ -105,33 +105,32 @@ while (month >= '2022-07-01') {
 INSERT INTO ${ctx.ref("all", "requests_stable")}
 AS
 SELECT
-  t0.date,
-  t0.client,
-  t0.page,
-  t0.is_root_page,
-  t0.root_page,
-  t1.rank,
-  t0.url,
-  t0.is_main_document,
-  t0.type,
-  t0.index,
-  t0.payload,
-  t0.summary,
-  t0.request_headers,
-  t0.response_headers
+  requests.date,
+  requests.client,
+  requests.page,
+  requests.is_root_page,
+  requests.root_page,
+  crux.rank,
+  requests.url,
+  requests.is_main_document,
+  requests.type,
+  requests.index,
+  requests.payload,
+  requests.summary,
+  requests.request_headers,
+  requests.response_headers
 FROM (
   SELECT *
-  FROM ${ctx.ref("all", "requests")}
-  WHERE date = '${month}'
-    AND client = 'mobile') AS t0
+  FROM ${ctx.ref("all", "requests")} ${constants.dev_TABLESAMPLE}
+  WHERE date = '${month}') AS requests
 LEFT JOIN (
   SELECT
     CONCAT(origin, '/') AS page,
     experimental.popularity.rank AS rank
   FROM ${ctx.ref("chrome-ux-report", "experimental", "global")}
   WHERE yyyymm = ${month_YYYYMM}
-) AS t1
-ON t0.root_page = t1.page
+) AS crux
+ON requests.root_page = crux.page
   `)
 
   month = constants.fn_past_month(month)
