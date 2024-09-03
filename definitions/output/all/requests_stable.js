@@ -38,7 +38,7 @@ publish("requests_stable", {
       },
       response_body: "Text-based response body",
     },
-    tags: ["all_stable"],
+    tags: ["requests_stable"],
 }).preOps(ctx => `
 CREATE TABLE IF NOT EXISTS ${ctx.self()}
 (
@@ -100,7 +100,7 @@ while (month >= '2022-07-01') {
   operate(`all_stable_requests ${month}`, {
     hasOutput: true
   }).tags(
-    ["all_stable_requests"]
+    ["requests_stable"]
   ).queries(ctx => `
 INSERT INTO ${ctx.ref("all", "requests_stable")}
 AS
