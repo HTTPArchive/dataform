@@ -12,7 +12,7 @@ async function get_compilation_results(repoURI) {
   const request = {
     parent: repoURI,
     compilationResult: {
-      gitCommitish: 'main'
+      releaseConfig: 'production'
     }
   }, dev_request = {
     parent: repoURI,
