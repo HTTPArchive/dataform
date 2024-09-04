@@ -94,7 +94,7 @@ SELECT
   requests.payload,
   PRUNE_OBJECT(
       requests.summary,
-      ["requestid", "pageid", "crawlid", "startedDateTime", "url", "urlShort", "firstReq", "firstHtml", "reqOtherHeaders", "respOtherHeaders", "req_accept", "req_accept_encoding", "req_accept_language", "req_if_modified_since", "req_if_none_match", "req_referer", "req_user_agent", "resp_age", "resp_cache_control", "resp_date", "resp_etag", "resp_last_modified", "resp_server", "resp_vary", "resp_content_length", "resp_content_type"]) as summary,
+      ["crawlid", "firstHtml", "firstReq", "pageid", "req_accept_encoding", "req_accept_language", "req_accept", "req_if_modified_since", "req_if_none_match", "req_referer", "req_user_agent", "reqOtherHeaders", "requestid", "resp_age", "resp_cache_control", "resp_content_length", "resp_content_type", "resp_date", "resp_etag", "resp_last_modified", "resp_server", "resp_vary", "respOtherHeaders", "startedDateTime", "url", "urlShort"]) as summary,
   requests.request_headers,
   requests.response_headers,
   requests.response_body
