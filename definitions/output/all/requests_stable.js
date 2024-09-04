@@ -63,6 +63,22 @@ CLUSTER BY client, is_root_page, type, rank
 OPTIONS(
   require_partition_filter=true
 );
+
+CREATE TEMP FUNCTION PRUNE_OBJECT(
+  json_str STRING,
+  keys_to_remove ARRAY<STRING>
+) RETURNS STRING
+LANGUAGE js AS """
+  try {
+    var jsonObject = JSON.parse(json_str);
+    keys_to_remove.forEach(function(key) {
+      delete jsonObject[key];
+    });
+    return JSON.stringify(jsonObject);
+  } catch (e) {
+    return json_str;
+  }
+""";
     `).query(ctx => `
 SELECT
   requests.date,
@@ -76,9 +92,12 @@ SELECT
   requests.type,
   requests.index,
   requests.payload,
-  requests.summary,
+  PRUNE_OBJECT(
+      requests.summary,
+      ["requestid", "pageid", "crawlid", "startedDateTime", "url", "urlShort", "firstReq", "firstHtml", "reqOtherHeaders", "respOtherHeaders", "req_accept", "req_accept_encoding", "req_accept_language", "req_if_modified_since", "req_if_none_match", "req_referer", "req_user_agent", "resp_age", "resp_cache_control", "resp_date", "resp_etag", "resp_last_modified", "resp_server", "resp_vary", "resp_content_length", "resp_content_type"]) as summary,
   requests.request_headers,
-  requests.response_headers
+  requests.response_headers,
+  requests.response_body
 FROM (
   SELECT *
   FROM ${ctx.ref("all", "requests")} ${constants.dev_TABLESAMPLE}
@@ -102,6 +121,22 @@ while (month >= '2022-07-01') {
   }).tags(
     ["requests_stable"]
   ).queries(ctx => `
+CREATE TEMP FUNCTION PRUNE_OBJECT(
+  json_str STRING,
+  keys_to_remove ARRAY<STRING>
+) RETURNS STRING
+LANGUAGE js AS """
+  try {
+    var jsonObject = JSON.parse(json_str);
+    keys_to_remove.forEach(function(key) {
+      delete jsonObject[key];
+    });
+    return JSON.stringify(jsonObject);
+  } catch (e) {
+    return json_str;
+  }
+""";
+
 INSERT INTO ${ctx.ref("all", "requests_stable")}
 AS
 SELECT
@@ -116,9 +151,12 @@ SELECT
   requests.type,
   requests.index,
   requests.payload,
-  requests.summary,
+  PRUNE_OBJECT(
+      requests.summary,
+      ["requestid", "pageid", "crawlid", "startedDateTime", "url", "urlShort", "firstReq", "firstHtml", "reqOtherHeaders", "respOtherHeaders", "req_accept", "req_accept_encoding", "req_accept_language", "req_if_modified_since", "req_if_none_match", "req_referer", "req_user_agent", "resp_age", "resp_cache_control", "resp_date", "resp_etag", "resp_last_modified", "resp_server", "resp_vary", "resp_content_length", "resp_content_type"]) as summary,
   requests.request_headers,
-  requests.response_headers
+  requests.response_headers,
+  requests.response_body
 FROM (
   SELECT *
   FROM ${ctx.ref("all", "requests")} ${constants.dev_TABLESAMPLE}
