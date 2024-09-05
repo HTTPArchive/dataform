@@ -16,6 +16,11 @@ FROM (
   FROM \`chrome-ux-report.materialized.INFORMATION_SCHEMA.PARTITIONS\`
   WHERE TABLE_NAME = 'device_summary'
     AND PARTITION_ID = FORMAT_DATE('%Y%m%d', DATE_SUB(DATE_TRUNC(DATE '${current_date}', MONTH), INTERVAL 1 MONTH))
+  UNION ALL
+  SELECT NOT TOTAL_ROWS > 0 AS row_count
+  FROM \`httparchive.core_web_vitals.INFORMATION_SCHEMA.PARTITIONS\`
+  WHERE TABLE_NAME = 'technologies'
+    AND PARTITION_ID = FORMAT_DATE('%Y%m%d', DATE_SUB(DATE_TRUNC(DATE '${current_date}', MONTH), INTERVAL 1 MONTH))
 );
     `,
     action: "runDataformRepo",
