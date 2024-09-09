@@ -21,3 +21,25 @@ Request body example with trigger name:
     "name": "cwv_tech_report"
 }
 ```
+
+## Local testing
+
+Run the following command to test the function locally:
+
+```bash
+npm run start
+```
+
+Then, in a separate terminal, run the following command to trigger the function:
+
+```bash
+curl -X POST "http://localhost:8080" -H "Content-Type: application/json" -d '{"name": "cwv_tech_report"}'
+```
+
+## Deployment
+
+When you're under `src/` run:
+
+```bash
+npm run deploy
+```

@@ -4,6 +4,7 @@ publish("parsed_css", {
     schema: "all",
     bigquery: {
         partitionBy: "date",
+        clusterBy: ["client", "is_root_page", "rank", "page"],
         requirePartitionFilter: true
     },
     tags: ["crawl_results_all"],
