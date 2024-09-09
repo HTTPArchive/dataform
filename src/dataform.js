@@ -28,7 +28,7 @@ async function get_compilation_results(repoURI) {
     }
   };
 
-  const [response] = await dataformClient.createCompilationResult(dev_request);
+  const [response] = await dataformClient.createCompilationResult(request);
   return response.compilationResult;
 }
 
