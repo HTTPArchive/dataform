@@ -24,7 +24,7 @@ CREATE TEMP FUNCTION IS_NON_ZERO(good FLOAT64, needs_improvement FLOAT64, poor F
 );
 
 CREATE TEMP FUNCTION GET_LIGHTHOUSE_CATEGORY_SCORES(categories STRING)
-RETURNS STRUCT<accessibility NUMERIC, best_practices NUMERIC, performance NUMERIC, pwa NUMERIC, seo NUMERIC> 
+RETURNS STRUCT<accessibility NUMERIC, best_practices NUMERIC, performance NUMERIC, pwa NUMERIC, seo NUMERIC>
 LANGUAGE js AS '''
 try {
   const $ = JSON.parse(categories);
@@ -74,7 +74,7 @@ crux AS (
     END AS rank,
     CONCAT(origin, '/') AS root_page_url,
     IF(device = 'desktop', 'desktop', 'mobile') AS client,
-    
+
     # CWV
     IS_NON_ZERO(fast_fid, avg_fid, slow_fid) AS any_fid,
     IS_GOOD(fast_fid, avg_fid, slow_fid) AS good_fid,
@@ -82,15 +82,15 @@ crux AS (
     IS_GOOD(small_cls, medium_cls, large_cls) AS good_cls,
     IS_NON_ZERO(fast_lcp, avg_lcp, slow_lcp) AS any_lcp,
     IS_GOOD(fast_lcp, avg_lcp, slow_lcp) AS good_lcp,
-    
+
     (IS_GOOD(fast_inp, avg_inp, slow_inp) OR fast_inp IS NULL) AND
     IS_GOOD(small_cls, medium_cls, large_cls) AND
     IS_GOOD(fast_lcp, avg_lcp, slow_lcp) AS good_cwv_2024,
-    
+
     (IS_GOOD(fast_fid, avg_fid, slow_fid) OR fast_fid IS NULL) AND
     IS_GOOD(small_cls, medium_cls, large_cls) AND
     IS_GOOD(fast_lcp, avg_lcp, slow_lcp) AS good_cwv_2023,
-    
+
     # WV
     IS_NON_ZERO(fast_fcp, avg_fcp, slow_fcp) AS any_fcp,
     IS_GOOD(fast_fcp, avg_fcp, slow_fcp) AS good_fcp,
@@ -114,7 +114,7 @@ technologies AS (
     ${ctx.resolve("all", "pages")},
     UNNEST(technologies) AS technology
   WHERE
-    date = '${past_month}' AND
+    date = '${past_month}' ${constants.dev_rank5000_filter} AND
     technology.technology IS NOT NULL AND
     technology.technology != ''
 UNION ALL
@@ -125,7 +125,7 @@ UNION ALL
   FROM
     ${ctx.resolve("all", "pages")}
   WHERE
-    date = '${past_month}'
+    date = '${past_month}' ${constants.dev_rank5000_filter}
 ),
 
 categories AS (
@@ -137,7 +137,7 @@ categories AS (
     UNNEST(technologies) AS technology,
     UNNEST(technology.categories) AS category
   WHERE
-    date = '${past_month}'
+    date = '${past_month}' ${constants.dev_rank5000_filter}
   GROUP BY
     app
 UNION ALL
@@ -149,7 +149,7 @@ UNION ALL
     UNNEST(technologies) AS technology,
     UNNEST(technology.categories) AS category
   WHERE
-    date = '${past_month}' AND
+    date = '${past_month}' ${constants.dev_rank5000_filter} AND
     client = 'mobile'
 ),
 
@@ -165,7 +165,7 @@ summary_stats AS (
   FROM
     ${ctx.resolve("all", "pages")}
   WHERE
-    date = '${past_month}'
+    date = '${past_month}' ${constants.dev_rank5000_filter}
 ),
 
 lab_data AS (
@@ -206,7 +206,7 @@ SELECT
   app,
   client,
   COUNT(0) AS origins,
-  
+
   # CrUX data
   COUNTIF(good_fid) AS origins_with_good_fid,
   COUNTIF(good_cls) AS origins_with_good_cls,
@@ -227,19 +227,19 @@ SELECT
   SAFE_DIVIDE(COUNTIF(good_cwv_2024), COUNTIF(any_lcp AND any_cls)) AS pct_eligible_origins_with_good_cwv,
   SAFE_DIVIDE(COUNTIF(good_cwv_2024), COUNTIF(any_lcp AND any_cls)) AS pct_eligible_origins_with_good_cwv_2024,
   SAFE_DIVIDE(COUNTIF(good_cwv_2023), COUNTIF(any_lcp AND any_cls)) AS pct_eligible_origins_with_good_cwv_2023,
-  
+
   # Lighthouse data
   APPROX_QUANTILES(accessibility, 1000)[OFFSET(500)] AS median_lighthouse_score_accessibility,
   APPROX_QUANTILES(best_practices, 1000)[OFFSET(500)] AS median_lighthouse_score_best_practices,
   APPROX_QUANTILES(performance, 1000)[OFFSET(500)] AS median_lighthouse_score_performance,
   APPROX_QUANTILES(pwa, 1000)[OFFSET(500)] AS median_lighthouse_score_pwa,
   APPROX_QUANTILES(seo, 1000)[OFFSET(500)] AS median_lighthouse_score_seo,
-  
+
   # Page weight stats
   APPROX_QUANTILES(bytesTotal, 1000)[OFFSET(500)] AS median_bytes_total,
   APPROX_QUANTILES(bytesJS, 1000)[OFFSET(500)] AS median_bytes_js,
   APPROX_QUANTILES(bytesImg, 1000)[OFFSET(500)] AS median_bytes_image
-  
+
 FROM
   lab_data
 JOIN
