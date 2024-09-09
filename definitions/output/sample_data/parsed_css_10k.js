@@ -1,16 +1,16 @@
-publish("pages_1k", {
+publish("parsed_css_10k", {
     type: "table",
     schema: "sample_data",
     bigquery: {
         partitionBy: "date",
-        clusterBy: ["client", "is_root_page", "rank"],
+        clusterBy: ["client", "is_root_page", "rank", "page"],
         requirePartitionFilter: true
     },
     tags: ["crawl_results_all"]
 }).query(ctx => `
 SELECT
     *
-FROM ${ctx.ref("all", "pages")}
+FROM ${ctx.ref("all", "parsed_css")}
 WHERE date = ${constants.current_month} AND
-    rank = 1000
+    rank <= 10000
 `);
