@@ -33,7 +33,13 @@ npm run start
 Then, in a separate terminal, run the following command to trigger the function:
 
 ```bash
-curl -X POST "http://localhost:8080" -H "Content-Type: application/json" -d '{"name": "cwv_tech_report"}'
+curl -X POST http://localhost:8080/ \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": {
+      "name": "cwv_tech_report"
+    }
+  }'
 ```
 
 ## Deployment
