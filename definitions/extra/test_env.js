@@ -2,7 +2,7 @@ const two_months_ago = constants.fn_past_month(constants.fn_past_month(constants
 
 operate("test_env", {
   hasOutput: true,
-  disabled: true // MUST NOT be commented in main branch
+  disabled: true // MUST be disabled on main branch
 }).queries(ctx => `
 CREATE OR REPLACE TABLE ${ctx.ref("all", "pages")} AS
 SELECT *
