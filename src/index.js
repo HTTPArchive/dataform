@@ -5,19 +5,19 @@ const TRIGGERS = {
   "cwv_tech_report": {
     type: "poller",
     query: `
-SELECT LOGICAL_AND(row_count)
+SELECT LOGICAL_AND(condition)
 FROM (
-  SELECT TOTAL_ROWS > 0 AS row_count
+  SELECT TOTAL_ROWS > 0 AS condition
   FROM \`chrome-ux-report.materialized.INFORMATION_SCHEMA.PARTITIONS\`
   WHERE TABLE_NAME = 'device_summary'
     AND PARTITION_ID = FORMAT_DATE('%Y%m%d', DATE_SUB(DATE_TRUNC(DATE '${current_date}', MONTH), INTERVAL 1 MONTH))
   UNION ALL
-  SELECT TOTAL_ROWS > 0 AS row_count
+  SELECT TOTAL_ROWS > 0 AS condition
   FROM \`chrome-ux-report.materialized.INFORMATION_SCHEMA.PARTITIONS\`
   WHERE TABLE_NAME = 'device_summary'
     AND PARTITION_ID = FORMAT_DATE('%Y%m%d', DATE_SUB(DATE_TRUNC(DATE '${current_date}', MONTH), INTERVAL 1 MONTH))
   UNION ALL
-  SELECT NOT TOTAL_ROWS > 0 AS row_count
+  SELECT NOT TOTAL_ROWS > 0 AS condition
   FROM \`httparchive.core_web_vitals.INFORMATION_SCHEMA.PARTITIONS\`
   WHERE TABLE_NAME = 'technologies'
     AND PARTITION_ID = FORMAT_DATE('%Y%m%d', DATE_SUB(DATE_TRUNC(DATE '${current_date}', MONTH), INTERVAL 1 MONTH))
@@ -88,7 +88,7 @@ async function messageHandler(req, res) {
       res.status(404).send(`No action found for event: ${eventName}`);
     }
   } catch (error) {
-    console.error("Error processing message:", error);
+    console.error(error);
     res.status(500).send("Internal Server Error");
   }
 }
@@ -103,16 +103,11 @@ async function runQuery(query) {
   const { BigQuery } = require('@google-cloud/bigquery');
   const bigquery = new BigQuery();
 
-  try {
-    const [job] = await bigquery.createQueryJob({ query });
-    console.log(`Query job ${job.id} started.`);
+  const [job] = await bigquery.createQueryJob({ query });
+  console.log(`Query job ${job.id} started.`);
 
-    const [rows] = await job.getQueryResults();
-    return rows.length > 0 && rows[0][Object.keys(rows[0])[0]] === true;
-  } catch (error) {
-    console.error("Error running query:", error);
-    return false;
-  }
+  const [rows] = await job.getQueryResults();
+  return rows.length > 0 && rows[0][Object.keys(rows[0])[0]] === true;
 }
 
 /**
@@ -128,7 +123,6 @@ async function executeAction(actionName, actionArgs) {
   }
 }
 
-// Example function to simulate running a Dataform repo action
 /**
  * Run Dataform repo action.
  *
@@ -138,18 +132,14 @@ async function runDataformRepo(args) {
   const { get_compilation_results, run_workflow } = require('./dataform');
   const project = 'httparchive';
   const location = 'us-central1';
-  try {
-    const { repoName, tags } = args;
-    console.log(`Triggering Dataform repo ${repoName} with tags: [${tags}].`);
-    const repoURI = `projects/${project}/locations/${location}/repositories/${repoName}`;
+  const { repoName, tags } = args;
 
-    const compilationResult = await get_compilation_results(repoURI);
-    await run_workflow(repoURI, compilationResult, tags);
-  } catch (error) {
-    console.error("Error triggering Dataform repo:", error);
-  }
+  console.log(`Triggering Dataform repo ${repoName} with tags: [${tags}].`);
+  const repoURI = `projects/${project}/locations/${location}/repositories/${repoName}`;
+
+  const compilationResult = await get_compilation_results(repoURI);
+  await run_workflow(repoURI, compilationResult, tags);
 }
-
 
 /**
  * Trigger function for Dataform workflows.
