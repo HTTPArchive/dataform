@@ -30,6 +30,7 @@ async function get_compilation_results(repoURI) {
 
   console.log(`Creating Dataform compilation result: ${JSON.stringify(request, null, 2)}`);
   const [response] = await dataformClient.createCompilationResult(request);
+  console.log(`Compilation result created: ${response.name}`);
   return response.name;
 }
 
@@ -56,8 +57,8 @@ async function run_workflow(repoURI, compilationResult, tags) {
   };
 
   console.log(`Invoking Dataform workflow: ${JSON.stringify(request, null, 2)}`);
-  const response = await dataformClient.createWorkflowInvocation(request);
-  console.log(`${response.name} complete`);
+  const [response] = await dataformClient.createWorkflowInvocation(request);
+  console.log(`Workflow invoked: ${response.name}`);
 }
 
 module.exports = { get_compilation_results, run_workflow };
