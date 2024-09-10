@@ -19,7 +19,7 @@ publish("requests_stable", {
       url: "The URL of the request",
       is_main_document: "Whether this request corresponds with the main HTML document of the page, which is the first HTML request after redirects",
       type: "Simplified description of the type of resource (script, html, css, text, other, etc)",
-      index: "The sequential 0-based index of the request",
+      index: "The sequential 1-based index of the request",
       payload: "JSON-encoded WebPageTest result data for this request",
       summary: "JSON-encoded summarization of request data",
       request_headers: {
@@ -106,27 +106,32 @@ SELECT
   requests.response_body
 FROM (
   SELECT *
-  FROM ${ctx.ref("all", "requests")} ${constants.dev_TABLESAMPLE}
+  FROM ${ctx.resolve("all", "requests")} ${constants.dev_TABLESAMPLE}
   WHERE date = '${month}') AS requests
 LEFT JOIN (
   SELECT
     CONCAT(origin, '/') AS page,
     experimental.popularity.rank AS rank
-  FROM ${ctx.ref("chrome-ux-report", "experimental", "global")}
+  FROM ${ctx.resolve("chrome-ux-report", "experimental", "global")}
   WHERE yyyymm = ${month_YYYYMM}
 ) AS crux
 ON requests.root_page = crux.page
 `)
 
-month = constants.fn_past_month(month)
-month_YYYYMM = constants.fn_past_month(month).replace('-', '').substring(0, 6)
+let monthRange = [];
+for (
+  let i = constants.fn_past_month(month);
+  i >= '2024-05-01'; // TODO 2022-07-01
+  i = constants.fn_past_month(i)) {
+    monthRange.push(i)
+}
 
-while (month >= '2022-07-01') {
-  operate(`all_stable_requests ${month}`, {
-    hasOutput: true
-  }).tags(
+monthRange.forEach((month, i) => {
+  operate(`all_requests_stable ${month}`).tags(
     ["requests_stable"]
-  ).queries(ctx => `
+  ).dependencies([
+    month === monthRange[0] ? "requests_stable" : `all_requests_stable ${monthRange[i-1]}`
+  ]).queries(ctx => `
 CREATE TEMP FUNCTION PRUNE_OBJECT(
   json_str STRING,
   keys_to_remove ARRAY<STRING>
@@ -143,8 +148,7 @@ LANGUAGE js AS """
   }
 """;
 
-INSERT INTO ${ctx.ref("all", "requests_stable")}
-AS
+INSERT INTO ${ctx.resolve("all", "requests_stable")}
 SELECT
   requests.date,
   requests.client,
@@ -165,18 +169,26 @@ SELECT
   requests.response_body
 FROM (
   SELECT *
-  FROM ${ctx.ref("all", "requests")} ${constants.dev_TABLESAMPLE}
+  FROM ${ctx.resolve("all", "requests")} ${constants.dev_TABLESAMPLE}
   WHERE date = '${month}') AS requests
 LEFT JOIN (
   SELECT
     CONCAT(origin, '/') AS page,
     experimental.popularity.rank AS rank
-  FROM ${ctx.ref("chrome-ux-report", "experimental", "global")}
-  WHERE yyyymm = ${month_YYYYMM}
+  FROM ${ctx.resolve("chrome-ux-report", "experimental", "global")}
+  WHERE yyyymm = ${constants.fn_past_month(month).replace('-', '').substring(0, 6)}
 ) AS crux
 ON requests.root_page = crux.page
   `)
+});
 
-  month = constants.fn_past_month(month)
-  month_YYYYMM = constants.fn_past_month(month).replace('-', '').substring(0, 6)
-}
+operate(`all_requests_stable_alter_post`).tags(
+  ['all_pages_stable']
+).dependencies([
+  `all_requests_stable ${monthRange[monthRange.length-1]}`
+]).queries(ctx => `
+DROP TABLE ${ctx.resolve("all", "requests")};
+
+CREATE TABLE IF NOT EXISTS ${ctx.resolve("all", "requests")}
+COPY ${ctx.resolve("all", "requests_stable")}
+`);
