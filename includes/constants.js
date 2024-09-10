@@ -10,11 +10,13 @@ const
     booleans = ['TRUE', 'FALSE'],
     [
         dev_TABLESAMPLE,
-        dev_rank5000_filter
-    ] = dataform.projectConfig.vars.env_name == "dev" ? [
+        dev_rank5000_filter,
+        is_dev_env
+    ] = dataform.projectConfig.vars.env_name == 'dev' ? [
         "TABLESAMPLE SYSTEM (0.001 PERCENT)",
-        "AND rank = 5000"
-    ] : ["", ""];
+        "AND rank = 5000",
+        true
+    ] : ["", "", false];
 
 module.exports = {
     current_month,
@@ -23,5 +25,6 @@ module.exports = {
     clients,
     booleans,
     dev_TABLESAMPLE,
-    dev_rank5000_filter
+    dev_rank5000_filter,
+    is_dev_env
 };
