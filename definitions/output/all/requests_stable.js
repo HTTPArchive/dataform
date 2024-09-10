@@ -54,8 +54,14 @@ CREATE TABLE IF NOT EXISTS ${ctx.self()}
   index INT64 OPTIONS(description="The sequential 0-based index of the request"),
   payload STRING OPTIONS(description="JSON-encoded WebPageTest result data for this request"),
   summary STRING OPTIONS(description="JSON-encoded summarization of request data"),
-  request_headers ARRAY<STRUCT<name STRING OPTIONS(description="Request header name"), value STRING OPTIONS(description="Request header value")>> OPTIONS(description="Request headers"),
-  response_headers ARRAY<STRUCT<name STRING OPTIONS(description="Response header name"), value STRING OPTIONS(description="Response header value")>> OPTIONS(description="Response headers"),
+  request_headers ARRAY<STRUCT<
+    name STRING OPTIONS(description="Request header name"),
+    value STRING OPTIONS(description="Request header value")
+    >> OPTIONS(description="Request headers"),
+  response_headers ARRAY<STRUCT<
+    name STRING OPTIONS(description="Response header name"),
+    value STRING OPTIONS(description="Response header value")
+    >> OPTIONS(description="Response headers"),
   response_body STRING OPTIONS(description="Text-based response body")
 )
 PARTITION BY date
