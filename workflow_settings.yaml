@@ -5,5 +5,5 @@ defaultAssertionDataset: dataform_assertions
 
 vars:
   placeholder: value  # keeping it to avoid 'empty vars' error
-  env_name: dev  # MUST be commented in main branch, enables processing sampled data and other test operations
+  # env_name: dev  # MUST be commented in main branch, enables processing sampled data and other test operations
   # current_month: 2024-07-01  # MUST be commented in main branch, allows processing historical data

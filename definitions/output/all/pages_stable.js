@@ -13,15 +13,20 @@ ADD COLUMN IF NOT EXISTS custom_metrics_struct STRUCT<
   > OPTIONS(description="Custom metrics from WebPageTest")
 `);
 
+let monthRange = [];
 for (
-  let month = '2024-08-01';
-  month >= '2024-07-01'; // TODO: 2022-07-01
-  month = constants.fn_past_month(month))
-{ 
+  let month = constants.current_month;
+  month >= '2022-07-01';
+  month = constants.fn_past_month(month)) {
+    monthRange.push(month)
+}
+
+monthRange.forEach((month, i) => { 
   operate(`all_pages_stable_update ${month}`).tags([
     "all_pages_stable"
-  ]).dependencies(["all_pages_stable_alter_pre"]
-  ).queries(ctx => `
+  ]).dependencies([
+    month === constants.current_month ? "all_pages_stable_alter_pre" : `all_pages_stable_update ${monthRange[i-1]}`
+  ]).queries(ctx => `
 CREATE TEMP FUNCTION SPLIT_CUSTOM_METRICS(custom_metrics STRING)
 RETURNS STRUCT<javascript STRING, media STRING, performance STRING, other STRING> LANGUAGE js AS '''
 const topLevelMetrics = new Set(['performance', 'javascript', 'media']);
@@ -71,14 +76,15 @@ SET summary = PRUNE_OBJECT(summary, ["metadata", "pageid", "createDate", "starte
   custom_metrics_struct = SPLIT_CUSTOM_METRICS(custom_metrics)
 WHERE date = '${month}';
   `)
-}
+})
 
 operate(`all_pages_stable_alter_post`, {
   disabled: true
 }).tags(
   ["all_pages_stable"]
-).dependencies(["all_pages_stable_update 2024-08-01"] // TODO: 2022-07-01
-).queries(ctx => `
+).dependencies([
+  `all_pages_stable_update ${monthRange[monthRange.length-1]}`
+]).queries(ctx => `
 ALTER TABLE ${ctx.resolve("all", "pages")}
 DROP COLUMN IF EXISTS custom_metrics;
 
