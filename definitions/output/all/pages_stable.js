@@ -1,16 +1,12 @@
-let month = '2024-08-01',
-    month_YYYYMM = constants.fn_past_month(month).replace('-', '').substring(0, 6);
-
-
-operate(`all_pages_stable alter`, {
-  hasOutput: true
-}).tags(
+operate(`all_pages_stable alter`).tags(
   ["all_pages_stable"]
 ).queries(ctx => `
 ALTER TABLE ${ctx.ref("all", "pages")}
 ADD COLUMN IF NOT EXISTS custom_metrics_struct STRUCT<performance STRING, other STRING> OPTIONS(description="Custom metrics from WebPageTest")
 `);
 
+let month = '2024-08-01',
+  month_YYYYMM = constants.fn_past_month(month).replace('-', '').substring(0, 6);
 
 while (month >= '2022-07-01') {
   operate(`all_pages_stable ${month}`, {
