@@ -2,7 +2,12 @@ operate(`all_pages_stable_alter_pre`).tags(
   ["all_pages_stable"]
 ).queries(ctx => `
 ALTER TABLE ${ctx.ref("all", "pages")}
-ADD COLUMN IF NOT EXISTS custom_metrics_struct STRUCT<javascript STRING, media STRING, performance STRING, other STRING> OPTIONS(description="Custom metrics from WebPageTest")
+ADD COLUMN IF NOT EXISTS custom_metrics_struct STRUCT<
+  javascript STRING OPTIONS(description="JavaScript metrics from WebPageTest"),
+  media STRING OPTIONS(description="Media metrics from WebPageTest"),
+  performance STRING OPTIONS(description="Performance metrics from WebPageTest"),
+  other STRING OPTIONS(description="Other metrics from WebPageTest"),
+  > OPTIONS(description="Custom metrics from WebPageTest")
 `);
 
 let month = '2024-08-01';
