@@ -12,7 +12,7 @@ async function get_compilation_results(repoURI) {
   const request = {
     parent: repoURI,
     compilationResult: {
-      releaseConfig: 'production'
+      releaseConfig: `${repoURI}/releaseConfigs/production`
     }
   }, dev_request = {
     parent: repoURI,
@@ -28,8 +28,9 @@ async function get_compilation_results(repoURI) {
     }
   };
 
+  console.log(`Creating Dataform compilation result: ${JSON.stringify(request, null, 2)}`);
   const [response] = await dataformClient.createCompilationResult(request);
-  return response.compilationResult;
+  return response.name;
 }
 
 /**
@@ -54,6 +55,7 @@ async function run_workflow(repoURI, compilationResult, tags) {
     }
   };
 
+  console.log(`Invoking Dataform workflow: ${JSON.stringify(request, null, 2)}`);
   const response = await dataformClient.createWorkflowInvocation(request);
   console.log(`${response.name} complete`);
 }
