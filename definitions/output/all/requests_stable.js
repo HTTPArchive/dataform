@@ -1,15 +1,16 @@
 operate(`all_requests_stable_pre`).tags(
   ["all_requests_stable"]
-).queries(ctx => `
-CREATE TABLE \`httparchive.all.requests_stable\`
+).queries(`
+CREATE SCHEMA IF NOT EXISTS all_dev;
+
+CREATE TABLE \`httparchive.all_dev.requests_stable\`
 LIKE httparchive.crawl_staging.requests;
 `);
-
 
 let monthRange = [];
 for (
   let i = constants.current_month;
-  i >= '2024-07-01'; // TODO 2022-07-01
+  i >= '2022-07-01';
   i = constants.fn_past_month(i)) {
     monthRange.push(i)
 }
@@ -36,7 +37,7 @@ LANGUAGE js AS """
   }
 """;
 
-INSERT INTO \`httparchive.all.requests_stable\`
+INSERT INTO \`httparchive.all_dev.requests_stable\`
 SELECT
   requests.date,
   requests.client,
@@ -60,13 +61,13 @@ FROM (
   FROM ${ctx.resolve("all", "requests")} ${constants.dev_TABLESAMPLE}
   WHERE date = '${month}') AS requests
 LEFT JOIN (
-  SELECT
+  SELECT DISTINCT
     CONCAT(origin, '/') AS page,
     experimental.popularity.rank AS rank
   FROM ${ctx.resolve("chrome-ux-report", "experimental", "global")}
   WHERE yyyymm = ${constants.fn_past_month(month).replace('-', '').substring(0, 6)}
 ) AS crux
-ON requests.root_page = crux.page
+ON requests.root_page = crux.page;
   `)
 });
 
@@ -77,6 +78,8 @@ operate(`all_requests_stable_post`).tags(
 ]).queries(ctx => `
 DROP TABLE ${ctx.resolve("all", "requests")};
 
-CREATE TABLE IF NOT EXISTS ${ctx.resolve("all", "requests")}
-COPY \`httparchive.all.requests_stable\`
+CREATE TABLE ${ctx.resolve("all", "requests")}
+COPY \`httparchive.all_dev.requests_stable\`;
+
+DROP TABLE \`httparchive.all_dev.requests_stable\`;
 `);
