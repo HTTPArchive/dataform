@@ -3,14 +3,14 @@ publish("parsed_css_10k", {
     schema: "sample_data",
     bigquery: {
         partitionBy: "date",
-        clusterBy: ["client", "is_root_page", "rank", "page"],
-        requirePartitionFilter: true
+        clusterBy: ["client", "is_root_page", "rank", "page"]
     },
     tags: ["crawl_results_all"]
-}).query(ctx => `
-SELECT
-    *
+}).preOps(ctx => `
+DROP TABLE ${ctx.self()};
+`).query(ctx => `
+SELECT *
 FROM ${ctx.ref("all", "parsed_css")}
-WHERE date = ${constants.current_month} AND
+WHERE date = "${constants.current_month}" AND
     rank <= 10000
 `);
