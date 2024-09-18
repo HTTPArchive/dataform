@@ -6,8 +6,7 @@ constants.clients.forEach(client => {
         type: "table",
         schema: "requests",
         tags: ["crawl_results_legacy"]
-    }
-    ).query(ctx => `
+    }).query(ctx => `
 SELECT
   page,
   url,

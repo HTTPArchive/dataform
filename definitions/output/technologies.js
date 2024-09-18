@@ -6,8 +6,7 @@ constants.clients.forEach(client => {
         type: "table",
         schema: "technologies",
         tags: ["crawl_results_legacy"]
-    }
-    ).query(ctx => `
+    }).query(ctx => `
 SELECT DISTINCT
   page as url,
   category,
