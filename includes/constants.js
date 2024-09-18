@@ -1,5 +1,6 @@
 const
-    current_month = (dataform.projectConfig.vars.current_month ? dataform.projectConfig.vars.current_month : new Date().toISOString()).substring(0, 8) + "01",
+    today = (dataform.projectConfig.vars.today ? dataform.projectConfig.vars.today : new Date().toISOString()).substring(0, 10),
+    current_month = today.substring(0, 8) + "01",
     fn_date_underscored = (date_str) => date_str.replaceAll("-", "_"),
     fn_past_month = (month_ISOstring) => {
         let month_date = new Date(month_ISOstring);
@@ -17,6 +18,7 @@ const
     ] : ["", ""];
 
 module.exports = {
+    today,
     current_month,
     fn_past_month,
     fn_date_underscored,
