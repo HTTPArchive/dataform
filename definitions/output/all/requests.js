@@ -61,8 +61,8 @@ for (
 }
 
 monthRange.forEach((month, i) => {
-  operate(`requests_backfill_from_response_bodies ${month}`).tags([
-    "response_bodies_deprecated"
+  operate(`requests_backfill ${month}`).tags([
+    "requests_backfill"
   ]).queries(ctx => `
 DELETE FROM ${ctx.resolve("all", "requests")}
 WHERE date = '${month}';
@@ -107,8 +107,8 @@ SELECT
   JSON_QUERY(payload, '$.request.headers') AS request_headers,
   JSON_QUERY(payload, '$.response.headers') AS response_headers,
   response_bodies.response_body AS response_body
-FROM ${ctx.resolve("response_bodies", `${constants.fn_date_underscored(month)}_*`)} AS response_bodies
-FULL OUTER JOIN ${ctx.resolve("requests", `${constants.fn_date_underscored(month)}_*`)} AS requests
+FROM \`response_bodies.${constants.fn_date_underscored(month)}_*\` AS response_bodies
+FULL OUTER JOIN \`requests.${constants.fn_date_underscored(month)}_*\` AS requests
 USING (page, url);
   `)
 })
