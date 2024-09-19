@@ -5,7 +5,7 @@ publish("usage", {
   tags: ["blink_features_report"]
 }).preOps(ctx => `
 DELETE FROM ${ctx.self()}
-WHERE date = '${constants.current_month}';
+WHERE yyyymmdd = '${constants.current_month}';
 `).query(ctx => `
 SELECT
   REGEXP_REPLACE(CAST(date AS STRING), '-', '') AS yyyymmdd,
@@ -26,7 +26,7 @@ FROM (
     type,
     COUNT(DISTINCT url) AS num_urls,
     ARRAY_AGG(url ORDER BY rank, url LIMIT 100) AS sample_urls
-  FROM ${ctx.resolve("blink_features", "features")}
+  FROM ${ctx.ref("blink_features", "features")} ${constants.dev_TABLESAMPLE}
   WHERE
     yyyymmdd = '${constants.current_month}'
   GROUP BY
@@ -41,10 +41,10 @@ JOIN (
     date,
     client,
     COUNT(DISTINCT page) AS total_urls
-  FROM ${ctx.resolve("all", "pages")}
+  FROM ${ctx.ref("all", "pages")}
   WHERE
     date = '${constants.current_month}' AND
-    is_root_page = TRUE
+    is_root_page = TRUE ${constants.dev_rank5000_filter}
   GROUP BY
     date,
     client

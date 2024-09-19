@@ -10,8 +10,8 @@ publish("features", {
   tags: ["blink_features_report"]
 }).preOps(ctx => `
 DELETE FROM ${ctx.self()}
-WHERE date = '${constants.current_month}';
-`).query(ctx => `
+WHERE yyyymmdd = DATE '${constants.current_month}';
+
 CREATE TEMP FUNCTION features(payload STRING)
 RETURNS ARRAY<STRUCT<id STRING, name STRING, type STRING>> LANGUAGE js AS
 """
@@ -37,12 +37,12 @@ function getFeatureNames(featureMap, featureType) {
 var $ = JSON.parse(payload);
 if (!$._blinkFeatureFirstUsed) return [];
 
-var idPattern = new RegExp('^Feature_(\\d+)$');
+var idPattern = new RegExp('^Feature_(\d+)$');
 return getFeatureNames($._blinkFeatureFirstUsed.Features, 'default')
   .concat(getFeatureNames($._blinkFeatureFirstUsed.CSSFeatures, 'css'))
   .concat(getFeatureNames($._blinkFeatureFirstUsed.AnimatedCSSFeatures, 'animated-css'));
 """;
-
+`).query(ctx => `
 SELECT
   date AS yyyymmdd,
   client,
@@ -59,11 +59,10 @@ FROM (
     payload,
     rank,
     feature
-  FROM
-    ${ctx.resolve("all", "pages")},
+  FROM ${ctx.ref("all", "pages")},
     UNNEST(features) AS feature
   WHERE
     date = '${constants.current_month}' AND
-    is_root_page = TRUE
+    is_root_page = TRUE ${constants.dev_rank5000_filter}
 )
 `)
