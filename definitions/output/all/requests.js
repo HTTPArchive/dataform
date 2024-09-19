@@ -54,8 +54,8 @@ WHERE date = '${constants.current_month}' AND client = 'mobile' AND is_root_page
 
 let monthRange = [];
 for (
-  let month = '2016-01-01';
-  month < '2022-07-01';
+  let month = '2022-06-01';
+  month >= '2016-01-01';
   month = constants.fn_past_month(month)) {
     monthRange.push(month)
 }
