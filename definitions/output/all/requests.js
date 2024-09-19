@@ -114,24 +114,3 @@ FULL OUTER JOIN ${ctx.resolve("requests", `${constants.fn_date_underscored(month
 USING (page, url);
   `)
 })
-
-
-  SAFE_CAST(JSON_EXTRACT_SCALAR(summary, '$.time') AS INTEGER) AS time,
-  JSON_EXTRACT_SCALAR(summary, '$.method') AS method,
-  JSON_EXTRACT_SCALAR(summary, '$.redirectUrl') AS redirectUrl,
-  JSON_EXTRACT_SCALAR(summary, '$.reqHttpVersion') AS reqHttpVersion,
-  SAFE_CAST(JSON_EXTRACT_SCALAR(summary, '$.reqHeadersSize') AS INTEGER) AS reqHeadersSize,
-  SAFE_CAST(JSON_EXTRACT_SCALAR(summary, '$.reqBodySize') AS INTEGER) AS reqBodySize,
-  SAFE_CAST(JSON_EXTRACT_SCALAR(summary, '$.reqCookieLen') AS INTEGER) AS reqCookieLen,
-  SAFE_CAST(JSON_EXTRACT_SCALAR(summary, '$.status') AS INTEGER) AS status,
-  JSON_EXTRACT_SCALAR(summary, '$.respHttpVersion') AS respHttpVersion,
-  SAFE_CAST(JSON_EXTRACT_SCALAR(summary, '$.respHeadersSize') AS INTEGER) AS respHeadersSize,
-  SAFE_CAST(JSON_EXTRACT_SCALAR(summary, '$.respBodySize') AS INTEGER) AS respBodySize,
-  SAFE_CAST(JSON_EXTRACT_SCALAR(summary, '$.respSize') AS INTEGER) AS respSize,
-  SAFE_CAST(JSON_EXTRACT_SCALAR(summary, '$.respCookieLen') AS INTEGER) AS respCookieLen,
-  SAFE_CAST(JSON_EXTRACT_SCALAR(summary, '$.expAge') AS INTEGER) AS expAge,
-  JSON_EXTRACT_SCALAR(summary, '$.mimeType') AS mimeType,
-  JSON_EXTRACT_SCALAR(summary, '$._cdn_provider') AS _cdn_provider,
-  SAFE_CAST(JSON_EXTRACT_SCALAR(summary, '$._gzip_save') AS INTEGER) AS _gzip_save,
-  JSON_EXTRACT_SCALAR(summary, '$.ext') AS ext,
-  JSON_EXTRACT_SCALAR(summary, '$.format') AS format,
