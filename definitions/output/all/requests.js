@@ -76,10 +76,8 @@ SELECT
   COALESCE(response_bodies.page, requests.page) AS root_page,
   COALESCE(response_bodies.url, requests.url) AS url,
   IF(
-    AND(
-      SAFE_CAST(JSON_EXTRACT_SCALAR(payload, '$._request_type') AS STRING) = "Document",
-      MIN(SAFE_CAST(JSON_EXTRACT_SCALAR(payload, '$._index') AS INT64)) OVER (PARTITION BY page) = SAFE_CAST(JSON_EXTRACT_SCALAR(payload, '$._index') AS INT64)
-    ),
+    SAFE_CAST(JSON_EXTRACT_SCALAR(payload, '$._request_type') AS STRING) = "Document" AND
+      MIN(SAFE_CAST(JSON_EXTRACT_SCALAR(payload, '$._index') AS INT64)) OVER (PARTITION BY page) = SAFE_CAST(JSON_EXTRACT_SCALAR(payload, '$._index') AS INT64),
     TRUE,
     FALSE
   ) AS is_main_document,
@@ -104,10 +102,10 @@ SELECT
     "_cdn_provider", JSON_VALUE(requests.payload, '$._cdn_provider'),
     "_gzip_save", JSON_VALUE(requests.payload, '$._gzip_save'),
     "ext", NULL,
-    "format", NULL,
+    "format", NULL
   ) AS summary,
-  SAFE_CAST(JSON_EXTRACT_SCALAR(payload, '$.request.headers') AS JSON) AS request_headers,
-  SAFE_CAST(JSON_EXTRACT_SCALAR(payload, '$.response.headers') AS JSON) AS response_headers,
+  JSON_QUERY(payload, '$.request.headers') AS request_headers,
+  JSON_QUERY(payload, '$.response.headers') AS response_headers,
   response_bodies.response_body AS response_body
 FROM ${ctx.resolve("response_bodies", `${constants.fn_date_underscored(month)}_*`)} AS response_bodies
 FULL OUTER JOIN ${ctx.resolve("requests", `${constants.fn_date_underscored(month)}_*`)} AS requests
