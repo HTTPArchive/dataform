@@ -1,8 +1,8 @@
 
 let monthRange = [];
 for (
-  let month = '2022-08-01';
-  month >= '2022-08-01'; //2016-01-01
+  let month = '2022-06-01';
+  month >= '2016-01-01';
   month = constants.fn_past_month(month)) {
     monthRange.push(month)
 }
