@@ -1,24 +1,41 @@
-let datesRange = [];
-for (
-  let date = '2016-02-01'; // 2022-06-01
-  date >= '2016-01-01';  // 2016-01-01
-  date = constants.fn_past_month(date)) {
-    datesRange.push(date)
+const iterations = []
+const clients = constants.clients
 
-    if (date <= "2018-12-01") {
-      midMonth = new Date(date);
-      midMonth.setDate(15);
-      datesRange.push(midMonth.toISOString().substring(0, 10))
-    }
+for (
+  let date = "2016-01-01"; // 2022-06-01
+  date >= "2016-01-01"; // 2016-01-01
+  date = constants.fn_past_month(date)
+) {
+  clients.forEach((client) => {
+    iterations.push({
+      date: date,
+      client: client,
+    })
+  })
+
+  if (date <= "2018-12-01") {
+    midMonth = new Date(date)
+    midMonth.setDate(15)
+
+    clients.forEach((client) => {
+      iterations.push({
+        date: midMonth.toISOString().substring(0, 10),
+        client: client,
+      })
+    })
+  }
 }
 
-datesRange.forEach((date, i) => {
-  constants.clients.forEach(client => {
-    operate(`requests_backfill ${date}_${client}`).tags([
-      "requests_backfill"
-    ]).queries(ctx => `
+operate("")
+
+iterations.forEach((iteration, i) => {
+  operate(`requests_backfill ${iteration.date} ${iteration.client}`).tags([
+    "requests_backfill"
+  ]).dependencies([
+    i===0 ? "" : `requests_backfill ${iterations[i-1].date} ${iterations[i-1].client}`
+  ]).queries(ctx => `
 DELETE FROM ${ctx.resolve("all", "requests")}
-WHERE date = '${date}';
+WHERE date = '${iteration.date}' AND client = '${iteration.client}';
 
 CREATE TEMP FUNCTION get_ext_from_url(url STRING)
 RETURNS STRING
@@ -119,24 +136,25 @@ AS """
   }
 """;
 
-INSERT INTO ${ctx.resolve("all", "requests")}
+INSERT INTO \`all_dev.requests_stable\` --${ctx.resolve("all", "requests")}
 SELECT
-  DATE('${date}') AS date,
-  '${client}' AS client,
+  DATE('${iteration.date}') AS date,
+  '${iteration.client}' AS client,
   requests.page AS page,
   TRUE AS is_root_page,
   requests.page AS root_page,
+  crux.rank AS rank,
   requests.url AS url,
   IF(
     SAFE_CAST(JSON_EXTRACT_SCALAR(payload, '$._request_type') AS STRING) = "Document" AND
-      MIN(SAFE_CAST(JSON_EXTRACT_SCALAR(payload, '$._index') AS INT64)) OVER (PARTITION BY page) = SAFE_CAST(JSON_EXTRACT_SCALAR(payload, '$._index') AS INT64),
+      MIN(SAFE_CAST(JSON_EXTRACT_SCALAR(payload, '$._index') AS INT64)) OVER (PARTITION BY requests.page) = SAFE_CAST(JSON_EXTRACT_SCALAR(payload, '$._index') AS INT64),
     TRUE,
     FALSE
   ) AS is_main_document,
   get_type(JSON_VALUE(requests.payload, '$.response.content.mimeType'), get_ext_from_url(requests.url)) AS type,
   SAFE_CAST(JSON_EXTRACT_SCALAR(payload, '$._index') AS INT64) AS index,
-  requests.payload AS payload,
-  TO_JSON_STRING( STRUCT(
+  SAFE.PARSE_JSON(requests.payload, wide_number_mode => 'round') AS payload,
+  TO_JSON( STRUCT(
     SAFE_CAST(JSON_VALUE(requests.payload, '$.time') AS INTEGER) AS time,
     JSON_VALUE(requests.payload, '$._method') AS method,
     NULL AS redirectUrl,
@@ -160,9 +178,16 @@ SELECT
   parse_headers(JSON_QUERY(payload, '$.request.headers')) AS request_headers,
   parse_headers(JSON_QUERY(payload, '$.response.headers')) AS response_headers,
   response_bodies.body AS response_body
-FROM requests.${constants.fn_date_underscored(date)}_${client} AS requests ${constants.dev_TABLESAMPLE}
-LEFT JOIN response_bodies.${constants.fn_date_underscored(date)}_${client} AS response_bodies ${constants.dev_TABLESAMPLE}
-USING (page, url);
-    `)
-  })
+FROM requests.${constants.fn_date_underscored(iteration.date)}_${iteration.client} AS requests ${constants.dev_TABLESAMPLE}
+LEFT JOIN (
+  SELECT DISTINCT
+    CONCAT(origin, '/') AS page,
+    experimental.popularity.rank AS rank
+  FROM ${ctx.resolve("chrome-ux-report", "experimental", "global")}
+  WHERE yyyymm = ${constants.fn_past_month(iteration.date).substring(0, 7).replace('-', '')}
+) AS crux
+ON requests.page = crux.page
+LEFT JOIN response_bodies.${constants.fn_date_underscored(iteration.date)}_${iteration.client} AS response_bodies ${constants.dev_TABLESAMPLE}
+ON requests.page = response_bodies.page AND requests.url = response_bodies.url;
+  `)
 })
