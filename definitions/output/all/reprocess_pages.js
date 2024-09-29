@@ -3,6 +3,8 @@ operate(`all_pages_stable_pre`).tags(
 ).queries(`
 CREATE SCHEMA IF NOT EXISTS all_dev;
 
+DROP TABLE IF EXISTS \`all_dev.pages_stable\`;
+
 CREATE TABLE \`all_dev.pages_stable\`
 (
   date DATE NOT NULL OPTIONS(description="YYYY-MM-DD format of the HTTP Archive monthly crawl"),
@@ -15,17 +17,25 @@ CREATE TABLE \`all_dev.pages_stable\`
   payload JSON OPTIONS(description="JSON-encoded WebPageTest results for the page"),
   summary JSON OPTIONS(description="JSON-encoded summarization of the page-level data"),
   custom_metrics STRUCT<
-    performance JSON OPTIONS(description="Performance metrics from WebPageTest"),
-    javascript JSON OPTIONS(description="JavaScript metrics from WebPageTest"),
-    media JSON OPTIONS(description="Media metrics from WebPageTest"),
-    wpt_bodies JSON OPTIONS(description="Response body metrics from WebPageTest"),
-    css_variables JSON OPTIONS(description="CSS variables from WebPageTest"),
-    responsive_images JSON OPTIONS(description="Responsive images metrics from WebPageTest"),
-    markup JSON OPTIONS(description="Markup metrics from WebPageTest"),
-    cookies JSON OPTIONS(description="Cookie metrics from WebPageTest"),
-    element_count JSON OPTIONS(description="Elements count metrics from WebPageTest"),
-    ecommerce JSON OPTIONS(description="Ecommerce metrics from WebPageTest"),
-    other JSON OPTIONS(description="Other metrics from WebPageTest")
+    a11y JSON,
+    cms JSON,
+    css_variables JSON,
+    cookies JSON,
+    element_count JSON,
+    ecommerce JSON,
+    javascript JSON,
+    markup JSON,
+    media JSON,
+    performance JSON,
+    privacy JSON,
+    responsive_images JSON,
+    robots_txt JSON,
+    security JSON,
+    structured_data JSON,
+    third_parties JSON,
+    well_known JSON,
+    wpt_bodies JSON,    
+    other JSON
     > OPTIONS(description="Custom metrics from WebPageTest"),
   lighthouse JSON OPTIONS(description="JSON-encoded Lighthouse report"),
   features ARRAY<STRUCT<
@@ -96,18 +106,46 @@ SELECT
   wptid,
   SAFE.PARSE_JSON(payload, wide_number_mode => 'round') AS payload,
   PRUNE_OBJECT(summary, ["metadata", "pageid", "createDate", "startedDateTime", "archive", "label", "crawlid", "url", "urlhash", "urlShort", "wptid", "wptrun", "rank", "PageSpeed", "_adult_site", "avg_dom_depth", "doctype", "document_height", "document_width", "localstorage_size", "sessionstorage_size", "meta_viewport", "num_iframes", "num_scripts", "num_scripts_sync", "num_scripts_async", "usertiming"]) AS summary,
-  STRUCT<css_variables JSON, responsive_images JSON, wpt_bodies JSON, performance JSON, markup JSON, cookies JSON, javascript JSON, media JSON, element_count JSON, ecommerce JSON, other JSON>(
+  STRUCT<
+    a11y JSON,
+    cms JSON,
+    css_variables JSON,
+    cookies JSON,
+    element_count JSON,
+    ecommerce JSON,
+    javascript JSON,
+    markup JSON,
+    media JSON,
+    performance JSON,
+    privacy JSON,
+    responsive_images JSON,
+    robots_txt JSON,
+    security JSON,
+    structured_data JSON,
+    third_parties JSON,
+    well_known JSON,
+    wpt_bodies JSON,
+    other JSON
+  >(
+    JSON_QUERY(SAFE.PARSE_JSON(custom_metrics, wide_number_mode => 'round'), "$.a11y"),
+    JSON_QUERY(SAFE.PARSE_JSON(custom_metrics, wide_number_mode => 'round'), "$.cms"),
     JSON_QUERY(SAFE.PARSE_JSON(custom_metrics, wide_number_mode => 'round'), "$.css-variables"),
-    JSON_QUERY(SAFE.PARSE_JSON(custom_metrics, wide_number_mode => 'round'), "$.responsive_images"),
-    JSON_QUERY(SAFE.PARSE_JSON(custom_metrics, wide_number_mode => 'round'), "$.wpt_bodies"),
-    JSON_QUERY(SAFE.PARSE_JSON(custom_metrics, wide_number_mode => 'round'), "$.performance"),
-    JSON_QUERY(SAFE.PARSE_JSON(custom_metrics, wide_number_mode => 'round'), "$.markup"),
     JSON_QUERY(SAFE.PARSE_JSON(custom_metrics, wide_number_mode => 'round'), "$.cookies"),
-    JSON_QUERY(SAFE.PARSE_JSON(custom_metrics, wide_number_mode => 'round'), "$.javascript"),
-    JSON_QUERY(SAFE.PARSE_JSON(custom_metrics, wide_number_mode => 'round'), "$.media"),
     JSON_QUERY(SAFE.PARSE_JSON(custom_metrics, wide_number_mode => 'round'), "$.element_count"),
     JSON_QUERY(SAFE.PARSE_JSON(custom_metrics, wide_number_mode => 'round'), "$.ecommerce"),
-    PRUNE_OBJECT(custom_metrics, ["css_variables", "responsive_images", "wpt_bodies", "performance", "markup", "cookies", "javascript", "media", "element_count", "ecommerce", "other"])
+    JSON_QUERY(SAFE.PARSE_JSON(custom_metrics, wide_number_mode => 'round'), "$.javascript"),
+    JSON_QUERY(SAFE.PARSE_JSON(custom_metrics, wide_number_mode => 'round'), "$.markup"),
+    JSON_QUERY(SAFE.PARSE_JSON(custom_metrics, wide_number_mode => 'round'), "$.media"),
+    JSON_QUERY(SAFE.PARSE_JSON(custom_metrics, wide_number_mode => 'round'), "$.performance"),
+    JSON_QUERY(SAFE.PARSE_JSON(custom_metrics, wide_number_mode => 'round'), "$.privacy"),
+    JSON_QUERY(SAFE.PARSE_JSON(custom_metrics, wide_number_mode => 'round'), "$.responsive_images"),
+    JSON_QUERY(SAFE.PARSE_JSON(custom_metrics, wide_number_mode => 'round'), "$.robots_txt"),
+    JSON_QUERY(SAFE.PARSE_JSON(custom_metrics, wide_number_mode => 'round'), "$.security"),
+    JSON_QUERY(SAFE.PARSE_JSON(custom_metrics, wide_number_mode => 'round'), "$.structured-data"),
+    JSON_QUERY(SAFE.PARSE_JSON(custom_metrics, wide_number_mode => 'round'), "$.third-parties"),
+    JSON_QUERY(SAFE.PARSE_JSON(custom_metrics, wide_number_mode => 'round'), "$.well-known"),
+    JSON_QUERY(SAFE.PARSE_JSON(custom_metrics, wide_number_mode => 'round'), "$.wpt_bodies"),
+    PRUNE_OBJECT(custom_metrics, ["a11y", "cms", "css-variables", "cookies", "element_count", "ecommerce", "javascript", "markup", "media", "performance", "privacy", "security", "responsive_images", "robots_txt", "structured-data", "third-parties", "well-known", "wpt_bodies"])
   ) AS custom_metrics,
   SAFE.PARSE_JSON(lighthouse, wide_number_mode => 'round') AS lighthouse,
   features,
