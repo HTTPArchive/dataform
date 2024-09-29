@@ -1,19 +1,24 @@
-
-let monthRange = [];
+let datesRange = [];
 for (
-  let month = '2022-06-01';
-  month >= '2016-01-01';
-  month = constants.fn_past_month(month)) {
-    monthRange.push(month)
+  let date = '2016-02-01'; // 2022-06-01
+  date >= '2016-01-01';  // 2016-01-01
+  date = constants.fn_past_month(date)) {
+    datesRange.push(date)
+
+    if (date <= "2018-12-01") {
+      midMonth = new Date(date);
+      midMonth.setDate(15);
+      datesRange.push(midMonth.toISOString().substring(0, 10))
+    }
 }
 
-monthRange.forEach((month, i) => {
+datesRange.forEach((date, i) => {
   constants.clients.forEach(client => {
-    operate(`requests_backfill ${month}_${client}`).tags([
+    operate(`requests_backfill ${date}_${client}`).tags([
       "requests_backfill"
     ]).queries(ctx => `
 DELETE FROM ${ctx.resolve("all", "requests")}
-WHERE date = '${month}';
+WHERE date = '${date}';
 
 CREATE TEMP FUNCTION get_ext_from_url(url STRING)
 RETURNS STRING
@@ -116,7 +121,7 @@ AS """
 
 INSERT INTO ${ctx.resolve("all", "requests")}
 SELECT
-  DATE('${month}') AS date,
+  DATE('${date}') AS date,
   '${client}' AS client,
   requests.page AS page,
   TRUE AS is_root_page,
@@ -155,8 +160,8 @@ SELECT
   parse_headers(JSON_QUERY(payload, '$.request.headers')) AS request_headers,
   parse_headers(JSON_QUERY(payload, '$.response.headers')) AS response_headers,
   response_bodies.body AS response_body
-FROM requests.${constants.fn_date_underscored(month)}_${client} AS requests ${constants.dev_TABLESAMPLE}
-LEFT JOIN response_bodies.${constants.fn_date_underscored(month)}_${client} AS response_bodies ${constants.dev_TABLESAMPLE}
+FROM requests.${constants.fn_date_underscored(date)}_${client} AS requests ${constants.dev_TABLESAMPLE}
+LEFT JOIN response_bodies.${constants.fn_date_underscored(date)}_${client} AS response_bodies ${constants.dev_TABLESAMPLE}
 USING (page, url);
     `)
   })

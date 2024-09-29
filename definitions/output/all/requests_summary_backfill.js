@@ -1,24 +1,28 @@
-let monthRange = [];
+let datesRange = [];
 for (
-  let month = '2015-12-01';
-  month >= '2011-06-01';
-  month = constants.fn_past_month(month)) {
-    monthRange.push(month)
+  let date = '2011-06-01'; // 2015-12-01
+  date >= '2011-06-01';
+  date = constants.fn_past_month(date)) {
+    datesRange.push(date)
+
+    midMonth = new Date(date);
+    midMonth.setDate(15);
+    datesRange.push(midMonth.toISOString().substring(0, 10))
 }
 
-monthRange.forEach((month, i) => {
-  if(month > "2014-06-01"){
-    flag1 = true;
+datesRange.forEach((date, i) => {
+  if(date > "2014-06-01"){
+    add_dimensions = true;
   } else {
-    flag1 = false;
+    add_dimensions = false;
   }
 
   constants.clients.forEach(client => {
-    operate(`requests_backfill_summary ${month}_${client}`).tags([
+    operate(`requests_backfill_summary ${date}_${client}`).tags([
       "requests_backfill"
     ]).queries(ctx => `
 DELETE FROM ${ctx.resolve("all", "requests")}
-WHERE date = '${month}';
+WHERE date = '${date}';
 
 CREATE TEMP FUNCTION get_ext_from_url(url STRING)
 RETURNS STRING
@@ -121,7 +125,7 @@ AS """
 
 INSERT INTO ${ctx.resolve("all", "requests")}
 SELECT
-  DATE('${month}') AS date,
+  DATE('${date}') AS date,
   '${client}' AS client,
   pages.url AS page,
   TRUE AS is_root_page,
@@ -149,7 +153,7 @@ SELECT
     requests.respOtherHeaders AS respOtherHeaders,
     requests.expAge AS expAge,
     requests.mimeType AS mimeType
-    ${flag1 ? ",requests._cdn_provider AS _cdn_provider,requests._gzip_save AS _gzip_save" : ""}
+    ${add_dimensions ? ",requests._cdn_provider AS _cdn_provider,requests._gzip_save AS _gzip_save" : ""}
   )) AS summary,
   ARRAY<STRUCT<name string, value string>>[
     ('Accept', requests.req_accept),
@@ -187,8 +191,8 @@ SELECT
     ("X-Powered-By", requests.resp_x_powered_by)
   ] AS response_headers,
   NULL AS response_body
-FROM summary_requests.${constants.fn_date_underscored(month)}_${client} AS requests ${constants.dev_TABLESAMPLE}
-LEFT JOIN summary_pages.${constants.fn_date_underscored(month)}_${client} AS pages ${constants.dev_TABLESAMPLE}
+FROM summary_requests.${constants.fn_date_underscored(date)}_${client} AS requests ${constants.dev_TABLESAMPLE}
+LEFT JOIN summary_pages.${constants.fn_date_underscored(date)}_${client} AS pages ${constants.dev_TABLESAMPLE}
 USING(pageid);
     `)
   })
