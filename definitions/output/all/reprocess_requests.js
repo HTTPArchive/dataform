@@ -95,8 +95,9 @@ SELECT
   requests.response_body
 FROM (
   SELECT *
-  FROM ${ctx.resolve("all", "requests")} ${constants.dev_TABLESAMPLE}
-  WHERE date = '${iteration.month}') AS requests
+  FROM \`all.requests\` ${constants.dev_TABLESAMPLE}
+  WHERE date = '${iteration.month}'
+    AND client = '${iteration.client}') AS requests
 LEFT JOIN (
   SELECT DISTINCT
     CONCAT(origin, '/') AS page,
