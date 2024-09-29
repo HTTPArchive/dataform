@@ -1,28 +1,41 @@
-let datesRange = [];
-for (
-  let date = '2011-06-01'; // 2015-12-01
-  date >= '2011-06-01';
-  date = constants.fn_past_month(date)) {
-    datesRange.push(date)
+const iterations = [],
+  clients = constants.clients;
 
-    midMonth = new Date(date);
-    midMonth.setDate(15);
-    datesRange.push(midMonth.toISOString().substring(0, 10))
+for (
+  let date = "2016-01-01"; // 2022-06-01
+  date >= "2016-01-01"; // 2016-01-01
+  date = constants.fn_past_month(date)
+) {
+  clients.forEach((client) => {
+    iterations.push({
+      date: date,
+      client: client,
+    })
+  })
+
+  midMonth = new Date(date)
+  midMonth.setDate(15)
+
+  clients.forEach((client) => {
+    iterations.push({
+      date: midMonth.toISOString().substring(0, 10),
+      client: client,
+    })
+  })
 }
 
-datesRange.forEach((date, i) => {
-  if(date > "2014-06-01"){
+iterations.forEach((iteration, i) => {
+  if(iteration.date > "2014-06-01"){
     add_dimensions = true;
   } else {
     add_dimensions = false;
   }
 
-  constants.clients.forEach(client => {
-    operate(`requests_backfill_summary ${date}_${client}`).tags([
-      "requests_backfill"
-    ]).queries(ctx => `
+  operate(`requests_backfill_summary ${iteration.date}_${iteration.client}`).tags([
+    "requests_backfill"
+  ]).queries(ctx => `
 DELETE FROM ${ctx.resolve("all", "requests")}
-WHERE date = '${date}';
+WHERE date = '${iteration.date}' AND client = '${iteration.client}';
 
 CREATE TEMP FUNCTION get_ext_from_url(url STRING)
 RETURNS STRING
@@ -123,19 +136,20 @@ AS """
   }
 """;
 
-INSERT INTO ${ctx.resolve("all", "requests")}
+INSERT INTO \`all_dev.requests_stable\` --${ctx.resolve("all", "requests")}
 SELECT
-  DATE('${date}') AS date,
-  '${client}' AS client,
+  DATE('${iteration.date}') AS date,
+  '${iteration.client}' AS client,
   pages.url AS page,
   TRUE AS is_root_page,
   pages.url AS root_page,
+  crux.rank AS rank,
   requests.url AS url,
   requests.firstHTML AS is_main_document,
   get_type(requests.mimeType, get_ext_from_url(requests.url)) AS type,
   IF(requests.firstReq, 1, NULL) AS index,
   NULL AS payload,
-  TO_JSON_STRING( STRUCT(
+  TO_JSON( STRUCT(
     requests.time AS time,
     requests.method AS method,
     requests.redirectUrl AS redirectUrl,
@@ -191,9 +205,16 @@ SELECT
     ("X-Powered-By", requests.resp_x_powered_by)
   ] AS response_headers,
   NULL AS response_body
-FROM summary_requests.${constants.fn_date_underscored(date)}_${client} AS requests ${constants.dev_TABLESAMPLE}
-LEFT JOIN summary_pages.${constants.fn_date_underscored(date)}_${client} AS pages ${constants.dev_TABLESAMPLE}
-USING(pageid);
-    `)
-  })
+FROM summary_requests.${constants.fn_date_underscored(iteration.date)}_${iteration.client} AS requests ${constants.dev_TABLESAMPLE}
+LEFT JOIN summary_pages.${constants.fn_date_underscored(iteration.date)}_${iteration.client} AS pages ${constants.dev_TABLESAMPLE}
+ON requests.pageid = pages.pageid
+LEFT JOIN (
+  SELECT DISTINCT
+    CONCAT(origin, '/') AS page,
+    experimental.popularity.rank AS rank
+  FROM ${ctx.resolve("chrome-ux-report", "experimental", "global")}
+  WHERE yyyymm = ${constants.fn_past_month(iteration.date).substring(0, 7).replace('-', '')}
+) AS crux
+ON pages.url = crux.page;
+  `)
 })
