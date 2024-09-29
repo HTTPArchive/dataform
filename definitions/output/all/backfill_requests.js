@@ -29,10 +29,10 @@ for (
 operate("")
 
 iterations.forEach((iteration, i) => {
-  operate(`requests_backfill ${iteration.date} ${iteration.client}`).tags([
-    "requests_backfill"
+  operate(`backfill_requests ${iteration.date} ${iteration.client}`).tags([
+    "backfill_requests"
   ]).dependencies([
-    i===0 ? "" : `requests_backfill ${iterations[i-1].date} ${iterations[i-1].client}`
+    i===0 ? "" : `backfill_requests ${iterations[i-1].date} ${iterations[i-1].client}`
   ]).queries(ctx => `
 DELETE FROM ${ctx.resolve("all", "requests")}
 WHERE date = '${iteration.date}' AND client = '${iteration.client}';

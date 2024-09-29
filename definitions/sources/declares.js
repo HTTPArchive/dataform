@@ -25,7 +25,6 @@ HAVING COUNT(1) = 0
     `);
 }
 
-
 declare({
     database: "chrome-ux-report",
     schema: "experimental",

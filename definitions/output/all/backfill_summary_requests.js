@@ -2,8 +2,8 @@ const iterations = [],
   clients = constants.clients;
 
 for (
-  let date = "2016-01-01"; // 2022-06-01
-  date >= "2016-01-01"; // 2016-01-01
+  let date = "2015-12-01";
+  date >= "2015-12-01"; // 2011-06-01
   date = constants.fn_past_month(date)
 ) {
   clients.forEach((client) => {
@@ -31,8 +31,10 @@ iterations.forEach((iteration, i) => {
     add_dimensions = false;
   }
 
-  operate(`requests_backfill_summary ${iteration.date}_${iteration.client}`).tags([
+  operate(`backfill_summary_requests ${iteration.date} ${iteration.client}`).tags([
     "requests_backfill"
+  ]).dependencies([
+    i===0 ? "" : `backfill_summary_requests ${iterations[i-1].date} ${iterations[i-1].client}`
   ]).queries(ctx => `
 DELETE FROM ${ctx.resolve("all", "requests")}
 WHERE date = '${iteration.date}' AND client = '${iteration.client}';
@@ -148,7 +150,66 @@ SELECT
   requests.firstHTML AS is_main_document,
   get_type(requests.mimeType, get_ext_from_url(requests.url)) AS type,
   IF(requests.firstReq, 1, NULL) AS index,
-  NULL AS payload,
+  TO_JSON( STRUCT(
+    requests.requestid,
+    requests.pageid,
+    requests.startedDateTime,
+    requests.time,
+    requests.method,
+    requests.url,
+    requests.urlShort,
+    requests.redirectUrl,
+    requests.firstReq,
+    requests.firstHtml,
+    requests.reqHttpVersion,
+    requests.reqHeadersSize,
+    requests.reqBodySize,
+    requests.reqCookieLen,
+    requests.reqOtherHeaders,
+    requests.status,
+    requests.respHttpVersion,
+    requests.respHeadersSize,
+    requests.respBodySize,
+    requests.respSize,
+    requests.respCookieLen,
+    requests.expAge,
+    requests.mimeType,
+    requests.respOtherHeaders,
+    requests.req_accept,
+    requests.req_accept_charset,
+    requests.req_accept_encoding,
+    requests.req_accept_language,
+    requests.req_connection,
+    requests.req_host,
+    requests.req_if_modified_since,
+    requests.req_if_none_match,
+    requests.req_referer,
+    requests.req_user_agent,
+    requests.resp_accept_ranges,
+    requests.resp_age,
+    requests.resp_cache_control,
+    requests.resp_connection,
+    requests.resp_content_encoding,
+    requests.resp_content_language,
+    requests.resp_content_length,
+    requests.resp_content_location,
+    requests.resp_content_type,
+    requests.resp_date,
+    requests.resp_etag,
+    requests.resp_expires,
+    requests.resp_keep_alive,
+    requests.resp_last_modified,
+    requests.resp_location,
+    requests.resp_pragma,
+    requests.resp_server,
+    requests.resp_transfer_encoding,
+    requests.resp_vary,
+    requests.resp_via,
+    requests.resp_x_powered_by,
+    requests._cdn_provider,
+    requests._gzip_save,
+    requests.crawlid
+  )) AS payload,
   TO_JSON( STRUCT(
     requests.time AS time,
     requests.method AS method,
