@@ -70,11 +70,11 @@ SELECT
   JSON_EXTRACT_SCALAR(summary, '$.format') AS format,
 FROM ${ctx.ref("all", "requests")}
 WHERE
-  date = ''${constants.current_month}'' AND
-  client = 'desktop' AND
+  date = '${constants.current_month}' AND
+  client = '${client}' AND
   is_root_page AND
   summary IS NOT NULL AND
-  JSON_EXTRACT_SCALAR(METADATA, '$.page_id') IS NOT NULL AND
-  JSON_EXTRACT_SCALAR(METADATA, '$.page_id') != ''
+  JSON_EXTRACT_SCALAR(summary, '$.requestid') IS NOT NULL AND
+  JSON_EXTRACT_SCALAR(summary, '$.requestid') != ''
     `);
 });
