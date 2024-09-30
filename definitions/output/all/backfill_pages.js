@@ -51,6 +51,37 @@ try {
 }
 """;
 
+CREATE TEMP FUNCTION GET_FEATURES(payload STRING)
+RETURNS ARRAY<STRUCT<feature STRING, id STRING, type STRING>> LANGUAGE js AS
+'''
+  function getFeatureNames(featureMap, featureType) {
+    try {
+      return Object.entries(featureMap).map(([key, value]) => {
+        // After Feb 2020 keys are feature IDs.
+        if (value.name) {
+          return {'feature': value.name, 'type': featureType, 'id': key};
+        }
+        // Prior to Feb 2020 keys fell back to IDs if the name was unknown.
+        if (idPattern.test(key)) {
+          return {'feature': '', 'type': featureType, 'id': key.match(idPattern)[1]};
+        }
+        // Prior to Feb 2020 keys were names by default.
+        return {'feature': key, 'type': featureType, 'id': ''};
+      });
+    } catch (e) {
+      return [];
+    }
+  }
+  
+  var $ = JSON.parse(payload);
+  if (!$._blinkFeatureFirstUsed) return [];
+  
+  var idPattern = new RegExp('^Feature_(\d+)$');
+  return getFeatureNames($._blinkFeatureFirstUsed.Features, 'default')
+    .concat(getFeatureNames($._blinkFeatureFirstUsed.CSSFeatures, 'css'))
+    .concat(getFeatureNames($._blinkFeatureFirstUsed.AnimatedCSSFeatures, 'animated-css'));
+''';
+
 INSERT INTO \`all_dev.pages_stable\`  --${ctx.resolve("all", "pages")}
 SELECT
   DATE('${iteration.date}') AS date,
@@ -106,7 +137,7 @@ SELECT
     GET_OTHER_CUSTOM_METRICS(SAFE.PARSE_JSON(payload, wide_number_mode => 'round'), ["_Colordepth", "_Dpi", "_Images", "_Resolution", "_almanac", "_avg_dom_depth", "_css", "_doctype", "_document_height", "_document_width", "_event-names", "_fugu-apis", "_has_shadow_root", "_img-loading-attr", "_initiators", "_inline_style_bytes", "_lib-detector-version", "_localstorage_size", "_meta_viewport", "_num_iframes", "_num_scripts", "_num_scripts_async", "_num_scripts_sync", "_pwa", "_quirks_mode", "_sass", "_sessionstorage_size", "_usertiming"])
   ) AS custom_metrics,
   NULL AS lighthouse,
-  NULL AS features,
+  GET_FEATURES(payload) AS features,
   NULL AS technologies,
   JSON_QUERY(SAFE.PARSE_JSON(payload, wide_number_mode => 'round'), "$._metadata") AS metadata
 FROM pages.${constants.fn_date_underscored(iteration.date)}_${iteration.client} AS pages ${constants.dev_TABLESAMPLE}
