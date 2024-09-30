@@ -19,8 +19,8 @@ CREATE TABLE \`all_dev.pages_stable\`
   custom_metrics STRUCT<
     a11y JSON,
     cms JSON,
-    css_variables JSON,
     cookies JSON,
+    css_variables JSON,
     ecommerce JSON,
     element_count JSON,
     javascript JSON,
@@ -110,8 +110,8 @@ SELECT
   STRUCT<
     a11y JSON,
     cms JSON,
-    css_variables JSON,
     cookies JSON,
+    css_variables JSON,
     ecommerce JSON,
     element_count JSON,
     javascript JSON,
@@ -131,8 +131,8 @@ SELECT
   >(
     JSON_QUERY(SAFE.PARSE_JSON(custom_metrics, wide_number_mode => 'round'), "$.a11y"),
     JSON_QUERY(SAFE.PARSE_JSON(custom_metrics, wide_number_mode => 'round'), "$.cms"),
-    JSON_QUERY(SAFE.PARSE_JSON(custom_metrics, wide_number_mode => 'round'), "$.css-variables"),
     JSON_QUERY(SAFE.PARSE_JSON(custom_metrics, wide_number_mode => 'round'), "$.cookies"),
+    JSON_QUERY(SAFE.PARSE_JSON(custom_metrics, wide_number_mode => 'round'), "$.css-variables"),
     JSON_QUERY(SAFE.PARSE_JSON(custom_metrics, wide_number_mode => 'round'), "$.ecommerce"),
     JSON_QUERY(SAFE.PARSE_JSON(custom_metrics, wide_number_mode => 'round'), "$.element_count"),
     JSON_QUERY(SAFE.PARSE_JSON(custom_metrics, wide_number_mode => 'round'), "$.javascript"),
