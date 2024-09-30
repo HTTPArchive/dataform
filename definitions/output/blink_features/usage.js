@@ -5,10 +5,10 @@ publish("usage", {
   tags: ["blink_features_report"]
 }).preOps(ctx => `
 DELETE FROM ${ctx.self()}
-WHERE yyyymmdd = '${constants.current_month}';
+WHERE yyyymmdd = REPLACE('${constants.current_month}', '-', '');
 `).query(ctx => `
 SELECT
-  REGEXP_REPLACE(CAST(date AS STRING), '-', '') AS yyyymmdd,
+  REPLACE(CAST(date AS STRING), '-', '') AS yyyymmdd,
   client,
   id,
   feature,
