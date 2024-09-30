@@ -16,18 +16,6 @@ Tag: `cwv_tech_report`
 
 - [x] httparchive.core_web_vitals.technologies
 
-### Legacy crawl tables (to be deprecated)
-
-Tag: `crawl_results_legacy`
-
-- [x] httparchive.lighthouse.YYYY_MM_DD_client
-- [x] httparchive.pages.YYYY_MM_DD_client
-- [x] httparchive.requests.YYYY_MM_DD_client
-- [x] httparchive.response_bodies.YYYY_MM_DD_client
-- [x] httparchive.summary_pages.YYYY_MM_DD_client
-- [x] httparchive.summary_requests.YYYY_MM_DD_client
-- [x] httparchive.technologies.YYYY_MM_DD_client
-
 ## Schedules
 
 1. [crawl-complete](https://console.cloud.google.com/cloudpubsub/subscription/detail/dataformTrigger?authuser=7&project=httparchive) PubSub subscription
@@ -35,7 +23,6 @@ Tag: `crawl_results_legacy`
     Tags:
 
    - crawl_results_all
-   - crawl_results_legacy
 
 2. [bq-poller-cwv-tech-report](https://console.cloud.google.com/cloudscheduler/jobs/edit/us-east4/bq-poller-cwv-tech-report?authuser=7&project=httparchive) Scheduler
 
