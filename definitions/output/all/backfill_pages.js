@@ -65,8 +65,8 @@ SELECT
   STRUCT<
     a11y JSON,
     cms JSON,
-    css_variables JSON,
     cookies JSON,
+    css_variables JSON,
     ecommerce JSON,
     element_count JSON,
     javascript JSON,
@@ -86,8 +86,8 @@ SELECT
   >(
     SAFE.PARSE_JSON(JSON_VALUE(SAFE.PARSE_JSON(payload, wide_number_mode => 'round'), "$._a11y"), wide_number_mode => 'round'),
     SAFE.PARSE_JSON(JSON_VALUE(SAFE.PARSE_JSON(payload, wide_number_mode => 'round'), "$._cms"), wide_number_mode => 'round'),
-    SAFE.PARSE_JSON(JSON_VALUE(SAFE.PARSE_JSON(payload, wide_number_mode => 'round'), "$._css-variables"), wide_number_mode => 'round'),
     SAFE.PARSE_JSON(JSON_VALUE(SAFE.PARSE_JSON(payload, wide_number_mode => 'round'), "$._cookies"), wide_number_mode => 'round'),
+    SAFE.PARSE_JSON(JSON_VALUE(SAFE.PARSE_JSON(payload, wide_number_mode => 'round'), "$._css-variables"), wide_number_mode => 'round'),
     SAFE.PARSE_JSON(JSON_VALUE(SAFE.PARSE_JSON(payload, wide_number_mode => 'round'), "$._ecommerce"), wide_number_mode => 'round'),
     SAFE.PARSE_JSON(JSON_VALUE(SAFE.PARSE_JSON(payload, wide_number_mode => 'round'), "$._element_count"), wide_number_mode => 'round'),
     SAFE.PARSE_JSON(JSON_VALUE(SAFE.PARSE_JSON(payload, wide_number_mode => 'round'), "$._javascript"), wide_number_mode => 'round'),
