@@ -80,22 +80,6 @@ iterations.forEach((iteration, i) => {
   ]).dependencies([
     i===0 ? "all_pages_stable_pre" : `all_pages_stable_update ${iterations[i-1].month} ${iterations[i-1].client}`
   ]).queries(ctx => `
-CREATE TEMP FUNCTION PRUNE_OBJECT(
-  json_str STRING,
-  keys_to_remove ARRAY<STRING>
-) RETURNS JSON
-LANGUAGE js AS """
-try {
-  var jsonObject = JSON.parse(json_str);
-  keys_to_remove.forEach(function(key) {
-    delete jsonObject[key];
-  });
-  return jsonObject;
-} catch (e) {
-  return null;
-}
-""";
-
 INSERT INTO \`all_dev.pages_stable\`
 SELECT
   date,
@@ -106,7 +90,36 @@ SELECT
   rank,
   wptid,
   SAFE.PARSE_JSON(payload, wide_number_mode => 'round') AS payload,
-  PRUNE_OBJECT(summary, ["metadata", "pageid", "createDate", "startedDateTime", "archive", "label", "crawlid", "url", "urlhash", "urlShort", "wptid", "wptrun", "rank", "PageSpeed", "_adult_site", "avg_dom_depth", "doctype", "document_height", "document_width", "localstorage_size", "sessionstorage_size", "meta_viewport", "num_iframes", "num_scripts", "num_scripts_sync", "num_scripts_async", "usertiming"]) AS summary,
+  JSON_REMOVE(
+    SAFE.PARSE_JSON(summary, wide_number_mode => 'round'), 
+    '$._adult_site',
+    '$.archive',
+    '$.avg_dom_depth',
+    '$.crawlid',
+    '$.createDate',
+    '$.doctype',
+    '$.document_height',
+    '$.document_width',
+    '$.label',
+    '$.localstorage_size',
+    '$.meta_viewport',
+    '$.metadata',
+    '$.num_iframes',
+    '$.num_scripts_async',
+    '$.num_scripts_sync',
+    '$.num_scripts',
+    '$.pageid',
+    '$.PageSpeed',
+    '$.rank',
+    '$.sessionstorage_size',
+    '$.startedDateTime',
+    '$.url',
+    '$.urlhash',
+    '$.urlShort',
+    '$.usertiming',
+    '$.wptid',
+    '$.wptrun'
+  ) AS summary,
   STRUCT<
     a11y JSON,
     cms JSON,
@@ -148,7 +161,28 @@ SELECT
     JSON_QUERY(SAFE.PARSE_JSON(custom_metrics, wide_number_mode => 'round'), "$.third-parties"),
     JSON_QUERY(SAFE.PARSE_JSON(custom_metrics, wide_number_mode => 'round'), "$.well-known"),
     JSON_QUERY(SAFE.PARSE_JSON(custom_metrics, wide_number_mode => 'round'), "$.wpt_bodies"),
-    PRUNE_OBJECT(custom_metrics, ["a11y", "cms", "cookies", "css-variables", "ecommerce", "element_count", "javascript", "markup", "media", "origin-trials", "performance", "privacy", "responsive_images", "robots_txt", "security", "structured-data", "third-parties", "well-known", "wpt_bodies"])
+    JSON_REMOVE(
+      SAFE.PARSE_JSON(custom_metrics, wide_number_mode => 'round'), 
+      '$.a11y', 
+      '$.cms', 
+      '$.cookies', 
+      '$.css-variables', 
+      '$.ecommerce', 
+      '$.element_count', 
+      '$.javascript', 
+      '$.markup', 
+      '$.media', 
+      '$.origin-trials', 
+      '$.performance', 
+      '$.privacy', 
+      '$.responsive_images', 
+      '$.robots_txt', 
+      '$.security', 
+      '$.structured-data', 
+      '$.third-parties', 
+      '$.well-known', 
+      '$.wpt_bodies'
+    )
   ) AS custom_metrics,
   SAFE.PARSE_JSON(lighthouse, wide_number_mode => 'round') AS lighthouse,
   features,
