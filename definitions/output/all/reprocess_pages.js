@@ -148,7 +148,7 @@ SELECT
     JSON_QUERY(SAFE.PARSE_JSON(custom_metrics, wide_number_mode => 'round'), "$.third-parties"),
     JSON_QUERY(SAFE.PARSE_JSON(custom_metrics, wide_number_mode => 'round'), "$.well-known"),
     JSON_QUERY(SAFE.PARSE_JSON(custom_metrics, wide_number_mode => 'round'), "$.wpt_bodies"),
-    PRUNE_OBJECT(custom_metrics, ["a11y", "cms", "css-variables", "cookies", "element_count", "ecommerce", "javascript", "markup", "media", "performance", "privacy", "security", "responsive_images", "robots_txt", "structured-data", "third-parties", "well-known", "wpt_bodies"])
+    PRUNE_OBJECT(custom_metrics, ["a11y", "cms", "cookies", "css-variables", "ecommerce", "element_count", "javascript", "markup", "media", "origin-trials", "performance", "privacy", "responsive_images", "robots_txt", "security", "structured-data", "third-parties", "well-known", "wpt_bodies"])
   ) AS custom_metrics,
   SAFE.PARSE_JSON(lighthouse, wide_number_mode => 'round') AS lighthouse,
   features,
