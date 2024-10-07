@@ -15,7 +15,7 @@ const
         is_dev_env
     ] = dataform.projectConfig.vars.env_name == 'dev' ? [
         "TABLESAMPLE SYSTEM (0.001 PERCENT)",
-        "AND rank = 5000",
+        "AND rank <= 10000",
         true
     ] : ["", "", false];
 
