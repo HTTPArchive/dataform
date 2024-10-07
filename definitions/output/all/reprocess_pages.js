@@ -20,6 +20,7 @@ CREATE TABLE \`all_dev.pages_stable\`
     a11y JSON,
     cms JSON,
     cookies JSON,
+    crux JSON,
     css_variables JSON,
     ecommerce JSON,
     element_count JSON,
@@ -154,7 +155,8 @@ SELECT
     '$._valid-head',
     '$._well-known',
     '$._wpt_bodies',
-    '$._blinkFeatureFirstUsed'
+    '$._blinkFeatureFirstUsed',
+    '$._CrUX'
   ) AS payload,
   JSON_REMOVE(
     SAFE.PARSE_JSON(summary, wide_number_mode => 'round'), 
@@ -190,6 +192,7 @@ SELECT
     a11y JSON,
     cms JSON,
     cookies JSON,
+    crux JSON,
     css_variables JSON,
     ecommerce JSON,
     element_count JSON,
@@ -211,6 +214,7 @@ SELECT
     JSON_QUERY(SAFE.PARSE_JSON(custom_metrics, wide_number_mode => 'round'), "$.a11y"),
     JSON_QUERY(SAFE.PARSE_JSON(custom_metrics, wide_number_mode => 'round'), "$.cms"),
     JSON_QUERY(SAFE.PARSE_JSON(custom_metrics, wide_number_mode => 'round'), "$.cookies"),
+    JSON_QUERY(SAFE.PARSE_JSON(payload, wide_number_mode => 'round'), "$._CrUX"),
     JSON_QUERY(SAFE.PARSE_JSON(custom_metrics, wide_number_mode => 'round'), "$.css-variables"),
     JSON_QUERY(SAFE.PARSE_JSON(custom_metrics, wide_number_mode => 'round'), "$.ecommerce"),
     JSON_QUERY(SAFE.PARSE_JSON(custom_metrics, wide_number_mode => 'round'), "$.element_count"),
