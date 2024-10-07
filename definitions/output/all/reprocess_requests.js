@@ -75,10 +75,8 @@ SELECT
   ) AS payload,
   JSON_REMOVE(
     SAFE.PARSE_JSON(requests.summary, wide_number_mode => 'round'),  
-    '$.crawlid',
     '$.firstHtml',
     '$.firstReq',
-    '$.pageid',
     '$.req_accept_encoding',
     '$.req_accept_language',
     '$.req_accept',
