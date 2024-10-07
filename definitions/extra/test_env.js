@@ -15,6 +15,8 @@ resources_list.forEach(resource => {
   ]).queries(ctx => `
 CREATE SCHEMA IF NOT EXISTS ${resource.datasetId}_dev;
 
+DROP TABLE ${resource.datasetId}_dev.dev_${resource.tableId};
+
 CREATE TABLE ${resource.datasetId}_dev.dev_${resource.tableId}
 LIKE httparchive.${resource.datasetId}.${resource.tableId};
 

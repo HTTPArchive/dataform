@@ -14,18 +14,6 @@ async function get_compilation_results(repoURI) {
     compilationResult: {
       releaseConfig: `${repoURI}/releaseConfigs/production`
     }
-  }, dev_request = {
-    parent: repoURI,
-    compilationResult: {
-      gitCommitish: 'dev'
-    },
-    codeCompilationConfig: {
-      schemaSuffix: 'dev',
-      tablePrefix: 'dev',
-      vars: {
-        current_month: '2024-08-01',
-      },
-    }
   };
 
   console.log(`Creating Dataform compilation result: ${JSON.stringify(request, null, 2)}`);
