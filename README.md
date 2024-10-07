@@ -1,6 +1,10 @@
 # HTTP Archive BigQuery pipeline with Dataform
 
-## Tables
+This repo handles the HTTP Archive data pipeline, which takes the results of the monthly HTTP Archive run and saves this to the `httparchive` dataset in BigQuery.
+
+## Pipelines
+
+The pipelines are run in Dataform service in Google Cloud Platform (GCP) and are kicked off automatically on crawl completion and other events. The code in the `main` branch is used on each triggered pipeline run.
 
 ### Crawl tables in `all` dataset
 
