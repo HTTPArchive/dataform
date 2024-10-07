@@ -57,6 +57,22 @@ iterations.forEach((iteration, i) => {
   ).dependencies([
     i===0 ? "all_requests_stable_pre" : `all_requests_stable ${iterations[i-1].month} ${iterations[i-1].client}`
   ]).queries(ctx => `
+CREATE TEMP FUNCTION PRUNE_HEADERS(
+  jsonObject JSON
+) RETURNS JSON
+LANGUAGE js AS """
+try {
+  for (const [key, value] of Object.entries(jsonObject)) {
+    if(key.startsWith('req_') || key.startsWith('resp_')) {
+      delete jsonObject[key];
+    }
+  }
+  return jsonObject;
+} catch (e) {
+  return null;
+}
+""";
+
 INSERT INTO \`all_dev.requests_stable\`
 SELECT
   requests.date,
@@ -71,35 +87,21 @@ SELECT
   requests.index,
   JSON_REMOVE(
     SAFE.PARSE_JSON(payload, wide_number_mode => 'round'),
-    '$._headers'
+    '$._headers',
+    '$.request.headers',
+    '$.response.headers'
   ) AS payload,
-  JSON_REMOVE(
+  PRUNE_HEADERS(JSON_REMOVE(
     SAFE.PARSE_JSON(requests.summary, wide_number_mode => 'round'),  
     '$.firstHtml',
     '$.firstReq',
-    '$.req_accept_encoding',
-    '$.req_accept_language',
-    '$.req_accept',
-    '$.req_if_modified_since',
-    '$.req_if_none_match',
-    '$.req_referer',
-    '$.req_user_agent',
     '$.reqOtherHeaders',
     '$.requestid',
-    '$.resp_age',
-    '$.resp_cache_control',
-    '$.resp_content_length',
-    '$.resp_content_type',
-    '$.resp_date',
-    '$.resp_etag',
-    '$.resp_last_modified',
-    '$.resp_server',
-    '$.resp_vary',
     '$.respOtherHeaders',
     '$.startedDateTime',
     '$.url',
     '$.urlShort'
-  ) as summary,
+  )) as summary,
   requests.request_headers,
   requests.response_headers,
   requests.response_body
