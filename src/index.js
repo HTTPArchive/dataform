@@ -34,7 +34,7 @@ FROM (
     action: "runDataformRepo",
     actionArgs: {
       repoName: "crawl-data",
-      tags: ["crawl_results_all", "crawl_results_legacy"]
+      tags: ["crawl_results_all"]
     }
   }
 };
