@@ -1,51 +1,46 @@
-# HTTP Archive BigQuery pipeline with Dataform
+# HTTP Archive datasets pipeline
 
-## Tables
+## Datasets
 
 ### Crawl tables in `all` dataset
 
 Tag: `crawl_results_all`
 
-- [x] httparchive.all.pages
-- [x] httparchive.all.parsed_css
-- [x] httparchive.all.requests
+- httparchive.all.pages
+- httparchive.all.parsed_css
+- httparchive.all.requests
 
 ### Core Web Vitals Technology Report
 
 Tag: `cwv_tech_report`
 
-- [x] httparchive.core_web_vitals.technologies
+- httparchive.core_web_vitals.technologies
 
 ### Legacy crawl tables (to be deprecated)
 
 Tag: `crawl_results_legacy`
 
-- [x] httparchive.lighthouse.YYYY_MM_DD_client
-- [x] httparchive.pages.YYYY_MM_DD_client
-- [x] httparchive.requests.YYYY_MM_DD_client
-- [x] httparchive.response_bodies.YYYY_MM_DD_client
-- [x] httparchive.summary_pages.YYYY_MM_DD_client
-- [x] httparchive.summary_requests.YYYY_MM_DD_client
-- [x] httparchive.technologies.YYYY_MM_DD_client
+- httparchive.lighthouse.YYYY_MM_DD_client
+- httparchive.pages.YYYY_MM_DD_client
+- httparchive.requests.YYYY_MM_DD_client
+- httparchive.response_bodies.YYYY_MM_DD_client
+- httparchive.summary_pages.YYYY_MM_DD_client
+- httparchive.summary_requests.YYYY_MM_DD_client
+- httparchive.technologies.YYYY_MM_DD_client
 
 ## Schedules
 
 1. [crawl-complete](https://console.cloud.google.com/cloudpubsub/subscription/detail/dataformTrigger?authuser=7&project=httparchive) PubSub subscription
 
-    Tags:
-
-   - crawl_results_all
-   - crawl_results_legacy
+    Tags: ["crawl_results_all", "crawl_results_legacy"]
 
 2. [bq-poller-cwv-tech-report](https://console.cloud.google.com/cloudscheduler/jobs/edit/us-east4/bq-poller-cwv-tech-report?authuser=7&project=httparchive) Scheduler
 
-    Tags:
-
-    - cwv_tech_report
+    Tags: ["cwv_tech_report"]
 
 ### Triggering workflows
 
-[see here](./src/README.md)
+In order to unify the workflow triggering mechanism, we use [a Cloud Run function](./src/README.md) that can be invoked in a number of ways (e.g. listen to PubSub messages), do intermediate checks and trigger the particular Dataform workflow execution configuration.
 
 ## Contributing
 
