@@ -33,7 +33,7 @@ Tag: `blink_features_report`
 
 Consumers:
 
-- [chromestatus.com](https://chromestatus.com/metrics/feature/timeline/popularity/2089)
+- chromestatus.com - [example](https://chromestatus.com/metrics/feature/timeline/popularity/2089)
 
 ### Legacy crawl results (to be deprecated)
 
