@@ -6,46 +6,56 @@ This repo handles the HTTP Archive data pipeline, which takes the results of the
 
 The pipelines are run in Dataform service in Google Cloud Platform (GCP) and are kicked off automatically on crawl completion and other events. The code in the `main` branch is used on each triggered pipeline run.
 
-### Crawl tables in `all` dataset
+### Crawl results
 
 Tag: `crawl_results_all`
 
-- [x] httparchive.all.pages
-- [x] httparchive.all.parsed_css
-- [x] httparchive.all.requests
+- httparchive.all.pages
+- httparchive.all.parsed_css
+- httparchive.all.requests
 
 ### Core Web Vitals Technology Report
 
 Tag: `cwv_tech_report`
 
-- [x] httparchive.core_web_vitals.technologies
+- httparchive.core_web_vitals.technologies
 
-### Legacy crawl tables (to be deprecated)
+Consumers:
+
+- [HTTP Archive Tech Report](https://httparchive.org/reports/techreport/landing)
+
+### Blink Features Report
+
+Tag: `blink_features_report`
+
+- httparchive.blink_features.features
+- httparchive.blink_features.usage
+
+Consumers:
+
+- chromestatus.com - [example](https://chromestatus.com/metrics/feature/timeline/popularity/2089)
+
+### Legacy crawl results (to be deprecated)
 
 Tag: `crawl_results_legacy`
 
-- [x] httparchive.lighthouse.YYYY_MM_DD_client
-- [x] httparchive.pages.YYYY_MM_DD_client
-- [x] httparchive.requests.YYYY_MM_DD_client
-- [x] httparchive.response_bodies.YYYY_MM_DD_client
-- [x] httparchive.summary_pages.YYYY_MM_DD_client
-- [x] httparchive.summary_requests.YYYY_MM_DD_client
-- [x] httparchive.technologies.YYYY_MM_DD_client
+- httparchive.lighthouse.YYYY_MM_DD_client
+- httparchive.pages.YYYY_MM_DD_client
+- httparchive.requests.YYYY_MM_DD_client
+- httparchive.response_bodies.YYYY_MM_DD_client
+- httparchive.summary_pages.YYYY_MM_DD_client
+- httparchive.summary_requests.YYYY_MM_DD_client
+- httparchive.technologies.YYYY_MM_DD_client
 
 ## Schedules
 
 1. [crawl-complete](https://console.cloud.google.com/cloudpubsub/subscription/detail/dataformTrigger?authuser=7&project=httparchive) PubSub subscription
 
-    Tags:
-
-   - crawl_results_all
-   - crawl_results_legacy
+    Tags: ["crawl_results_all", "blink_features_report", "crawl_results_legacy"]
 
 2. [bq-poller-cwv-tech-report](https://console.cloud.google.com/cloudscheduler/jobs/edit/us-east4/bq-poller-cwv-tech-report?authuser=7&project=httparchive) Scheduler
 
-    Tags:
-
-    - cwv_tech_report
+    Tags: ["cwv_tech_report"]
 
 ### Triggering workflows
 

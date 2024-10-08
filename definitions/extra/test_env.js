@@ -1,4 +1,4 @@
-const date = constants.fn_past_month(constants.current_month);
+const date = constants.current_month;
 
 var resources_list = [
   { datasetId: "all", tableId: "pages" },
@@ -11,17 +11,38 @@ resources_list.forEach(resource => {
   operate(
     `test_table ${resource.datasetId}_${resource.tableId}`,
     { hasOutput: true }
-  ).queries(ctx => `
+  ).queries(`
 CREATE SCHEMA IF NOT EXISTS ${resource.datasetId}_dev;
 
-DROP TABLE ${resource.datasetId}_dev.dev_${resource.tableId};
+DROP TABLE IF EXISTS ${resource.datasetId}_dev.dev_${resource.tableId};
 
-CREATE TABLE ${resource.datasetId}_dev.dev_${resource.tableId}
-LIKE httparchive.${resource.datasetId}.${resource.tableId};
-
-INSERT INTO ${resource.datasetId}_dev.dev_${resource.tableId}
+CREATE TABLE IF NOT EXISTS ${resource.datasetId}_dev.dev_${resource.tableId} AS
 SELECT *
-FROM httparchive.${resource.datasetId}.${resource.tableId} ${constants.dev_TABLESAMPLE}
+FROM \`${resource.datasetId}.${resource.tableId}\` ${constants.dev_TABLESAMPLE}
 WHERE date = '${date}'
   `);
 })
+
+operate("test_table blink_features_dev_dev_usage", {
+  hasOutput: true,
+}).queries(`
+CREATE SCHEMA IF NOT EXISTS blink_features_dev;
+
+CREATE TABLE IF NOT EXISTS blink_features_dev.dev_usage AS
+SELECT *
+FROM blink_features.usage ${constants.dev_TABLESAMPLE}
+WHERE yyyymmdd = '${date}';
+`)
+
+operate("test_table blink_features_dev_dev_features", {
+  hasOutput: true,
+}).queries(`
+CREATE SCHEMA IF NOT EXISTS blink_features_dev;
+
+DROP TABLE IF EXISTS blink_features_dev.dev_features;
+
+CREATE TABLE IF NOT EXISTS blink_features_dev.dev_features AS
+SELECT *
+FROM blink_features.features ${constants.dev_TABLESAMPLE}
+WHERE yyyymmdd = DATE '${date}';
+`)
