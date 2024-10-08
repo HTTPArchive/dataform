@@ -3,9 +3,9 @@ operate(`all_pages_stable_pre`).tags(
 ).queries(`
 CREATE SCHEMA IF NOT EXISTS all_dev;
 
-DROP TABLE IF EXISTS \`all_dev.pages_stable\`;
+-- DROP TABLE IF EXISTS \`all_dev.pages_stable\`;
 
-CREATE TABLE \`all_dev.pages_stable\`
+CREATE TABLE IF NOT EXISTS \`all_dev.pages_stable\`
 (
   date DATE NOT NULL OPTIONS(description="YYYY-MM-DD format of the HTTP Archive monthly crawl"),
   client STRING NOT NULL OPTIONS(description="Test environment: desktop or mobile"),
@@ -80,6 +80,9 @@ iterations.forEach((iteration, i) => {
   ]).dependencies([
     i === 0 ? "all_pages_stable_pre" : `all_pages_stable_update ${iterations[i - 1].month} ${iterations[i - 1].client}`
   ]).queries(ctx => `
+DELETE FROM \`all_dev.pages_stable\`
+WHERE date = "${iteration.month}";
+
 INSERT INTO \`all_dev.pages_stable\`
 SELECT
   date,

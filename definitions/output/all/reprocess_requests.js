@@ -3,9 +3,9 @@ operate(`all_requests_stable_pre`).tags(
 ).queries(`
 CREATE SCHEMA IF NOT EXISTS all_dev;
 
-DROP TABLE IF EXISTS \`all_dev.requests_stable\`;
+-- DROP TABLE IF EXISTS \`all_dev.requests_stable\`;
 
-CREATE TABLE \`all_dev.requests_stable\`
+CREATE TABLE IF NOT EXISTS \`all_dev.requests_stable\`
 (
   date DATE NOT NULL OPTIONS(description="YYYY-MM-DD format of the HTTP Archive monthly crawl"),
   client STRING NOT NULL OPTIONS(description="Test environment: desktop or mobile"),
@@ -57,6 +57,9 @@ iterations.forEach((iteration, i) => {
   ).dependencies([
     i === 0 ? "all_requests_stable_pre" : `all_requests_stable ${iterations[i - 1].month} ${iterations[i - 1].client}`
   ]).queries(ctx => `
+DELETE FROM \`all_dev.requests_stable\`
+WHERE date = "${iteration.month}";
+
 CREATE TEMP FUNCTION PRUNE_HEADERS(
   jsonObject JSON
 ) RETURNS JSON
