@@ -1,13 +1,13 @@
 publish("parsed_css", {
-    type: "incremental",
-    protected: true,
-    schema: "all",
-    bigquery: {
-        partitionBy: "date",
-        clusterBy: ["client", "is_root_page", "rank", "page"],
-        requirePartitionFilter: true
-    },
-    tags: ["crawl_results_all"],
+  type: "incremental",
+  protected: true,
+  schema: "all",
+  bigquery: {
+    partitionBy: "date",
+    clusterBy: ["client", "is_root_page", "rank", "page"],
+    requirePartitionFilter: true
+  },
+  tags: ["crawl_results_all"],
 }).preOps(ctx => `
 DELETE FROM ${ctx.self()}
 WHERE date = '${constants.current_month}';

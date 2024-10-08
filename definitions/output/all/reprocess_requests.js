@@ -43,19 +43,19 @@ for (
   let month = constants.current_month;
   month >= '2024-09-01'; // 2022-07-01
   month = constants.fn_past_month(month)) {
-    clients.forEach((client) => {
-      iterations.push({
-        month: month,
-        client: client
-        })
+  clients.forEach((client) => {
+    iterations.push({
+      month: month,
+      client: client
     })
+  })
 }
 
 iterations.forEach((iteration, i) => {
   operate(`all_requests_stable ${iteration.month} ${iteration.client}`).tags(
     ["all_requests_stable"]
   ).dependencies([
-    i===0 ? "all_requests_stable_pre" : `all_requests_stable ${iterations[i-1].month} ${iterations[i-1].client}`
+    i === 0 ? "all_requests_stable_pre" : `all_requests_stable ${iterations[i - 1].month} ${iterations[i - 1].client}`
   ]).queries(ctx => `
 CREATE TEMP FUNCTION PRUNE_HEADERS(
   jsonObject JSON
@@ -91,17 +91,19 @@ SELECT
     '$.request.headers',
     '$.response.headers'
   ) AS payload,
-  PRUNE_HEADERS(JSON_REMOVE(
-    SAFE.PARSE_JSON(requests.summary, wide_number_mode => 'round'),  
-    '$.firstHtml',
-    '$.firstReq',
-    '$.reqOtherHeaders',
-    '$.requestid',
-    '$.respOtherHeaders',
-    '$.startedDateTime',
-    '$.url',
-    '$.urlShort'
-  )) as summary,
+  PRUNE_HEADERS(
+    JSON_REMOVE(
+      SAFE.PARSE_JSON(requests.summary, wide_number_mode => 'round'),
+      '$.firstHtml',
+      '$.firstReq',
+      '$.reqOtherHeaders',
+      '$.requestid',
+      '$.respOtherHeaders',
+      '$.startedDateTime',
+      '$.url',
+      '$.urlShort'
+    )
+  ) as summary,
   requests.request_headers,
   requests.response_headers,
   requests.response_body

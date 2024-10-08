@@ -61,13 +61,15 @@ Tag: `crawl_results_legacy`
 
 ### Dataform development workspace hints
 
-1. In workflow settings vars set `dev_name: dev` to process sampled data in dev workspace.
-2. Change `current_month` variable to a month in the past. May be helpful for testing pipelines based on `chrome-ux-report` data.
-3. `definitions/extra/test_env.sqlx` script helps to setup the tables required to run pipelines when in dev workspace. It's disabled by default.
+1. In workflow settings vars:
+   1. set `env_name: dev` to process sampled data in dev workspace.
+   2. change `today` variable to a month in the past. May be helpful for testing pipelines based on `chrome-ux-report` data.
+2. `definitions/extra/test_env.sqlx` script helps to setup the tables required to run pipelines when in dev workspace. It's disabled by default.
 
 ### Error Monitoring
 
 The issues within the pipeline are being tracked using the following alerts:
+
 1. the event trigger processing fails - [Dataform Trigger Function Error](https://console.cloud.google.com/monitoring/alerting/policies/3950167380893746326?authuser=7&project=httparchive)
 2. a job in the workflow fails - "[Dataform Workflow Invocation Failed](https://console.cloud.google.com/monitoring/alerting/policies/7137542315653007241?authuser=7&project=httparchive)
 

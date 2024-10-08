@@ -35,7 +35,7 @@ CREATE TABLE \`all_dev.pages_stable\`
     structured_data JSON,
     third_parties JSON,
     well_known JSON,
-    wpt_bodies JSON,    
+    wpt_bodies JSON,
     other JSON
     > OPTIONS(description="Custom metrics from WebPageTest"),
   lighthouse JSON OPTIONS(description="JSON-encoded Lighthouse report"),
@@ -66,19 +66,19 @@ for (
   let month = constants.current_month;
   month >= '2024-09-01'; // 2022-07-01
   month = constants.fn_past_month(month)) {
-    clients.forEach((client) => {
-      iterations.push({
-        month: month,
-        client: client
-        })
+  clients.forEach((client) => {
+    iterations.push({
+      month: month,
+      client: client
     })
+  })
 }
 
 iterations.forEach((iteration, i) => {
   operate(`all_pages_stable_update ${iteration.month} ${iteration.client}`).tags([
     "all_pages_stable"
   ]).dependencies([
-    i===0 ? "all_pages_stable_pre" : `all_pages_stable_update ${iterations[i-1].month} ${iterations[i-1].client}`
+    i === 0 ? "all_pages_stable_pre" : `all_pages_stable_update ${iterations[i - 1].month} ${iterations[i - 1].client}`
   ]).queries(ctx => `
 INSERT INTO \`all_dev.pages_stable\`
 SELECT
@@ -159,7 +159,7 @@ SELECT
   ) AS payload,
   JSON_SET(
     JSON_REMOVE(
-      SAFE.PARSE_JSON(summary, wide_number_mode => 'round'), 
+      SAFE.PARSE_JSON(summary, wide_number_mode => 'round'),
       '$._adult_site',
       '$.archive',
       '$.avg_dom_depth',
@@ -233,25 +233,25 @@ SELECT
     JSON_QUERY(SAFE.PARSE_JSON(custom_metrics, wide_number_mode => 'round'), "$.well-known"),
     JSON_QUERY(SAFE.PARSE_JSON(custom_metrics, wide_number_mode => 'round'), "$.wpt_bodies"),
     JSON_REMOVE(
-      SAFE.PARSE_JSON(custom_metrics, wide_number_mode => 'round'), 
-      '$.a11y', 
-      '$.cms', 
-      '$.cookies', 
-      '$.css-variables', 
-      '$.ecommerce', 
-      '$.element_count', 
+      SAFE.PARSE_JSON(custom_metrics, wide_number_mode => 'round'),
+      '$.a11y',
+      '$.cms',
+      '$.cookies',
+      '$.css-variables',
+      '$.ecommerce',
+      '$.element_count',
       '$.javascript',
-      '$.markup', 
-      '$.media', 
-      '$.origin-trials', 
-      '$.performance', 
-      '$.privacy', 
-      '$.responsive_images', 
-      '$.robots_txt', 
-      '$.security', 
-      '$.structured-data', 
-      '$.third-parties', 
-      '$.well-known', 
+      '$.markup',
+      '$.media',
+      '$.origin-trials',
+      '$.performance',
+      '$.privacy',
+      '$.responsive_images',
+      '$.robots_txt',
+      '$.security',
+      '$.structured-data',
+      '$.third-parties',
+      '$.well-known',
       '$.wpt_bodies'
     )
   ) AS custom_metrics,
