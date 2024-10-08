@@ -114,7 +114,7 @@ technologies AS (
     ${ctx.resolve("all", "pages")},
     UNNEST(technologies) AS technology
   WHERE
-    date = '${past_month}' ${constants.dev_rank5000_filter} AND
+    date = '${past_month}' ${constants.dev_rank_filter} AND
     technology.technology IS NOT NULL AND
     technology.technology != ''
 UNION ALL
@@ -125,7 +125,7 @@ UNION ALL
   FROM
     ${ctx.resolve("all", "pages")}
   WHERE
-    date = '${past_month}' ${constants.dev_rank5000_filter}
+    date = '${past_month}' ${constants.dev_rank_filter}
 ),
 
 categories AS (
@@ -137,7 +137,7 @@ categories AS (
     UNNEST(technologies) AS technology,
     UNNEST(technology.categories) AS category
   WHERE
-    date = '${past_month}' ${constants.dev_rank5000_filter}
+    date = '${past_month}' ${constants.dev_rank_filter}
   GROUP BY
     app
 UNION ALL
@@ -149,7 +149,7 @@ UNION ALL
     UNNEST(technologies) AS technology,
     UNNEST(technology.categories) AS category
   WHERE
-    date = '${past_month}' ${constants.dev_rank5000_filter} AND
+    date = '${past_month}' ${constants.dev_rank_filter} AND
     client = 'mobile'
 ),
 
@@ -165,7 +165,7 @@ summary_stats AS (
   FROM
     ${ctx.resolve("all", "pages")}
   WHERE
-    date = '${past_month}' ${constants.dev_rank5000_filter}
+    date = '${past_month}' ${constants.dev_rank_filter}
 ),
 
 lab_data AS (
