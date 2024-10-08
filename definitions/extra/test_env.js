@@ -1,7 +1,7 @@
 const date = constants.fn_past_month(constants.current_month);
 
 var resources_list = [
-  //{datasetId: "all",              tableId: "pages"},
+  {datasetId: "all",              tableId: "pages"},
   {datasetId: "all",              tableId: "requests"},
   //{datasetId: "all",              tableId: "parsed_css"},
   //{datasetId: "core_web_vitals",  tableId: "technologies"},
