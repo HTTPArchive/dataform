@@ -1,45 +1,48 @@
-const past_month = constants.fn_past_month(constants.current_month);
+const date = constants.current_month;
 
-operate("test_env", {
+var resources_list = [
+  { datasetId: "all", tableId: "pages" },
+  { datasetId: "all", tableId: "requests" },
+  //{datasetId: "all", tableId: "parsed_css"},
+  //{datasetId: "core_web_vitals", tableId: "technologies"},
+];
+
+resources_list.forEach(resource => {
+  operate(
+    `test_table ${resource.datasetId}_${resource.tableId}`,
+    { hasOutput: true }
+  ).queries(`
+CREATE SCHEMA IF NOT EXISTS ${resource.datasetId}_dev;
+
+DROP TABLE IF EXISTS ${resource.datasetId}_dev.dev_${resource.tableId};
+
+CREATE TABLE IF NOT EXISTS ${resource.datasetId}_dev.dev_${resource.tableId} AS
+SELECT *
+FROM \`${resource.datasetId}.${resource.tableId}\` ${constants.dev_TABLESAMPLE}
+WHERE date = '${date}'
+  `);
+})
+
+operate("test_table blink_features_dev_dev_usage", {
   hasOutput: true,
-  disabled: true // MUST be disabled in main branch
-}).queries(ctx => `
-CREATE SCHEMA IF NOT EXISTS all_dev;
-
-CREATE TABLE IF NOT EXISTS ${ctx.resolve("all", "pages")} AS
-SELECT *
-FROM httparchive.all.pages
-WHERE
-  date = '${constants.current_month}'
-  ${constants.dev_rank5000_filter};
-
-CREATE TABLE IF NOT EXISTS ${ctx.resolve("all", "requests")} AS
-SELECT *
-FROM httparchive.all.requests ${constants.dev_TABLESAMPLE}
-WHERE date = '${constants.current_month}';
-
-CREATE TABLE IF NOT EXISTS ${ctx.resolve("all", "parsed_css")} AS
-SELECT *
-FROM httparchive.all.parsed_css
-WHERE date = '${constants.current_month}'
-  ${constants.dev_rank5000_filter};
-
-CREATE SCHEMA IF NOT EXISTS core_web_vitals_dev;
-
-CREATE TABLE IF NOT EXISTS ${ctx.resolve("core_web_vitals", "technologies")} AS
-SELECT *
-FROM httparchive.core_web_vitals.technologies ${constants.dev_TABLESAMPLE}
-WHERE date = '${past_month}';
-
+}).queries(`
 CREATE SCHEMA IF NOT EXISTS blink_features_dev;
 
-CREATE TABLE IF NOT EXISTS ${ctx.resolve("blink_features", "usage")} AS
+CREATE TABLE IF NOT EXISTS blink_features_dev.dev_usage AS
 SELECT *
-FROM httparchive.blink_features.usage ${constants.dev_TABLESAMPLE}
-WHERE yyyymmdd = '${past_month}';
+FROM blink_features.usage ${constants.dev_TABLESAMPLE}
+WHERE yyyymmdd = '${date}';
+`)
 
-CREATE TABLE IF NOT EXISTS ${ctx.resolve("blink_features", "features")} AS
+operate("test_table blink_features_dev_dev_features", {
+  hasOutput: true,
+}).queries(`
+CREATE SCHEMA IF NOT EXISTS blink_features_dev;
+
+DROP TABLE IF EXISTS blink_features_dev.dev_features;
+
+CREATE TABLE IF NOT EXISTS blink_features_dev.dev_features AS
 SELECT *
-FROM httparchive.blink_features.features ${constants.dev_TABLESAMPLE}
-WHERE yyyymmdd = DATE '${past_month}';
+FROM blink_features.features ${constants.dev_TABLESAMPLE}
+WHERE yyyymmdd = DATE '${date}';
 `)

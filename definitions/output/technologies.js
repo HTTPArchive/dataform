@@ -18,7 +18,8 @@ UNNEST (tech.categories) AS category,
 UNNEST (tech.info) AS info
 WHERE date = '${constants.current_month}' AND
   client = '${client}' AND
-  is_root_page AND
+  is_root_page
+  ${constants.dev_rank_filter} AND
   tech.technology IS NOT NULL
     `);
 })

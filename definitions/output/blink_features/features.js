@@ -59,10 +59,11 @@ FROM (
     payload,
     rank,
     feature
-  FROM ${ctx.ref("all", "pages")} ${constants.dev_TABLESAMPLE},
+  FROM ${ctx.ref("all", "pages")},
     UNNEST(features) AS feature
   WHERE
     date = '${constants.current_month}' AND
-    is_root_page = TRUE ${constants.dev_rank5000_filter}
+    is_root_page = TRUE
+    ${constants.dev_rank_filter}
 )
 `)

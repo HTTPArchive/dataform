@@ -26,9 +26,10 @@ FROM (
     type,
     COUNT(DISTINCT url) AS num_urls,
     ARRAY_AGG(url ORDER BY rank, url LIMIT 100) AS sample_urls
-  FROM ${ctx.ref("blink_features", "features")} ${constants.dev_TABLESAMPLE}
+  FROM ${ctx.ref("blink_features", "features")}
   WHERE
     yyyymmdd = '${constants.current_month}'
+    ${constants.dev_rank_filter}
   GROUP BY
     yyyymmdd,
     client,
@@ -44,7 +45,8 @@ JOIN (
   FROM ${ctx.ref("all", "pages")}
   WHERE
     date = '${constants.current_month}' AND
-    is_root_page = TRUE ${constants.dev_rank5000_filter}
+    is_root_page = TRUE
+    ${constants.dev_rank_filter}
   GROUP BY
     date,
     client
