@@ -107,8 +107,10 @@ SELECT
   PRUNE_HEADERS(
     JSON_REMOVE(
       SAFE.PARSE_JSON(requests.summary, wide_number_mode => 'round'),
+      '$.crawlid',
       '$.firstHtml',
       '$.firstReq',
+      '$.pageid',
       '$.reqOtherHeaders',
       '$.requestid',
       '$.respOtherHeaders',
