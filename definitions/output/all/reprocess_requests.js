@@ -113,6 +113,7 @@ SELECT
       '$.requestid',
       '$.respOtherHeaders',
       '$.startedDateTime',
+      '$.type',
       '$.url',
       '$.urlShort'
     )
