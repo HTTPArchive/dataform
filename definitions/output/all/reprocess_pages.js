@@ -81,7 +81,8 @@ iterations.forEach((iteration, i) => {
     i === 0 ? "all_pages_stable_pre" : `all_pages_stable_update ${iterations[i - 1].month} ${iterations[i - 1].client}`
   ]).queries(ctx => `
 DELETE FROM \`all_dev.pages_stable\`
-WHERE date = "${iteration.month}";
+WHERE date = "${iteration.month}" AND
+  client = "${iteration.client}";
 
 INSERT INTO \`all_dev.pages_stable\`
 SELECT
