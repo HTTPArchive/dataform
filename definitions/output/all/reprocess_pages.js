@@ -262,7 +262,12 @@ SELECT
   SAFE.PARSE_JSON(lighthouse, wide_number_mode => 'round') AS lighthouse,
   features,
   technologies,
-  SAFE.PARSE_JSON(metadata, wide_number_mode => 'round') AS metadata
+  JSON_REMOVE(
+    SAFE.PARSE_JSON(metadata, wide_number_mode => 'round'),
+    '$.page_id',
+    '$.parent_page_id',
+    '$.root_page_id'
+  ) AS metadata
 FROM \`all.pages\`
 WHERE
   date = "${iteration.month}" AND
