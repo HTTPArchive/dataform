@@ -36,29 +36,39 @@ OPTIONS(
 );
 `);
 
-const iterations = [];
-const clients = constants.clients;
+const
+  iterations = [],
+  types = ["= 'script'", "= 'image'", "NOT IN ('script', 'image')"];
 
 for (
   let month = constants.current_month;
   month >= '2024-09-01'; // 2022-07-01
   month = constants.fn_past_month(month)) {
-  clients.forEach((client) => {
-    iterations.push({
-      month: month,
-      client: client
+  constants.clients.forEach((client) => {
+    constants.booleans.forEach((is_root_page) => {
+      types.forEach((type) => {
+        iterations.push({
+          month: month,
+          client: client,
+          is_root_page: is_root_page,
+          type: type
+        })
+      })
     })
   })
 }
 
 iterations.forEach((iteration, i) => {
-  operate(`all_requests_stable ${iteration.month} ${iteration.client}`).tags(
+  operate(`all_requests_stable ${iteration.month} ${iteration.client} ${iteration.is_root_page} ${i}`).tags(
     ["all_requests_stable"]
   ).dependencies([
-    i === 0 ? "all_requests_stable_pre" : `all_requests_stable ${iterations[i - 1].month} ${iterations[i - 1].client}`
+    i === 0 ? "all_requests_stable_pre" : `all_requests_stable ${iterations[i - 1].month} ${iterations[i - 1].client} ${iterations[i - 1].is_root_page} ${i-1}`
   ]).queries(ctx => `
 DELETE FROM \`all_dev.requests_stable\`
-WHERE date = "${iteration.month}";
+WHERE date = "${iteration.month}"
+  AND client = '${iteration.client}'
+  AND is_root_page = ${iteration.is_root_page}
+  AND type ${iteration.type};
 
 CREATE TEMP FUNCTION PRUNE_HEADERS(
   jsonObject JSON
@@ -97,12 +107,15 @@ SELECT
   PRUNE_HEADERS(
     JSON_REMOVE(
       SAFE.PARSE_JSON(requests.summary, wide_number_mode => 'round'),
+      '$.crawlid',
       '$.firstHtml',
       '$.firstReq',
+      '$.pageid',
       '$.reqOtherHeaders',
       '$.requestid',
       '$.respOtherHeaders',
       '$.startedDateTime',
+      '$.type',
       '$.url',
       '$.urlShort'
     )
@@ -114,7 +127,10 @@ FROM (
   SELECT *
   FROM \`all.requests\` ${constants.dev_TABLESAMPLE}
   WHERE date = '${iteration.month}'
-    AND client = '${iteration.client}') AS requests
+    AND client = '${iteration.client}'
+    AND is_root_page = ${iteration.is_root_page}
+    AND type ${iteration.type}
+) AS requests
 LEFT JOIN (
   SELECT DISTINCT
     CONCAT(origin, '/') AS page,
