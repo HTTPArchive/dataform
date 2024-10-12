@@ -72,8 +72,8 @@ Tag: `crawl_results_legacy`
 ### Dataform development workspace hints
 
 1. In workflow settings vars:
-   1. set `env_name: dev` to process sampled data in dev workspace.
-   2. change `today` variable to a month in the past. May be helpful for testing pipelines based on `chrome-ux-report` data.
+    1. set `env_name: dev` to process sampled data in dev workspace.
+    2. change `today` variable to a month in the past. May be helpful for testing pipelines based on `chrome-ux-report` data.
 2. `definitions/extra/test_env.sqlx` script helps to setup the tables required to run pipelines when in dev workspace. It's disabled by default.
 
 ### Error Monitoring

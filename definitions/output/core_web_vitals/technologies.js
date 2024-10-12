@@ -1,15 +1,15 @@
-const past_month = constants.fn_past_month(constants.current_month);
+const past_month = constants.fnPastMonth(constants.currentMonth)
 
-publish("technologies", {
-  schema: "core_web_vitals",
-  type: "incremental",
+publish('technologies', {
+  schema: 'core_web_vitals',
+  type: 'incremental',
   protected: true,
   bigquery: {
-    partitionBy: "date",
-    clusterBy: ["geo", "app", "rank", "client"],
+    partitionBy: 'date',
+    clusterBy: ['geo', 'app', 'rank', 'client'],
     requirePartitionFilter: true
   },
-  tags: ["cwv_tech_report"],
+  tags: ['cwv_tech_report'],
   dependOnDependencyAssertions: true
 }).preOps(ctx => `
 DELETE FROM ${ctx.self()}
@@ -46,7 +46,7 @@ WITH geo_summary AS (
     * EXCEPT (country_code),
     \`chrome-ux-report\`.experimental.GET_COUNTRY(country_code) AS geo
   FROM
-    ${ctx.ref("chrome-ux-report", "materialized", "country_summary")}
+    ${ctx.ref('chrome-ux-report', 'materialized', 'country_summary')}
   WHERE
     yyyymm = CAST(FORMAT_DATE('%Y%m', '${past_month}') AS INT64) AND
     device IN ('desktop', 'phone')
@@ -55,7 +55,7 @@ UNION ALL
     * EXCEPT (yyyymmdd, p75_fid_origin, p75_cls_origin, p75_lcp_origin, p75_inp_origin),
     'ALL' AS geo
   FROM
-    ${ctx.ref("chrome-ux-report", "materialized", "device_summary")}
+    ${ctx.ref('chrome-ux-report', 'materialized', 'device_summary')}
   WHERE
     date = '${past_month}' AND
     device IN ('desktop', 'phone')
@@ -111,11 +111,11 @@ technologies AS (
     client,
     page AS url
   FROM
-    ${ctx.resolve("all", "pages")},
+    ${ctx.resolve('all', 'pages')},
     UNNEST(technologies) AS technology
   WHERE
     date = '${past_month}'
-    ${constants.dev_rank_filter} AND
+    ${constants.devRankFilter} AND
     technology.technology IS NOT NULL AND
     technology.technology != ''
 UNION ALL
@@ -124,10 +124,10 @@ UNION ALL
     client,
     page AS url
   FROM
-    ${ctx.resolve("all", "pages")}
+    ${ctx.resolve('all', 'pages')}
   WHERE
     date = '${past_month}'
-    ${constants.dev_rank_filter}
+    ${constants.devRankFilter}
 ),
 
 categories AS (
@@ -135,12 +135,12 @@ categories AS (
     technology.technology AS app,
     ARRAY_TO_STRING(ARRAY_AGG(DISTINCT category IGNORE NULLS ORDER BY category), ', ') AS category
   FROM
-    ${ctx.resolve("all", "pages")},
+    ${ctx.resolve('all', 'pages')},
     UNNEST(technologies) AS technology,
     UNNEST(technology.categories) AS category
   WHERE
     date = '${past_month}'
-    ${constants.dev_rank_filter}
+    ${constants.devRankFilter}
   GROUP BY
     app
 UNION ALL
@@ -148,13 +148,13 @@ UNION ALL
     'ALL' AS app,
     ARRAY_TO_STRING(ARRAY_AGG(DISTINCT category IGNORE NULLS ORDER BY category), ', ') AS category
   FROM
-    ${ctx.resolve("all", "pages")},
+    ${ctx.resolve('all', 'pages')},
     UNNEST(technologies) AS technology,
     UNNEST(technology.categories) AS category
   WHERE
     date = '${past_month}' AND
     client = 'mobile'
-    ${constants.dev_rank_filter}
+    ${constants.devRankFilter}
 ),
 
 summary_stats AS (
@@ -167,10 +167,10 @@ summary_stats AS (
     CAST(JSON_VALUE(summary, '$.bytesImg') AS INT64) AS bytesImg,
     GET_LIGHTHOUSE_CATEGORY_SCORES(JSON_QUERY(lighthouse, '$.categories')) AS lighthouse_category
   FROM
-    ${ctx.resolve("all", "pages")}
+    ${ctx.resolve('all', 'pages')}
   WHERE
     date = '${past_month}'
-    ${constants.dev_rank_filter}
+    ${constants.devRankFilter}
 ),
 
 lab_data AS (

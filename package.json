@@ -8,5 +8,14 @@
         "compile": "dataform compile",
         "test": "dataform test",
         "format": "dataform format"
+    },
+    "standard": {
+        "globals": [
+            "constants",
+            "operate",
+            "assert",
+            "publish",
+            "declare"
+        ]
     }
 }

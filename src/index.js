@@ -2,8 +2,8 @@ const functions = require('@google-cloud/functions-framework');
 
 const current_date = new Date().toISOString().substring(0, 10);
 const TRIGGERS = {
-  "cwv_tech_report": {
-    type: "poller",
+  'cwv_tech_report': {
+    type: 'poller',
     query: `
 SELECT LOGICAL_AND(condition)
 FROM (
@@ -23,18 +23,18 @@ FROM (
     AND PARTITION_ID = FORMAT_DATE('%Y%m%d', DATE_SUB(DATE_TRUNC(DATE '${current_date}', MONTH), INTERVAL 1 MONTH))
 );
     `,
-    action: "runDataformRepo",
+    action: 'runDataformRepo',
     actionArgs: {
-      repoName: "crawl-data",
-      tags: ["cwv_tech_report"]
+      repoName: 'crawl-data',
+      tags: ['cwv_tech_report']
     }
   },
-  "crawl_complete": {
-    type: "event",
-    action: "runDataformRepo",
+  'crawl_complete': {
+    type: 'event',
+    action: 'runDataformRepo',
     actionArgs: {
-      repoName: "crawl-data",
-      tags: ["crawl_results_all", "blink_features_report", "crawl_results_legacy"]
+      repoName: 'crawl-data',
+      tags: ['crawl_results_all', 'blink_features_report', 'crawl_results_legacy']
     }
   }
 };
@@ -55,27 +55,27 @@ async function messageHandler(req, res) {
     }
     let message = req?.body?.message;
     if (!message) {
-      res.status(400).send("Bad Request: invalid message format");
+      res.status(400).send('Bad Request: invalid message format');
       return;
     }
 
     message = message.data ? JSON.parse(Buffer.from(message.data, 'base64').toString('utf-8')) : message;
     const eventName = message.name;
     if (!eventName) {
-      res.status(400).send("Bad Request: no trigger name found");
+      res.status(400).send('Bad Request: no trigger name found');
       return;
     }
 
     if (TRIGGERS[eventName]) {
       const trigger = TRIGGERS[eventName];
-      if (trigger.type === "poller") {
+      if (trigger.type === 'poller') {
         console.log(`Poller action ${eventName}`);
         const result = await runQuery(trigger.query);
         console.log(`Query result: ${result}`);
         if (result) {
           await executeAction(trigger.action, trigger.actionArgs);
         }
-      } else if (trigger.type === "event") {
+      } else if (trigger.type === 'event') {
         console.log(`Event action ${eventName}`);
         await executeAction(trigger.action, trigger.actionArgs);
       } else {
@@ -89,7 +89,7 @@ async function messageHandler(req, res) {
     }
   } catch (error) {
     console.error(error);
-    res.status(500).send("Internal Server Error");
+    res.status(500).send('Internal Server Error');
   }
 }
 
@@ -117,7 +117,7 @@ async function runQuery(query) {
  * @param {object} actionArgs Action arguments.
  */
 async function executeAction(actionName, actionArgs) {
-  if (actionName === "runDataformRepo") {
+  if (actionName === 'runDataformRepo') {
     console.log(`Executing action: ${actionName}`);
     await runDataformRepo(actionArgs);
   }

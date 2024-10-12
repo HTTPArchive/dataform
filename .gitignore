@@ -1,4 +1,8 @@
 node_modules/
-.df-credentials.json
+
+# Terraform
 tf/.terraform/
 tf/temp
+
+# Dataform
+.df-credentials.json

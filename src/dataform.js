@@ -1,6 +1,6 @@
-const { DataformClient } = require('@google-cloud/dataform').v1beta1;
+const { DataformClient } = require('@google-cloud/dataform').v1beta1
 
-const dataformClient = new DataformClient();
+const dataformClient = new DataformClient()
 
 /**
  * Get Dataform compilation result.
@@ -14,12 +14,12 @@ async function get_compilation_results(repoURI) {
     compilationResult: {
       releaseConfig: `${repoURI}/releaseConfigs/production`
     }
-  };
+  }
 
-  console.log(`Creating Dataform compilation result: ${JSON.stringify(request, null, 2)}`);
-  const [response] = await dataformClient.createCompilationResult(request);
-  console.log(`Compilation result created: ${response.name}`);
-  return response.name;
+  console.log(`Creating Dataform compilation result: ${JSON.stringify(request, null, 2)}`)
+  const [response] = await dataformClient.createCompilationResult(request)
+  console.log(`Compilation result created: ${response.name}`)
+  return response.name
 }
 
 /**
@@ -44,9 +44,9 @@ async function run_workflow(repoURI, compilationResult, tags) {
     }
   };
 
-  console.log(`Invoking Dataform workflow: ${JSON.stringify(request, null, 2)}`);
-  const [response] = await dataformClient.createWorkflowInvocation(request);
-  console.log(`Workflow invoked: ${response.name}`);
+  console.log(`Invoking Dataform workflow: ${JSON.stringify(request, null, 2)}`)
+  const [response] = await dataformClient.createWorkflowInvocation(request)
+  console.log(`Workflow invoked: ${response.name}`)
 }
 
-module.exports = { get_compilation_results, run_workflow };
+module.exports = { get_compilation_results, run_workflow }
