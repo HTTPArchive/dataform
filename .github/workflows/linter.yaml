@@ -31,3 +31,4 @@ jobs:
           DEFAULT_BRANCH: main
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VALIDATE_JAVASCRIPT_PRETTIER: false
+          MARKDOWN_PRETTIER: false
