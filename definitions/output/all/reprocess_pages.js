@@ -1,4 +1,4 @@
-operate(`all_pages_stable_pre`).tags(
+operate('all_pages_stable_pre').tags(
   ['all_pages_stable']
 ).queries(`
 CREATE SCHEMA IF NOT EXISTS all_dev;
@@ -58,8 +58,8 @@ OPTIONS(
 );
 `)
 
-const iterations = [],
-  clients = constants.clients
+const iterations = []
+const clients = constants.clients
 
 for (
   let month = constants.currentMonth;
@@ -67,8 +67,8 @@ for (
   month = constants.fnPastMonth(month)) {
   clients.forEach((client) => {
     iterations.push({
-      month: month,
-      client: client
+      month,
+      client
     })
   })
 }

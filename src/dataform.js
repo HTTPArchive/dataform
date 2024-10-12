@@ -8,7 +8,7 @@ const dataformClient = new DataformClient()
  * @param {string} repoURI Dataform repository URI.
  * @returns {object} Compilation result.
  */
-async function get_compilation_results(repoURI) {
+async function getCompilationResults (repoURI) {
   const request = {
     parent: repoURI,
     compilationResult: {
@@ -30,23 +30,23 @@ async function get_compilation_results(repoURI) {
  * @param {object} tags Dataform tags.
  * @returns
  */
-async function run_workflow(repoURI, compilationResult, tags) {
+async function runWorkflow (repoURI, compilationResult, tags) {
   const request = {
     parent: repoURI,
     workflowInvocation: {
-      compilationResult: compilationResult,
+      compilationResult,
       invocationConfig: {
         includedTags: tags,
         fullyRefreshIncrementalTablesEnabled: false,
         transitiveDependenciesIncluded: true,
         transitiveDependentsIncluded: false
-      },
+      }
     }
-  };
+  }
 
   console.log(`Invoking Dataform workflow: ${JSON.stringify(request, null, 2)}`)
   const [response] = await dataformClient.createWorkflowInvocation(request)
   console.log(`Workflow invoked: ${response.name}`)
 }
 
-module.exports = { get_compilation_results, run_workflow }
+module.exports = { getCompilationResults, runWorkflow }

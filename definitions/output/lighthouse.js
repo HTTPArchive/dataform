@@ -2,10 +2,10 @@ const current_month_underscored = constants.fnDateUnderscored(constants.currentM
 
 constants.clients.forEach(client => {
   publish(`${current_month_underscored}_${client}`, {
-      type: 'table',
-      schema: 'lighthouse',
-      tags: ['crawl_results_legacy']
-    }
+    type: 'table',
+    schema: 'lighthouse',
+    tags: ['crawl_results_legacy']
+  }
   ).query(ctx => `
 SELECT
   page AS url,

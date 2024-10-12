@@ -1,4 +1,4 @@
-operate(`all_requests_stable_pre`).tags(
+operate('all_requests_stable_pre').tags(
   ['all_requests_stable']
 ).queries(`
 CREATE SCHEMA IF NOT EXISTS all_dev;
@@ -36,9 +36,8 @@ OPTIONS(
 );
 `)
 
-const
-  iterations = [],
-  types = ['= "script"', '= "image"', 'NOT IN ("script", "image")']
+const iterations = []
+const types = ['= "script"', '= "image"', 'NOT IN ("script", "image")']
 
 for (
   let month = constants.currentMonth;
@@ -48,10 +47,10 @@ for (
     constants.booleans.forEach((is_root_page) => {
       types.forEach((type) => {
         iterations.push({
-          month: month,
-          client: client,
-          is_root_page: is_root_page,
-          type: type
+          month,
+          client,
+          is_root_page,
+          type
         })
       })
     })
@@ -62,7 +61,7 @@ iterations.forEach((iteration, i) => {
   operate(`all_requests_stable ${iteration.month} ${iteration.client} ${iteration.is_root_page} ${i}`).tags(
     ['all_requests_stable']
   ).dependencies([
-    i === 0 ? 'all_requests_stable_pre' : `all_requests_stable ${iterations[i - 1].month} ${iterations[i - 1].client} ${iterations[i - 1].is_root_page} ${i-1}`
+    i === 0 ? 'all_requests_stable_pre' : `all_requests_stable ${iterations[i - 1].month} ${iterations[i - 1].client} ${iterations[i - 1].is_root_page} ${i - 1}`
   ]).queries(ctx => `
 DELETE FROM \`all_dev.requests_stable\`
 WHERE date = '${iteration.month}'

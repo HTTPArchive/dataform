@@ -1,15 +1,15 @@
 const date = constants.currentMonth
 
-var resources_list = [{
-    datasetId: 'all',
-    tableId: 'pages'
-  },
-  {
-    datasetId: 'all',
-    tableId: 'requests'
-  },
-  // {datasetId: 'all', tableId: 'parsed_css'},
-  // {datasetId: 'core_web_vitals', tableId: 'technologies'},
+const resources_list = [{
+  datasetId: 'all',
+  tableId: 'pages'
+},
+{
+  datasetId: 'all',
+  tableId: 'requests'
+}
+// {datasetId: 'all', tableId: 'parsed_css'},
+// {datasetId: 'core_web_vitals', tableId: 'technologies'},
 ]
 
 resources_list.forEach(resource => {
@@ -30,7 +30,7 @@ WHERE date = '${date}'
 })
 
 operate('test_table blink_features_dev_dev_usage', {
-  hasOutput: true,
+  hasOutput: true
 }).queries(`
 CREATE SCHEMA IF NOT EXISTS blink_features_dev;
 
@@ -41,7 +41,7 @@ WHERE yyyymmdd = '${date}';
 `)
 
 operate('test_table blink_features_dev_dev_features', {
-  hasOutput: true,
+  hasOutput: true
 }).queries(`
 CREATE SCHEMA IF NOT EXISTS blink_features_dev;
 
