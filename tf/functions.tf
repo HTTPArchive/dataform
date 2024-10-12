@@ -1,9 +1,3 @@
-import {
-  provider = google-beta
-  id = "projects/${local.project}/locations/us-east4/jobs/bq-poller-cwv-tech-report"
-  to = google_cloud_scheduler_job.bq-poller-cwv-tech-report
-}
-
 # Cloud Function deployment source code
 data "archive_file" "dataformTriggerSrc" {
   type        = "zip"
@@ -118,6 +112,12 @@ locals {
   }
 }
 EOF
+}
+
+import {
+  provider = google-beta
+  id = "projects/${local.project}/locations/us-east4/jobs/bq-poller-cwv-tech-report"
+  to = google_cloud_scheduler_job.bq-poller-cwv-tech-report
 }
 
 resource "google_cloud_scheduler_job" "bq-poller-cwv-tech-report" {
