@@ -1,5 +1,60 @@
 # Infrastucture
 
+```mermaid
+graph LR;
+    subgraph Cloud_Run_Functions
+        dataformTrigger[Dataform Trigger Function]
+    end
+
+    subgraph PubSub
+        crawl_complete_topic[Crawl Complete Topic]
+        dataformTrigger_subscription[Dataform Trigger Subscription]
+        crawl_complete_topic --> dataformTrigger_subscription
+    end
+
+    dataformTrigger_subscription --> dataformTrigger
+
+    subgraph Cloud_Scheduler
+        bq_poller_cwv_tech_report[CWV Report Poller Job]
+        bq_poller_cwv_tech_report --> dataformTrigger
+    end
+
+    subgraph Dataform
+        dataform_repo[Dataform Repository]
+        dataform_repo_release_config[Release Configuration]
+        dataform_repo_workflow[Workflow Execution]
+    end
+
+    dataformTrigger --> dataform_repo[Dataform Repository]
+    dataform_repo --> dataform_repo_release_config[Release Configuration]
+    dataform_repo_release_config --> dataform_repo_workflow[Workflow Execution]
+
+    subgraph BigQuery
+        bq_jobs[BigQuery Jobs]
+        bq_datasets[BigQuery Dataset Updates]
+        bq_jobs --> bq_datasets
+    end
+    dataform_repo_workflow --> bq_jobs
+
+    subgraph Logs_and_Alerts
+        cloud_run_logs[Cloud Run Logs]
+        dataform_logs[Dataform Logs]
+        bq_logs[BigQuery Logs]
+        alerting_policies[Alerting Policies]
+        slack_notifications[Slack Notifications]
+
+        cloud_run_logs --> alerting_policies
+        dataform_logs --> alerting_policies
+        bq_logs --> alerting_policies
+        alerting_policies --> slack_notifications
+    end
+
+    dataformTrigger --> cloud_run_logs
+    dataform_repo_workflow --> dataform_logs
+    bq_jobs --> bq_logs
+
+```
+
 ## Cloud Run function
 
 Triggers the Dataform workflow execution, based on events or cron schedules.
