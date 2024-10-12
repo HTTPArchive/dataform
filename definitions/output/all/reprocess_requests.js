@@ -43,12 +43,12 @@ const types = ['= "script"', '= "image"', 'NOT IN ("script", "image")']
 for (
   let month = constants.currentMonth; month >= '2024-09-01'; month = constants.fnPastMonth(month)) {
   constants.clients.forEach((client) => {
-    constants.booleans.forEach((is_root_page) => {
+    constants.booleans.forEach((isRootPage) => {
       types.forEach((type) => {
         iterations.push({
           month,
           client,
-          is_root_page,
+          isRootPage,
           type
         })
       })
@@ -57,15 +57,15 @@ for (
 }
 
 iterations.forEach((iteration, i) => {
-  operate(`all_requests_stable ${iteration.month} ${iteration.client} ${iteration.is_root_page} ${i}`).tags(
+  operate(`all_requests_stable ${iteration.month} ${iteration.client} ${iteration.isRootPage} ${i}`).tags(
     ['all_requests_stable']
   ).dependencies([
-    i === 0 ? 'all_requests_stable_pre' : `all_requests_stable ${iterations[i - 1].month} ${iterations[i - 1].client} ${iterations[i - 1].is_root_page} ${i - 1}`
+    i === 0 ? 'all_requests_stable_pre' : `all_requests_stable ${iterations[i - 1].month} ${iterations[i - 1].client} ${iterations[i - 1].isRootPage} ${i - 1}`
   ]).queries(ctx => `
 DELETE FROM \`all_dev.requests_stable\`
 WHERE date = '${iteration.month}'
   AND client = '${iteration.client}'
-  AND is_root_page = ${iteration.is_root_page}
+  AND is_root_page = ${iteration.isRootPage}
   AND type ${iteration.type};
 
 CREATE TEMP FUNCTION PRUNE_HEADERS(
@@ -126,7 +126,7 @@ FROM (
   FROM \`all.requests\` ${constants.devTABLESAMPLE}
   WHERE date = '${iteration.month}'
     AND client = '${iteration.client}'
-    AND is_root_page = ${iteration.is_root_page}
+    AND is_root_page = ${iteration.isRootPage}
     AND type ${iteration.type}
 ) AS requests
 LEFT JOIN (
