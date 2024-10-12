@@ -1,4 +1,3 @@
-
 publish("features", {
   schema: "blink_features",
   type: "incremental",
