@@ -34,7 +34,11 @@ FROM (
     action: 'runDataformRepo',
     actionArgs: {
       repoName: 'crawl-data',
-      tags: ['crawl_results_all', 'blink_features_report', 'crawl_results_legacy']
+      tags: [
+        'crawl_results_all',
+        'blink_features_report',
+        'crawl_results_legacy'
+      ]
     }
   }
 }
@@ -59,7 +63,9 @@ async function messageHandler (req, res) {
       return
     }
 
-    message = message.data ? JSON.parse(Buffer.from(message.data, 'base64').toString('utf-8')) : message
+    message = message.data
+      ? JSON.parse(Buffer.from(message.data, 'base64').toString('utf-8'))
+      : message
     const eventName = message.name
     if (!eventName) {
       res.status(400).send('Bad Request: no trigger name found')

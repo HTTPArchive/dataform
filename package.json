@@ -1,25 +1,25 @@
 {
-    "name": "crawl-data",
-    "dependencies": {
-        "@dataform/core": "3.0.4"
-    },
-    "scripts": {
-        "start": "dataform run",
-        "compile": "dataform compile",
-        "test": "dataform test",
-        "format": "dataform format"
-    },
-    "standard": {
-        "globals": [
-            "constants",
-            "operate",
-            "assert",
-            "publish",
-            "declare",
-            "dataform"
-        ]
-    },
-    "devDependencies": {
-        "standard": "^17.1.2"
-    }
+  "name": "crawl-data",
+  "dependencies": {
+    "@dataform/core": "3.0.4"
+  },
+  "scripts": {
+    "start": "dataform run",
+    "compile": "dataform compile",
+    "test": "dataform test",
+    "format": "dataform format"
+  },
+  "standard": {
+    "globals": [
+      "constants",
+      "operate",
+      "assert",
+      "publish",
+      "declare",
+      "dataform"
+    ]
+  },
+  "devDependencies": {
+    "standard": "^17.1.2"
+  }
 }
