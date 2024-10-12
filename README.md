@@ -51,11 +51,11 @@ Tag: `crawl_results_legacy`
 
 1. [crawl-complete](https://console.cloud.google.com/cloudpubsub/subscription/detail/dataformTrigger?authuser=7&project=httparchive) PubSub subscription
 
-    Tags: ["crawl_results_all", "blink_features_report", "crawl_results_legacy"]
+   Tags: ["crawl_results_all", "blink_features_report", "crawl_results_legacy"]
 
 2. [bq-poller-cwv-tech-report](https://console.cloud.google.com/cloudscheduler/jobs/edit/us-east4/bq-poller-cwv-tech-report?authuser=7&project=httparchive) Scheduler
 
-    Tags: ["cwv_tech_report"]
+   Tags: ["cwv_tech_report"]
 
 ### Triggering workflows
 
@@ -73,8 +73,8 @@ Tag: `crawl_results_legacy`
 
 1. In workflow settings vars:
 
-    - set `env_name: dev` to process sampled data in dev workspace.
-    - change `today` variable to a month in the past. May be helpful for testing pipelines based on `chrome-ux-report` data.
+   - set `env_name: dev` to process sampled data in dev workspace.
+   - change `today` variable to a month in the past. May be helpful for testing pipelines based on `chrome-ux-report` data.
 
 2. `definitions/extra/test_env.sqlx` script helps to setup the tables required to run pipelines when in dev workspace. It's disabled by default.
 
