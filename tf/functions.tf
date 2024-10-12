@@ -4,7 +4,112 @@ import {
   to = google_cloud_scheduler_job.bq-poller-cwv-tech-report
 }
 
+# Cloud Function deployment source code
+data "archive_file" "dataformTriggerSrc" {
+  type        = "zip"
+  source_dir  = "../src/"
+  excludes    = ["node_modules/*"]
+  output_path = "temp/dataformTrigger/function-source.zip"
+}
 
+resource "google_storage_bucket_object" "object" {
+  name   = "dataformTrigger/function-source.zip"
+  bucket = "gcf-v2-sources-226352634162-us-central1"
+  source = data.archive_file.dataformTriggerSrc.output_path
+}
+
+# Cloud Function to trigger Dataform workflow
+import {
+  provider = google-beta
+  id = "projects/${local.project}/locations/${local.region}/functions/dataformTrigger"
+  to = google_cloudfunctions2_function.dataformTrigger
+}
+
+resource "google_cloudfunctions2_function" "dataformTrigger" {
+  provider     = google-beta
+  description  = null
+  kms_key_name = null
+  labels       = {}
+  location     = local.region
+  name         = "dataformTrigger"
+  project      = local.project
+  build_config {
+    docker_repository     = "projects/httparchive/locations/us-central1/repositories/gcf-artifacts"
+    entry_point           = "dataformTrigger"
+    environment_variables = {}
+    runtime               = "nodejs20"
+    service_account       = null
+    worker_pool           = null
+    automatic_update_policy {
+    }
+    source {
+      storage_source {
+        bucket     = "gcf-v2-sources-226352634162-us-central1"
+        object     = "dataformTrigger/function-source.zip"
+      }
+    }
+  }
+  service_config {
+    all_traffic_on_latest_revision = true
+    available_cpu                  = "167m"
+    available_memory               = "256Mi"
+    environment_variables = {
+      LOG_EXECUTION_ID = "true"
+    }
+    ingress_settings                 = "ALLOW_ALL"
+    max_instance_count               = 1
+    max_instance_request_concurrency = 1
+    min_instance_count               = 0
+    service                          = "projects/${local.project}/locations/${local.region}/services/dataformtrigger"
+    service_account_email            = "cloud-function@httparchive.iam.gserviceaccount.com"
+    timeout_seconds                  = 60
+    vpc_connector                    = null
+    vpc_connector_egress_settings    = null
+  }
+}
+
+resource "google_cloud_run_service_iam_member" "member" {
+  location = google_cloudfunctions2_function.dataformTrigger.location
+  service  = google_cloudfunctions2_function.dataformTrigger.name
+  role     = "roles/run.invoker"
+  member   = "serviceAccount:scheduler@httparchive.iam.gserviceaccount.com"
+}
+
+# Pub/Sub Subscription to trigger Crawl Data Dataform workflow
+import {
+  id = "projects/${local.project}/subscriptions/dataformTrigger"
+  to = google_pubsub_subscription.dataformTrigger
+}
+
+resource "google_pubsub_subscription" "dataformTrigger" {
+  ack_deadline_seconds         = 60
+  enable_exactly_once_delivery = false
+  enable_message_ordering      = false
+  filter                       = null
+  labels                       = {}
+  message_retention_duration   = "604800s"
+  name                         = "dataformTrigger"
+  project                      = local.project
+  retain_acked_messages        = false
+  topic                        = "projects/${local.project}/topics/crawl-complete"
+  expiration_policy {
+    ttl = ""
+  }
+  push_config {
+    attributes    = {}
+    push_endpoint = "https://${local.region}-${local.project}.cloudfunctions.net/dataformTrigger"
+    oidc_token {
+      audience              = "https://${local.region}-${local.project}.cloudfunctions.net/dataformTrigger"
+      service_account_email = "cloud-function@httparchive.iam.gserviceaccount.com"
+    }
+  }
+  retry_policy {
+    maximum_backoff = "60s"
+    minimum_backoff = "10s"
+  }
+}
+
+# Cloud Scheduler Job to trigger CWV Tech Report Dataform workflow
 locals {
   scheduler_body = <<EOF
 {
@@ -44,73 +149,4 @@ resource "google_cloud_scheduler_job" "bq-poller-cwv-tech-report" {
     min_backoff_duration = "5s"
     retry_count          = 0
   }
-}
-
-data "archive_file" "dataformTriggerSrc" {
-  type        = "zip"
-  source_dir  = "../src/"
-  output_path = "temp/dataformTrigger/function-source.zip"
-}
-
-resource "google_storage_bucket_object" "object" {
-  name   = "function-source.zip"
-  bucket = "gcf-v2-sources-226352634162-us-central1"
-  source = data.archive_file.dataformTriggerSrc.output_path
-}
-
-import {
-  provider = google-beta
-  id = "projects/${local.project}/locations/${local.region}/functions/dataformTrigger"
-  to = google_cloudfunctions2_function.dataformTrigger
-}
-
-resource "google_cloudfunctions2_function" "dataformTrigger" {
-  provider     = google-beta
-  description  = null
-  kms_key_name = null
-  labels       = {}
-  location     = local.region
-  name         = "dataformTrigger"
-  project      = local.project
-  build_config {
-    docker_repository     = "projects/httparchive/locations/us-central1/repositories/gcf-artifacts"
-    entry_point           = "dataformTrigger"
-    environment_variables = {}
-    runtime               = "nodejs20"
-    service_account       = null
-    worker_pool           = null
-    automatic_update_policy {
-    }
-    source {
-      storage_source {
-        bucket     = "gcf-v2-sources-226352634162-us-central1"
-        generation = 1725969315499844
-        object     = "dataformTrigger/function-source.zip"
-      }
-    }
-  }
-  service_config {
-    all_traffic_on_latest_revision = true
-    available_cpu                  = "167m"
-    available_memory               = "256Mi"
-    environment_variables = {
-      LOG_EXECUTION_ID = "true"
-    }
-    ingress_settings                 = "ALLOW_ALL"
-    max_instance_count               = 1
-    max_instance_request_concurrency = 1
-    min_instance_count               = 0
-    service                          = "projects/${local.project}/locations/${local.region}/services/dataformtrigger"
-    service_account_email            = "cloud-function@httparchive.iam.gserviceaccount.com"
-    timeout_seconds                  = 60
-    vpc_connector                    = null
-    vpc_connector_egress_settings    = null
-  }
-}
-
-resource "google_cloud_run_service_iam_member" "member" {
-  location = google_cloudfunctions2_function.dataformTrigger.location
-  service  = google_cloudfunctions2_function.dataformTrigger.name
-  role     = "roles/run.invoker"
-  member   = "serviceAccount:scheduler@httparchive.iam.gserviceaccount.com"
 }
