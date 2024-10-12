@@ -1,1 +1,3 @@
 node_modules/
+tf/.terraform/
+.DS_Store
