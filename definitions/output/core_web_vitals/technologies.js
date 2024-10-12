@@ -1,4 +1,4 @@
-const past_month = constants.fnPastMonth(constants.currentMonth)
+const pastMonth = constants.fnPastMonth(constants.currentMonth)
 
 publish('technologies', {
   schema: 'core_web_vitals',
@@ -13,7 +13,7 @@ publish('technologies', {
   dependOnDependencyAssertions: true
 }).preOps(ctx => `
 DELETE FROM ${ctx.self()}
-WHERE date = '${past_month}';
+WHERE date = '${pastMonth}';
 
 CREATE TEMP FUNCTION IS_GOOD(good FLOAT64, needs_improvement FLOAT64, poor FLOAT64) RETURNS BOOL AS (
   SAFE_DIVIDE(good, good + needs_improvement + poor) >= 0.75
@@ -48,7 +48,7 @@ WITH geo_summary AS (
   FROM
     ${ctx.ref('chrome-ux-report', 'materialized', 'country_summary')}
   WHERE
-    yyyymm = CAST(FORMAT_DATE('%Y%m', '${past_month}') AS INT64) AND
+    yyyymm = CAST(FORMAT_DATE('%Y%m', '${pastMonth}') AS INT64) AND
     device IN ('desktop', 'phone')
 UNION ALL
   SELECT
@@ -57,7 +57,7 @@ UNION ALL
   FROM
     ${ctx.ref('chrome-ux-report', 'materialized', 'device_summary')}
   WHERE
-    date = '${past_month}' AND
+    date = '${pastMonth}' AND
     device IN ('desktop', 'phone')
 ),
 
@@ -114,7 +114,7 @@ technologies AS (
     ${ctx.resolve('all', 'pages')},
     UNNEST(technologies) AS technology
   WHERE
-    date = '${past_month}'
+    date = '${pastMonth}'
     ${constants.devRankFilter} AND
     technology.technology IS NOT NULL AND
     technology.technology != ''
@@ -126,7 +126,7 @@ UNION ALL
   FROM
     ${ctx.resolve('all', 'pages')}
   WHERE
-    date = '${past_month}'
+    date = '${pastMonth}'
     ${constants.devRankFilter}
 ),
 
@@ -139,7 +139,7 @@ categories AS (
     UNNEST(technologies) AS technology,
     UNNEST(technology.categories) AS category
   WHERE
-    date = '${past_month}'
+    date = '${pastMonth}'
     ${constants.devRankFilter}
   GROUP BY
     app
@@ -152,7 +152,7 @@ UNION ALL
     UNNEST(technologies) AS technology,
     UNNEST(technology.categories) AS category
   WHERE
-    date = '${past_month}' AND
+    date = '${pastMonth}' AND
     client = 'mobile'
     ${constants.devRankFilter}
 ),
@@ -169,7 +169,7 @@ summary_stats AS (
   FROM
     ${ctx.resolve('all', 'pages')}
   WHERE
-    date = '${past_month}'
+    date = '${pastMonth}'
     ${constants.devRankFilter}
 ),
 
@@ -204,7 +204,7 @@ lab_data AS (
 )
 
 SELECT
-  DATE('${past_month}') AS date,
+  DATE('${pastMonth}') AS date,
   geo,
   rank,
   ANY_VALUE(category) AS category,

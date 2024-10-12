@@ -1,7 +1,7 @@
-const current_month_underscored = constants.fnDateUnderscored(constants.currentMonth)
+const currentMonthUnderscored = constants.fnDateUnderscored(constants.currentMonth)
 
 constants.clients.forEach(client => {
-  publish(`${current_month_underscored}_${client}`, {
+  publish(`${currentMonthUnderscored}_${client}`, {
     type: 'table',
     schema: 'pages',
     tags: ['crawl_results_legacy']

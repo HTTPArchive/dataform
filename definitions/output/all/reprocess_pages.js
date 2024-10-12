@@ -61,10 +61,9 @@ OPTIONS(
 const iterations = []
 const clients = constants.clients
 
+// From 2022-07-01 till today
 for (
-  let month = constants.currentMonth;
-  month >= '2024-09-01'; // 2022-07-01
-  month = constants.fnPastMonth(month)) {
+  let month = constants.currentMonth; month >= '2024-09-01'; month = constants.fnPastMonth(month)) {
   clients.forEach((client) => {
     iterations.push({
       month,

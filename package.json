@@ -15,7 +15,8 @@
             "operate",
             "assert",
             "publish",
-            "declare"
+            "declare",
+            "dataform"
         ]
     },
     "devDependencies": {

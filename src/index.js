@@ -1,6 +1,6 @@
 const functions = require('@google-cloud/functions-framework')
 
-const current_date = new Date().toISOString().substring(0, 10)
+const currentDate = new Date().toISOString().substring(0, 10)
 const TRIGGERS = {
   cwv_tech_report: {
     type: 'poller',
@@ -10,17 +10,17 @@ FROM (
   SELECT TOTAL_ROWS > 0 AS condition
   FROM \`chrome-ux-report.materialized.INFORMATION_SCHEMA.PARTITIONS\`
   WHERE TABLE_NAME = 'device_summary'
-    AND PARTITION_ID = FORMAT_DATE('%Y%m%d', DATE_SUB(DATE_TRUNC(DATE '${current_date}', MONTH), INTERVAL 1 MONTH))
+    AND PARTITION_ID = FORMAT_DATE('%Y%m%d', DATE_SUB(DATE_TRUNC(DATE '${currentDate}', MONTH), INTERVAL 1 MONTH))
   UNION ALL
   SELECT TOTAL_ROWS > 0 AS condition
   FROM \`chrome-ux-report.materialized.INFORMATION_SCHEMA.PARTITIONS\`
   WHERE TABLE_NAME = 'device_summary'
-    AND PARTITION_ID = FORMAT_DATE('%Y%m%d', DATE_SUB(DATE_TRUNC(DATE '${current_date}', MONTH), INTERVAL 1 MONTH))
+    AND PARTITION_ID = FORMAT_DATE('%Y%m%d', DATE_SUB(DATE_TRUNC(DATE '${currentDate}', MONTH), INTERVAL 1 MONTH))
   UNION ALL
   SELECT NOT TOTAL_ROWS > 0 AS condition
   FROM \`httparchive.core_web_vitals.INFORMATION_SCHEMA.PARTITIONS\`
   WHERE TABLE_NAME = 'technologies'
-    AND PARTITION_ID = FORMAT_DATE('%Y%m%d', DATE_SUB(DATE_TRUNC(DATE '${current_date}', MONTH), INTERVAL 1 MONTH))
+    AND PARTITION_ID = FORMAT_DATE('%Y%m%d', DATE_SUB(DATE_TRUNC(DATE '${currentDate}', MONTH), INTERVAL 1 MONTH))
 );
     `,
     action: 'runDataformRepo',

@@ -39,10 +39,9 @@ OPTIONS(
 const iterations = []
 const types = ['= "script"', '= "image"', 'NOT IN ("script", "image")']
 
+// From 2022-07-01 till today
 for (
-  let month = constants.currentMonth;
-  month >= '2024-09-01'; // 2022-07-01
-  month = constants.fnPastMonth(month)) {
+  let month = constants.currentMonth; month >= '2024-09-01'; month = constants.fnPastMonth(month)) {
   constants.clients.forEach((client) => {
     constants.booleans.forEach((is_root_page) => {
       types.forEach((type) => {

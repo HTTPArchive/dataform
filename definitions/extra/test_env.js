@@ -1,6 +1,6 @@
 const date = constants.currentMonth
 
-const resources_list = [{
+const resourcesList = [{
   datasetId: 'all',
   tableId: 'pages'
 },
@@ -8,11 +8,11 @@ const resources_list = [{
   datasetId: 'all',
   tableId: 'requests'
 }
-// {datasetId: 'all', tableId: 'parsed_css'},
-// {datasetId: 'core_web_vitals', tableId: 'technologies'},
+  // {datasetId: 'all', tableId: 'parsed_css'},
+  // {datasetId: 'core_web_vitals', tableId: 'technologies'},
 ]
 
-resources_list.forEach(resource => {
+resourcesList.forEach(resource => {
   operate(
     `test_table ${resource.datasetId}_${resource.tableId}`, {
       hasOutput: true
