@@ -1,8 +1,12 @@
 # HTTP Archive datasets pipeline
 
-## Datasets
+This repo handles the HTTP Archive data pipeline, which takes the results of the monthly HTTP Archive run and saves this to the `httparchive` dataset in BigQuery.
 
-### Crawl tables in `all` dataset
+## Pipelines
+
+The pipelines are run in Dataform service in Google Cloud Platform (GCP) and are kicked off automatically on crawl completion and other events. The code in the `main` branch is used on each triggered pipeline run.
+
+### Crawl results
 
 Tag: `crawl_results_all`
 
@@ -16,7 +20,22 @@ Tag: `cwv_tech_report`
 
 - httparchive.core_web_vitals.technologies
 
-### Legacy crawl tables (to be deprecated)
+Consumers:
+
+- [HTTP Archive Tech Report](https://httparchive.org/reports/techreport/landing)
+
+### Blink Features Report
+
+Tag: `blink_features_report`
+
+- httparchive.blink_features.features
+- httparchive.blink_features.usage
+
+Consumers:
+
+- chromestatus.com - [example](https://chromestatus.com/metrics/feature/timeline/popularity/2089)
+
+### Legacy crawl results (to be deprecated)
 
 Tag: `crawl_results_legacy`
 
@@ -32,7 +51,7 @@ Tag: `crawl_results_legacy`
 
 1. [crawl-complete](https://console.cloud.google.com/cloudpubsub/subscription/detail/dataformTrigger?authuser=7&project=httparchive) PubSub subscription
 
-    Tags: ["crawl_results_all", "crawl_results_legacy"]
+    Tags: ["crawl_results_all", "blink_features_report", "crawl_results_legacy"]
 
 2. [bq-poller-cwv-tech-report](https://console.cloud.google.com/cloudscheduler/jobs/edit/us-east4/bq-poller-cwv-tech-report?authuser=7&project=httparchive) Scheduler
 
@@ -52,6 +71,16 @@ In order to unify the workflow triggering mechanism, we use [a Cloud Run functio
 
 ### Dataform development workspace hints
 
-1. In workflow settings vars set `dev_name: dev` to process sampled data in dev workspace.
-2. Change `current_month` variable to a month in the past. May be helpful for testing pipelines based on `chrome-ux-report` data.
-3. `definitions/extra/test_env.sqlx` script helps to setup the tables required to run pipelines when in dev workspace. It's disabled by default.
+1. In workflow settings vars:
+   1. set `env_name: dev` to process sampled data in dev workspace.
+   2. change `today` variable to a month in the past. May be helpful for testing pipelines based on `chrome-ux-report` data.
+2. `definitions/extra/test_env.sqlx` script helps to setup the tables required to run pipelines when in dev workspace. It's disabled by default.
+
+### Error Monitoring
+
+The issues within the pipeline are being tracked using the following alerts:
+
+1. the event trigger processing fails - [Dataform Trigger Function Error](https://console.cloud.google.com/monitoring/alerting/policies/3950167380893746326?authuser=7&project=httparchive)
+2. a job in the workflow fails - "[Dataform Workflow Invocation Failed](https://console.cloud.google.com/monitoring/alerting/policies/7137542315653007241?authuser=7&project=httparchive)
+
+Error notifications are sent to [#10x-infra](https://httparchive.slack.com/archives/C030V4WAVL3) Slack channel.
