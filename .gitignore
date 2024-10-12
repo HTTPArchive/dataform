@@ -1,4 +1,5 @@
 node_modules/
+.DS_Store
 
 # Terraform
 tf/.terraform/
@@ -6,3 +7,4 @@ tf/temp
 
 # Dataform
 .df-credentials.json
+.gitignore
