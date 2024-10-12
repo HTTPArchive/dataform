@@ -7,14 +7,16 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+  packages: read
+
 jobs:
   build:
     name: Lint
     runs-on: ubuntu-latest
 
     permissions:
-      contents: read
-      packages: read
       statuses: write # To report GitHub Actions status checks
 
     steps:
