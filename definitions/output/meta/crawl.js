@@ -15,7 +15,7 @@ WITH metadata AS (
   UNION ALL
   SELECT * FROM summary_requests.__TABLES__
   UNION ALL
-  SELECT * FROM lighthouse.__TABLES__ 
+  SELECT * FROM lighthouse.__TABLES__
   UNION ALL
   SELECT * FROM technologies.__TABLES__
   UNION ALL
