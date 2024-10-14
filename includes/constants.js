@@ -6,8 +6,8 @@ const fnPastMonth = (monthISOstring) => {
   monthDate.setMonth(monthDate.getMonth() - 1)
   return monthDate.toISOString().substring(0, 10)
 }
-const clients = ['mobile', 'desktop']
-const booleans = ['TRUE', 'FALSE']
+const clients = ['desktop', 'mobile']
+const booleans = ['FALSE', 'TRUE']
 const [
   devTABLESAMPLE,
   devRankFilter
