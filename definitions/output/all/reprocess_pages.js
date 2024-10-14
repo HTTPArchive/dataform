@@ -58,7 +58,6 @@ OPTIONS(
 );
 `);
 
-
 const iterations = [];
 const clients = constants.clients;
 

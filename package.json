@@ -2,5 +2,11 @@
     "name": "crawl-data",
     "dependencies": {
         "@dataform/core": "3.0.4"
+    },
+    "scripts": {
+        "start": "dataform run",
+        "compile": "dataform compile",
+        "test": "dataform test",
+        "format": "dataform format"
     }
 }

@@ -1,4 +1,3 @@
-
 publish("features", {
   schema: "blink_features",
   type: "incremental",
@@ -37,7 +36,7 @@ function getFeatureNames(featureMap, featureType) {
 var $ = JSON.parse(payload);
 if (!$._blinkFeatureFirstUsed) return [];
 
-var idPattern = new RegExp('^Feature_(\d+)$');
+var idPattern = new RegExp('^Feature_(\\\\d+)$');
 return getFeatureNames($._blinkFeatureFirstUsed.Features, 'default')
   .concat(getFeatureNames($._blinkFeatureFirstUsed.CSSFeatures, 'css'))
   .concat(getFeatureNames($._blinkFeatureFirstUsed.AnimatedCSSFeatures, 'animated-css'));

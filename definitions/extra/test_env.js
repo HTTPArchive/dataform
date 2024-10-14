@@ -1,16 +1,22 @@
 const date = constants.current_month;
 
-var resources_list = [
-  { datasetId: "all", tableId: "pages" },
-  { datasetId: "all", tableId: "requests" },
+var resources_list = [{
+    datasetId: "all",
+    tableId: "pages"
+  },
+  {
+    datasetId: "all",
+    tableId: "requests"
+  },
   //{datasetId: "all", tableId: "parsed_css"},
   //{datasetId: "core_web_vitals", tableId: "technologies"},
 ];
 
 resources_list.forEach(resource => {
   operate(
-    `test_table ${resource.datasetId}_${resource.tableId}`,
-    { hasOutput: true }
+    `test_table ${resource.datasetId}_${resource.tableId}`, {
+      hasOutput: true
+    }
   ).queries(`
 CREATE SCHEMA IF NOT EXISTS ${resource.datasetId}_dev;
 
