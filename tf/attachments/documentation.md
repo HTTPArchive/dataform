@@ -3,10 +3,10 @@
 
 This dataset supports the following applications:
 
-- Analyzing web performance trends, such as page load times, content delivery patterns, and API usage across thousands of websites.
+- Analyzing web performance trends, such as page load times, content delivery patterns, and API usage across thousands of sites.
 - Studying how web technologies evolve, focusing on JavaScript frameworks, security protocols, and resource loading strategies.
 - Identifying and comparing the adoption of new web standards, APIs, and features over time.
-- Optimizing front-end development practices by leveraging performance data from top sites.
+- Optimizing frontend development practices by leveraging performance data from top sites.
 - Monitoring trends in mobile and desktop web experience.
 
 Example analysis

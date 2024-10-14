@@ -126,7 +126,7 @@ Pipeline can be [run manually](https://cloud.google.com/dataform/docs/code-lifec
 
 GitHub PAT saved to a [Secret Manager secret](https://console.cloud.google.com/security/secret-manager/secret/GitHub_max-ostapenko_dataform_PAT/versions?authuser=7&project=httparchive).
 
-- repo: HTTPArchive/dataform
+- repository: HTTPArchive/dataform
 - permissions:
   - Commit statuses: read
   - Contents: read, write

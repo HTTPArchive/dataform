@@ -3,7 +3,7 @@ locals {
   listing_id       = "http_archive_crawls_1927d748827"
 }
 
-import {
+/*import {
   id = "projects/${local.project}/locations/${local.location}/dataExchanges/${local.data_exchange_id}"
   to = google_bigquery_analytics_hub_data_exchange.default
 }
@@ -11,7 +11,7 @@ import {
 import {
   id = "projects/${local.project}/locations/${local.location}/dataExchanges/${local.data_exchange_id}/listings/${local.listing_id}"
   to = google_bigquery_analytics_hub_listing.default
-}
+}*/
 
 resource "google_bigquery_analytics_hub_data_exchange" "default" {
   data_exchange_id = local.data_exchange_id

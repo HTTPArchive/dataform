@@ -1,7 +1,7 @@
-import {
+/*import {
   id = "projects/httparchive/alertPolicies/3950167380893746326"
   to = google_monitoring_alert_policy.dataform_trigger
-}
+}*/
 
 resource "google_monitoring_alert_policy" "dataform_trigger" {
   combiner              = "OR"
@@ -35,10 +35,10 @@ EOF
   }
 }
 
-import {
+/*import {
   id = "projects/httparchive/alertPolicies/7137542315653007241"
   to = google_monitoring_alert_policy.dataform_workflow
-}
+}*/
 
 resource "google_monitoring_alert_policy" "dataform_workflow" {
   combiner              = "OR"

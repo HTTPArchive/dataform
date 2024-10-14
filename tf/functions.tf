@@ -13,11 +13,11 @@ resource "google_storage_bucket_object" "object" {
 }
 
 # Cloud Function to trigger Dataform workflow
-import {
+/*import {
   provider = google-beta
   id       = "projects/${local.project}/locations/${local.region}/functions/dataformTrigger"
   to       = google_cloudfunctions2_function.dataformTrigger
-}
+}*/
 
 resource "google_cloudfunctions2_function" "dataformTrigger" {
   provider     = google-beta
@@ -50,7 +50,7 @@ resource "google_cloudfunctions2_function" "dataformTrigger" {
     environment_variables = {
       LOG_EXECUTION_ID = "true"
     }
-    ingress_settings                 = "ALLOW_ALL"
+    ingress_settings                 = "ALLOW_INTERNAL_AND_GCLB"
     max_instance_count               = 1
     max_instance_request_concurrency = 1
     min_instance_count               = 0
@@ -70,10 +70,10 @@ resource "google_cloud_run_service_iam_member" "member" {
 }
 
 # Pub/Sub Subscription to trigger Crawl Data Dataform workflow
-import {
+/*import {
   id = "projects/${local.project}/subscriptions/dataformTrigger"
   to = google_pubsub_subscription.dataformTrigger
-}
+}*/
 
 resource "google_pubsub_subscription" "dataformTrigger" {
   ack_deadline_seconds         = 60
@@ -114,11 +114,11 @@ locals {
 EOF
 }
 
-import {
+/*import {
   provider = google-beta
   id       = "projects/${local.project}/locations/us-east4/jobs/bq-poller-cwv-tech-report"
   to       = google_cloud_scheduler_job.bq-poller-cwv-tech-report
-}
+}*/
 
 resource "google_cloud_scheduler_job" "bq-poller-cwv-tech-report" {
   provider         = google-beta
