@@ -1,13 +1,13 @@
 publish("requests", {
-    type: "incremental",
-    protected: true,
-    schema: "all",
-    bigquery: {
-        partitionBy: "date",
-        clusterBy: ["client", "is_root_page", "is_main_document", "type"],
-        requirePartitionFilter: true
-    },
-    tags: ["crawl_results_all"],
+  type: "incremental",
+  protected: true,
+  schema: "all",
+  bigquery: {
+    partitionBy: "date",
+    clusterBy: ["client", "is_root_page", "is_main_document", "type"],
+    requirePartitionFilter: true
+  },
+  tags: ["crawl_results_all"],
 }).preOps(ctx => `
 DELETE FROM ${ctx.self()}
 WHERE date = '${constants.current_month}';

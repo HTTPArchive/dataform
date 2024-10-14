@@ -1,11 +1,11 @@
 const current_month_underscored = constants.fn_date_underscored(constants.current_month);
 
 constants.clients.forEach(client => {
-    publish(current_month_underscored + "_" + client, {
-        type: "table",
-        schema: "summary_requests",
-        tags: ["crawl_results_legacy"]
-    }).query(ctx => `
+  publish(current_month_underscored + "_" + client, {
+    type: "table",
+    schema: "summary_requests",
+    tags: ["crawl_results_legacy"]
+  }).query(ctx => `
 SELECT
   SAFE_CAST(JSON_EXTRACT_SCALAR(summary, '$.requestid') AS INTEGER) AS requestid,
   SAFE_CAST(JSON_EXTRACT_SCALAR(summary, '$.pageid') AS INTEGER) AS pageid,
