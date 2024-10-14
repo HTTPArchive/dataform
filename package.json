@@ -7,7 +7,8 @@
     "start": "dataform run",
     "compile": "dataform compile",
     "test": "dataform test",
-    "format": "dataform format"
+    "format": "npx standard --fix; npx markdownlint --ignore-path .gitignore --config package.json --configPointer /markdownlint . --fix",
+    "lint": "npx standard; npx markdownlint --ignore-path .gitignore --config package.json --configPointer /markdownlint ."
   },
   "standard": {
     "globals": [
@@ -20,6 +21,11 @@
     ]
   },
   "devDependencies": {
+    "markdownlint-cli": "^0.42.0",
     "standard": "^17.1.2"
+  },
+  "markdownlint": {
+    "default": true,
+    "MD013": false
   }
 }
