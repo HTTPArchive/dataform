@@ -1,8 +1,8 @@
-publish("meta_crawl", {
-    type: "table",
-    description: "Used in dashboard: https://lookerstudio.google.com/u/7/reporting/1jh_ScPlCIbSYTf2r2Y6EftqmX9SQy4Gn/page/p_an38lbzywc/edit",
-    schema: "scratchspace",
-    tags: ["crawl_results_all"]
+publish('meta_crawl', {
+  type: 'table',
+  description: 'Used in dashboard: https://lookerstudio.google.com/u/7/reporting/1jh_ScPlCIbSYTf2r2Y6EftqmX9SQy4Gn/page/p_an38lbzywc/edit',
+  schema: 'scratchspace',
+  tags: ['crawl_results_all']
 }).query(`
 WITH metadata AS (
   SELECT * FROM pages.__TABLES__
@@ -62,4 +62,4 @@ SELECT
   REGEXP_EXTRACT(table_id, r'(desktop|mobile)') AS client,
   *
 FROM metadata
-`);
+`)
