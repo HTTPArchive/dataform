@@ -1,6 +1,6 @@
 # HTTP Archive BigQuery pipeline with Dataform
 
-This repo handles the HTTP Archive data pipeline, which takes the results of the monthly HTTP Archive run and saves this to the `httparchive` dataset in BigQuery.
+This repository handles the HTTP Archive data pipeline, which takes the results of the monthly HTTP Archive run and saves this to the `httparchive` dataset in BigQuery.
 
 ## Pipelines
 
@@ -72,8 +72,10 @@ Tag: `crawl_results_legacy`
 ### Dataform development workspace hints
 
 1. In workflow settings vars:
-   1. set `env_name: dev` to process sampled data in dev workspace.
-   2. change `today` variable to a month in the past. May be helpful for testing pipelines based on `chrome-ux-report` data.
+
+    - set `env_name: dev` to process sampled data in dev workspace.
+    - change `today` variable to a month in the past. May be helpful for testing pipelines based on `chrome-ux-report` data.
+
 2. `definitions/extra/test_env.sqlx` script helps to setup the tables required to run pipelines when in dev workspace. It's disabled by default.
 
 ### Error Monitoring

@@ -1,10 +1,10 @@
-const current_month_underscored = constants.fn_date_underscored(constants.current_month);
+const currentMonthUnderscored = constants.fnDateUnderscored(constants.currentMonth)
 
 constants.clients.forEach(client => {
-  publish(current_month_underscored + "_" + client, {
-    type: "table",
-    schema: "summary_requests",
-    tags: ["crawl_results_legacy"]
+  publish(`${currentMonthUnderscored}_${client}`, {
+    type: 'table',
+    schema: 'summary_requests',
+    tags: ['crawl_results_legacy']
   }).query(ctx => `
 SELECT
   SAFE_CAST(JSON_EXTRACT_SCALAR(summary, '$.requestid') AS INTEGER) AS requestid,
@@ -68,13 +68,13 @@ SELECT
   JSON_EXTRACT_SCALAR(summary, '$.type') AS type,
   JSON_EXTRACT_SCALAR(summary, '$.ext') AS ext,
   JSON_EXTRACT_SCALAR(summary, '$.format') AS format,
-FROM ${ctx.ref("all", "requests")}
+FROM ${ctx.ref('all', 'requests')}
 WHERE
-  date = '${constants.current_month}' AND
+  date = '${constants.currentMonth}' AND
   client = '${client}' AND
   is_root_page AND
   summary IS NOT NULL AND
   JSON_EXTRACT_SCALAR(summary, '$.requestid') IS NOT NULL AND
   JSON_EXTRACT_SCALAR(summary, '$.requestid') != ''
-    `);
-});
+    `)
+})

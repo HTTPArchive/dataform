@@ -1,11 +1,11 @@
-publish("usage", {
-  schema: "blink_features",
-  type: "incremental",
+publish('usage', {
+  schema: 'blink_features',
+  type: 'incremental',
   protected: true,
-  tags: ["blink_features_report"]
+  tags: ['blink_features_report']
 }).preOps(ctx => `
 DELETE FROM ${ctx.self()}
-WHERE yyyymmdd = REPLACE('${constants.current_month}', '-', '');
+WHERE yyyymmdd = REPLACE('${constants.currentMonth}', '-', '');
 `).query(ctx => `
 SELECT
   REPLACE(CAST(date AS STRING), '-', '') AS yyyymmdd,
@@ -26,10 +26,10 @@ FROM (
     type,
     COUNT(DISTINCT url) AS num_urls,
     ARRAY_AGG(url ORDER BY rank, url LIMIT 100) AS sample_urls
-  FROM ${ctx.ref("blink_features", "features")}
+  FROM ${ctx.ref('blink_features', 'features')}
   WHERE
-    yyyymmdd = '${constants.current_month}'
-    ${constants.dev_rank_filter}
+    yyyymmdd = '${constants.currentMonth}'
+    ${constants.devRankFilter}
   GROUP BY
     yyyymmdd,
     client,
@@ -42,11 +42,11 @@ JOIN (
     date,
     client,
     COUNT(DISTINCT page) AS total_urls
-  FROM ${ctx.ref("all", "pages")}
+  FROM ${ctx.ref('all', 'pages')}
   WHERE
-    date = '${constants.current_month}' AND
+    date = '${constants.currentMonth}' AND
     is_root_page = TRUE
-    ${constants.dev_rank_filter}
+    ${constants.devRankFilter}
   GROUP BY
     date,
     client

@@ -1,19 +1,19 @@
-publish("features", {
-  schema: "blink_features",
-  type: "incremental",
+publish('features', {
+  schema: 'blink_features',
+  type: 'incremental',
   protected: true,
   bigquery: {
-    partitionBy: "yyyymmdd",
-    clusterBy: ["client", "rank"]
+    partitionBy: 'yyyymmdd',
+    clusterBy: ['client', 'rank']
   },
-  tags: ["blink_features_report"]
+  tags: ['blink_features_report']
 }).preOps(ctx => `
 DELETE FROM ${ctx.self()}
-WHERE yyyymmdd = DATE '${constants.current_month}';
+WHERE yyyymmdd = DATE '${constants.currentMonth}';
 
 CREATE TEMP FUNCTION features(payload STRING)
 RETURNS ARRAY<STRUCT<id STRING, name STRING, type STRING>> LANGUAGE js AS
-"""
+'''
 function getFeatureNames(featureMap, featureType) {
   try {
     return Object.entries(featureMap).map(([key, value]) => {
@@ -40,7 +40,7 @@ var idPattern = new RegExp('^Feature_(\\\\d+)$');
 return getFeatureNames($._blinkFeatureFirstUsed.Features, 'default')
   .concat(getFeatureNames($._blinkFeatureFirstUsed.CSSFeatures, 'css'))
   .concat(getFeatureNames($._blinkFeatureFirstUsed.AnimatedCSSFeatures, 'animated-css'));
-""";
+''';
 `).query(ctx => `
 SELECT
   date AS yyyymmdd,
@@ -58,11 +58,11 @@ FROM (
     payload,
     rank,
     feature
-  FROM ${ctx.ref("all", "pages")},
+  FROM ${ctx.ref('all', 'pages')},
     UNNEST(features) AS feature
   WHERE
-    date = '${constants.current_month}' AND
+    date = '${constants.currentMonth}' AND
     is_root_page = TRUE
-    ${constants.dev_rank_filter}
+    ${constants.devRankFilter}
 )
 `)
