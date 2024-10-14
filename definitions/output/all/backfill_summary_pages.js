@@ -1,15 +1,16 @@
 const iterations = []
 const clients = constants.clients
 
+let midMonth
 for (
-  let date = "2015-12-01";
-  date >= "2015-12-01"; // 2011-06-01
+  let date = '2015-12-01';
+  date >= '2015-12-01'; // 2011-06-01
   date = constants.fn_past_month(date)
 ) {
   clients.forEach((client) => {
     iterations.push({
-      date: date,
-      client: client,
+      date,
+      client
     })
   })
 
@@ -19,29 +20,28 @@ for (
   clients.forEach((client) => {
     iterations.push({
       date: midMonth.toISOString().substring(0, 10),
-      client: client,
+      client
     })
   })
-  
 }
 
 iterations.forEach((iteration, i) => {
   operate(`backfill_summary_pages ${iteration.date} ${iteration.client}`).tags([
-    "pages_backfill"
+    'pages_backfill'
   ]).dependencies([
-    i===0 ? "" : `backfill_summary_pages ${iterations[i-1].date} ${iterations[i-1].client}`
+    i === 0 ? '' : `backfill_summary_pages ${iterations[i - 1].date} ${iterations[i - 1].client}`
   ]).queries(ctx => `
 DELETE FROM \`all_dev.pages_stable\`
 WHERE date = '${iteration.date}' AND client = '${iteration.client}';
 
-INSERT INTO \`all_dev.pages_stable\`  --${ctx.resolve("all", "pages")}
+INSERT INTO \`all_dev.pages_stable\`  --${ctx.resolve('all', 'pages')}
 SELECT
   DATE('${iteration.date}') AS date,
   '${iteration.client}' AS client,
   pages.url AS page,
   TRUE AS is_root_page,
   pages.url AS root_page,
-  CASE 
+  CASE
     WHEN rank<=1000 THEN 1000
     WHEN rank<=5000 THEN 5000
     ELSE NULL

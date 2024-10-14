@@ -1,26 +1,27 @@
 const iterations = []
 const clients = constants.clients
 
+let midMonth
 for (
-  let date = "2016-01-01"; // 2022-06-01
-  date >= "2016-01-01"; // 2016-01-01
+  let date = '2016-01-01'; // 2022-06-01
+  date >= '2016-01-01'; // 2016-01-01
   date = constants.fn_past_month(date)
 ) {
   clients.forEach((client) => {
     iterations.push({
-      date: date,
-      client: client,
+      date,
+      client
     })
   })
 
-  if (date <= "2018-12-01") {
+  if (date <= '2018-12-01') {
     midMonth = new Date(date)
     midMonth.setDate(15)
 
     clients.forEach((client) => {
       iterations.push({
         date: midMonth.toISOString().substring(0, 10),
-        client: client,
+        client
       })
     })
   }
@@ -28,9 +29,9 @@ for (
 
 iterations.forEach((iteration, i) => {
   operate(`backfill_pages ${iteration.date} ${iteration.client}`).tags([
-    "backfill_pages"
+    'backfill_pages'
   ]).dependencies([
-    i===0 ? "" : `backfill_pages ${iterations[i-1].date} ${iterations[i-1].client}`
+    i === 0 ? '' : `backfill_pages ${iterations[i - 1].date} ${iterations[i - 1].client}`
   ]).queries(ctx => `
 DELETE FROM \`all_dev.pages_stable\`
 WHERE date = '${iteration.date}' AND client = '${iteration.client}';
@@ -72,17 +73,17 @@ RETURNS ARRAY<STRUCT<feature STRING, id STRING, type STRING>> LANGUAGE js AS
       return [];
     }
   }
-  
+
   var $ = JSON.parse(payload);
   if (!$._blinkFeatureFirstUsed) return [];
-  
-  var idPattern = new RegExp('^Feature_(\d+)$');
+
+  var idPattern = new RegExp('^Feature_(\\\\d+)$');
   return getFeatureNames($._blinkFeatureFirstUsed.Features, 'default')
     .concat(getFeatureNames($._blinkFeatureFirstUsed.CSSFeatures, 'css'))
     .concat(getFeatureNames($._blinkFeatureFirstUsed.AnimatedCSSFeatures, 'animated-css'));
 ''';
 
-INSERT INTO \`all_dev.pages_stable\`  --${ctx.resolve("all", "pages")}
+INSERT INTO \`all_dev.pages_stable\`  --${ctx.resolve('all', 'pages')}
 SELECT
   DATE('${iteration.date}') AS date,
   '${iteration.client}' AS client,
@@ -145,7 +146,7 @@ LEFT JOIN (
   SELECT DISTINCT
     CONCAT(origin, '/') AS page,
     experimental.popularity.rank AS rank
-  FROM ${ctx.resolve("chrome-ux-report", "experimental", "global")}
+  FROM ${ctx.resolve('chrome-ux-report', 'experimental', 'global')}
   WHERE yyyymm = ${constants.fn_past_month(iteration.date).substring(0, 7).replace('-', '')}
 ) AS crux
 ON pages.url = crux.page;

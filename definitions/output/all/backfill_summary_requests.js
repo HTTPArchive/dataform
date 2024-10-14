@@ -1,15 +1,16 @@
-const iterations = [],
-  clients = constants.clients;
+const iterations = []
+const clients = constants.clients
 
+let midMonth
 for (
-  let date = "2015-12-01";
-  date >= "2015-12-01"; // 2011-06-01
+  let date = '2015-12-01';
+  date >= '2015-12-01'; // 2011-06-01
   date = constants.fn_past_month(date)
 ) {
   clients.forEach((client) => {
     iterations.push({
-      date: date,
-      client: client,
+      date,
+      client
     })
   })
 
@@ -19,24 +20,25 @@ for (
   clients.forEach((client) => {
     iterations.push({
       date: midMonth.toISOString().substring(0, 10),
-      client: client,
+      client
     })
   })
 }
 
+let addDimensions
 iterations.forEach((iteration, i) => {
-  if(iteration.date > "2014-06-01"){
-    add_dimensions = true;
+  if (iteration.date > '2014-06-01') {
+    addDimensions = true
   } else {
-    add_dimensions = false;
+    addDimensions = false
   }
 
   operate(`backfill_summary_requests ${iteration.date} ${iteration.client}`).tags([
-    "requests_backfill"
+    'requests_backfill'
   ]).dependencies([
-    i===0 ? "" : `backfill_summary_requests ${iterations[i-1].date} ${iterations[i-1].client}`
+    i === 0 ? '' : `backfill_summary_requests ${iterations[i - 1].date} ${iterations[i - 1].client}`
   ]).queries(ctx => `
-DELETE FROM ${ctx.resolve("all", "requests")}
+DELETE FROM ${ctx.resolve('all', 'requests')}
 WHERE date = '${iteration.date}' AND client = '${iteration.client}';
 
 CREATE TEMP FUNCTION get_ext_from_url(url STRING)
@@ -138,7 +140,7 @@ AS """
   }
 """;
 
-INSERT INTO \`all_dev.requests_stable\` --${ctx.resolve("all", "requests")}
+INSERT INTO \`all_dev.requests_stable\` --${ctx.resolve('all', 'requests')}
 SELECT
   DATE('${iteration.date}') AS date,
   '${iteration.client}' AS client,
@@ -228,7 +230,7 @@ SELECT
     requests.respOtherHeaders AS respOtherHeaders,
     requests.expAge AS expAge,
     requests.mimeType AS mimeType
-    ${add_dimensions ? ",requests._cdn_provider AS _cdn_provider,requests._gzip_save AS _gzip_save" : ""}
+    ${addDimensions ? ',requests._cdn_provider AS _cdn_provider,requests._gzip_save AS _gzip_save' : ''}
   )) AS summary,
   ARRAY<STRUCT<name string, value string>>[
     ('Accept', requests.req_accept),
@@ -273,7 +275,7 @@ LEFT JOIN (
   SELECT DISTINCT
     CONCAT(origin, '/') AS page,
     experimental.popularity.rank AS rank
-  FROM ${ctx.resolve("chrome-ux-report", "experimental", "global")}
+  FROM ${ctx.resolve('chrome-ux-report', 'experimental', 'global')}
   WHERE yyyymm = ${constants.fn_past_month(iteration.date).substring(0, 7).replace('-', '')}
 ) AS crux
 ON pages.url = crux.page;
