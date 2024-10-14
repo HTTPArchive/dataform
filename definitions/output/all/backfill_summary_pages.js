@@ -5,7 +5,7 @@ let midMonth
 for (
   let date = '2015-12-01';
   date >= '2015-12-01'; // 2011-06-01
-  date = constants.fn_past_month(date)
+  date = constants.fnPastMonth(date)
 ) {
   clients.forEach((client) => {
     iterations.push({
@@ -128,6 +128,6 @@ SELECT
   NULL AS features,
   NULL AS technologies,
   NULL AS metadata
-FROM summary_pages.${constants.fn_date_underscored(iteration.date)}_${iteration.client} AS pages ${constants.dev_TABLESAMPLE};
+FROM summary_pages.${constants.fnDateUnderscored(iteration.date)}_${iteration.client} AS pages ${constants.dev_TABLESAMPLE};
   `)
 })

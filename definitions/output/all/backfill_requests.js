@@ -5,7 +5,7 @@ let midMonth
 for (
   let date = '2016-01-01'; // 2022-06-01
   date >= '2016-01-01'; // 2016-01-01
-  date = constants.fn_past_month(date)
+  date = constants.fnPastMonth(date)
 ) {
   clients.forEach((client) => {
     iterations.push({
@@ -179,16 +179,16 @@ SELECT
   parse_headers(JSON_QUERY(payload, '$.request.headers')) AS request_headers,
   parse_headers(JSON_QUERY(payload, '$.response.headers')) AS response_headers,
   response_bodies.body AS response_body
-FROM requests.${constants.fn_date_underscored(iteration.date)}_${iteration.client} AS requests ${constants.dev_TABLESAMPLE}
+FROM requests.${constants.fnDateUnderscored(iteration.date)}_${iteration.client} AS requests ${constants.dev_TABLESAMPLE}
 LEFT JOIN (
   SELECT DISTINCT
     CONCAT(origin, '/') AS page,
     experimental.popularity.rank AS rank
   FROM ${ctx.resolve('chrome-ux-report', 'experimental', 'global')}
-  WHERE yyyymm = ${constants.fn_past_month(iteration.date).substring(0, 7).replace('-', '')}
+  WHERE yyyymm = ${constants.fnPastMonth(iteration.date).substring(0, 7).replace('-', '')}
 ) AS crux
 ON requests.page = crux.page
-LEFT JOIN response_bodies.${constants.fn_date_underscored(iteration.date)}_${iteration.client} AS response_bodies ${constants.dev_TABLESAMPLE}
+LEFT JOIN response_bodies.${constants.fnDateUnderscored(iteration.date)}_${iteration.client} AS response_bodies ${constants.dev_TABLESAMPLE}
 ON requests.page = response_bodies.page AND requests.url = response_bodies.url;
   `)
 })

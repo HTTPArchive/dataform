@@ -4,11 +4,9 @@
     "@dataform/core": "3.0.6"
   },
   "scripts": {
-    "start": "dataform run",
-    "compile": "dataform compile",
-    "test": "dataform test",
     "format": "npx standard --fix; npx markdownlint --ignore-path .gitignore --config package.json --configPointer /markdownlint . --fix",
-    "lint": "npx standard; npx markdownlint --ignore-path .gitignore --config package.json --configPointer /markdownlint ."
+    "lint": "npx standard; npx markdownlint --ignore-path .gitignore --config package.json --configPointer /markdownlint .; dataform compile",
+    "test": "dataform test"
   },
   "standard": {
     "globals": [

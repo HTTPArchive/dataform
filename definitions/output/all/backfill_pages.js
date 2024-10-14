@@ -5,7 +5,7 @@ let midMonth
 for (
   let date = '2016-01-01'; // 2022-06-01
   date >= '2016-01-01'; // 2016-01-01
-  date = constants.fn_past_month(date)
+  date = constants.fnPastMonth(date)
 ) {
   clients.forEach((client) => {
     iterations.push({
@@ -141,13 +141,13 @@ SELECT
   GET_FEATURES(payload) AS features,
   NULL AS technologies,
   JSON_QUERY(SAFE.PARSE_JSON(payload, wide_number_mode => 'round'), "$._metadata") AS metadata
-FROM pages.${constants.fn_date_underscored(iteration.date)}_${iteration.client} AS pages ${constants.dev_TABLESAMPLE}
+FROM pages.${constants.fnDateUnderscored(iteration.date)}_${iteration.client} AS pages ${constants.dev_TABLESAMPLE}
 LEFT JOIN (
   SELECT DISTINCT
     CONCAT(origin, '/') AS page,
     experimental.popularity.rank AS rank
   FROM ${ctx.resolve('chrome-ux-report', 'experimental', 'global')}
-  WHERE yyyymm = ${constants.fn_past_month(iteration.date).substring(0, 7).replace('-', '')}
+  WHERE yyyymm = ${constants.fnPastMonth(iteration.date).substring(0, 7).replace('-', '')}
 ) AS crux
 ON pages.url = crux.page;
   `)
