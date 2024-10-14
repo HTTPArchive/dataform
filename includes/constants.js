@@ -7,8 +7,8 @@ const
     month_date.setMonth(month_date.getMonth() - 1)
     return month_date.toISOString().substring(0, 10);
   },
-  clients = ['mobile', 'desktop'],
-  booleans = ['TRUE', 'FALSE'],
+  clients = ['desktop', 'mobile'],
+  booleans = ['FALSE', 'TRUE'],
   [
     dev_TABLESAMPLE,
     dev_rank_filter
