@@ -1,3 +1,4 @@
+<!-- markdownlint-disable first-line-heading -->
 ## Use Cases
 
 This dataset supports the following applications:
