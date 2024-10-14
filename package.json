@@ -1,6 +1,29 @@
 {
-    "name": "crawl-data",
-    "dependencies": {
-        "@dataform/core": "3.0.2"
-    }
+  "name": "crawl-data",
+  "dependencies": {
+    "@dataform/core": "3.0.6"
+  },
+  "scripts": {
+    "format": "npx standard --fix; npx markdownlint --ignore-path .gitignore --config package.json --configPointer /markdownlint . --fix",
+    "lint": "npx standard; npx markdownlint --ignore-path .gitignore --config package.json --configPointer /markdownlint .; dataform compile",
+    "test": "dataform test"
+  },
+  "standard": {
+    "globals": [
+      "constants",
+      "operate",
+      "assert",
+      "publish",
+      "declare",
+      "dataform"
+    ]
+  },
+  "devDependencies": {
+    "markdownlint-cli": "^0.42.0",
+    "standard": "^17.1.2"
+  },
+  "markdownlint": {
+    "default": true,
+    "MD013": false
+  }
 }

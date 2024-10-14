@@ -1,28 +1,54 @@
-const last_month = constants.fn_past_month(constants.current_month);
+const date = constants.currentMonth
 
-operate("test_env", {
-  hasOutput: true,
-  disabled: true // MUST NOT be commented in main branch
-}).queries(ctx => `
-CREATE OR REPLACE TABLE ${ctx.ref("all", "requests")} AS
+const resourcesList = [{
+  datasetId: 'all',
+  tableId: 'pages'
+},
+{
+  datasetId: 'all',
+  tableId: 'requests'
+}
+  // {datasetId: 'all', tableId: 'parsed_css'},
+  // {datasetId: 'core_web_vitals', tableId: 'technologies'},
+]
+
+resourcesList.forEach(resource => {
+  operate(
+    `test_table ${resource.datasetId}_${resource.tableId}`, {
+      hasOutput: true
+    }
+  ).queries(`
+CREATE SCHEMA IF NOT EXISTS ${resource.datasetId}_dev;
+
+DROP TABLE IF EXISTS ${resource.datasetId}_dev.dev_${resource.tableId};
+
+CREATE TABLE IF NOT EXISTS ${resource.datasetId}_dev.dev_${resource.tableId} AS
 SELECT *
-FROM httparchive.all.requests ${constants.dev_TABLESAMPLE}
-WHERE date = '${last_month}';
+FROM \`${resource.datasetId}.${resource.tableId}\` ${constants.devTABLESAMPLE}
+WHERE date = '${date}'
+  `)
+})
+
+operate('test_table blink_features_dev_dev_usage', {
+  hasOutput: true
+}).queries(`
+CREATE SCHEMA IF NOT EXISTS blink_features_dev;
+
+CREATE TABLE IF NOT EXISTS blink_features_dev.dev_usage AS
+SELECT *
+FROM blink_features.usage ${constants.devTABLESAMPLE}
+WHERE yyyymmdd = '${date}';
 `)
 
-/*
-CREATE OR REPLACE TABLE ${ctx.ref("all", "pages")} AS
-SELECT *
-FROM httparchive.all.pages ${constants.dev_TABLESAMPLE}
-WHERE date = '${last_month}';
+operate('test_table blink_features_dev_dev_features', {
+  hasOutput: true
+}).queries(`
+CREATE SCHEMA IF NOT EXISTS blink_features_dev;
 
-CREATE OR REPLACE TABLE ${ctx.ref("all", "parsed_css")} AS
-SELECT *
-FROM httparchive.all.parsed_css ${constants.dev_TABLESAMPLE}
-WHERE date = '${last_month}';
+DROP TABLE IF EXISTS blink_features_dev.dev_features;
 
-CREATE OR REPLACE TABLE ${ctx.ref("core_web_vitals", "technologies")} AS
+CREATE TABLE IF NOT EXISTS blink_features_dev.dev_features AS
 SELECT *
-FROM httparchive.core_web_vitals.technologies
-WHERE date = '${last_month}'
-*/
+FROM blink_features.features ${constants.devTABLESAMPLE}
+WHERE yyyymmdd = DATE '${date}';
+`)

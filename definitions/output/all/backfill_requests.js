@@ -1,40 +1,41 @@
 const iterations = []
 const clients = constants.clients
 
+let midMonth
 for (
-  let date = "2016-01-01"; // 2022-06-01
-  date >= "2016-01-01"; // 2016-01-01
-  date = constants.fn_past_month(date)
+  let date = '2016-01-01'; // 2022-06-01
+  date >= '2016-01-01'; // 2016-01-01
+  date = constants.fnPastMonth(date)
 ) {
   clients.forEach((client) => {
     iterations.push({
-      date: date,
-      client: client,
+      date,
+      client
     })
   })
 
-  if (date <= "2018-12-01") {
+  if (date <= '2018-12-01') {
     midMonth = new Date(date)
     midMonth.setDate(15)
 
     clients.forEach((client) => {
       iterations.push({
         date: midMonth.toISOString().substring(0, 10),
-        client: client,
+        client
       })
     })
   }
 }
 
-operate("")
+operate('')
 
 iterations.forEach((iteration, i) => {
   operate(`backfill_requests ${iteration.date} ${iteration.client}`).tags([
-    "backfill_requests"
+    'backfill_requests'
   ]).dependencies([
-    i===0 ? "" : `backfill_requests ${iterations[i-1].date} ${iterations[i-1].client}`
+    i === 0 ? '' : `backfill_requests ${iterations[i - 1].date} ${iterations[i - 1].client}`
   ]).queries(ctx => `
-DELETE FROM ${ctx.resolve("all", "requests")}
+DELETE FROM ${ctx.resolve('all', 'requests')}
 WHERE date = '${iteration.date}' AND client = '${iteration.client}';
 
 CREATE TEMP FUNCTION get_ext_from_url(url STRING)
@@ -136,7 +137,7 @@ AS """
   }
 """;
 
-INSERT INTO \`all_dev.requests_stable\` --${ctx.resolve("all", "requests")}
+INSERT INTO \`all_dev.requests_stable\` --${ctx.resolve('all', 'requests')}
 SELECT
   DATE('${iteration.date}') AS date,
   '${iteration.client}' AS client,
@@ -178,16 +179,16 @@ SELECT
   parse_headers(JSON_QUERY(payload, '$.request.headers')) AS request_headers,
   parse_headers(JSON_QUERY(payload, '$.response.headers')) AS response_headers,
   response_bodies.body AS response_body
-FROM requests.${constants.fn_date_underscored(iteration.date)}_${iteration.client} AS requests ${constants.dev_TABLESAMPLE}
+FROM requests.${constants.fnDateUnderscored(iteration.date)}_${iteration.client} AS requests ${constants.dev_TABLESAMPLE}
 LEFT JOIN (
   SELECT DISTINCT
     CONCAT(origin, '/') AS page,
     experimental.popularity.rank AS rank
-  FROM ${ctx.resolve("chrome-ux-report", "experimental", "global")}
-  WHERE yyyymm = ${constants.fn_past_month(iteration.date).substring(0, 7).replace('-', '')}
+  FROM ${ctx.resolve('chrome-ux-report', 'experimental', 'global')}
+  WHERE yyyymm = ${constants.fnPastMonth(iteration.date).substring(0, 7).replace('-', '')}
 ) AS crux
 ON requests.page = crux.page
-LEFT JOIN response_bodies.${constants.fn_date_underscored(iteration.date)}_${iteration.client} AS response_bodies ${constants.dev_TABLESAMPLE}
+LEFT JOIN response_bodies.${constants.fnDateUnderscored(iteration.date)}_${iteration.client} AS response_bodies ${constants.dev_TABLESAMPLE}
 ON requests.page = response_bodies.page AND requests.url = response_bodies.url;
   `)
 })
