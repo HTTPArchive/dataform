@@ -1,30 +1,30 @@
-const
-  today = (dataform.projectConfig.vars.today ? dataform.projectConfig.vars.today : new Date().toISOString()).substring(0, 10),
-  current_month = today.substring(0, 8) + "01",
-  fn_date_underscored = (date_str) => date_str.replaceAll("-", "_"),
-  fn_past_month = (month_ISOstring) => {
-    let month_date = new Date(month_ISOstring);
-    month_date.setMonth(month_date.getMonth() - 1)
-    return month_date.toISOString().substring(0, 10);
-  },
-  clients = ['desktop', 'mobile'],
-  booleans = ['FALSE', 'TRUE'],
-  [
-    dev_TABLESAMPLE,
-    dev_rank_filter
-  ] = dataform.projectConfig.vars.env_name == 'dev' ? [
-    "TABLESAMPLE SYSTEM (0.001 PERCENT)",
-    "AND rank <= 10000",
-    true
-  ] : ["", ""];
+const today = (dataform.projectConfig.vars.today ? dataform.projectConfig.vars.today : new Date().toISOString()).substring(0, 10)
+const currentMonth = today.substring(0, 8) + '01'
+const fnDateUnderscored = (dateStr) => dateStr.replaceAll('-', '_')
+const fnPastMonth = (monthISOstring) => {
+  const monthDate = new Date(monthISOstring)
+  monthDate.setMonth(monthDate.getMonth() - 1)
+  return monthDate.toISOString().substring(0, 10)
+}
+const clients = ['desktop', 'mobile']
+const booleans = ['FALSE', 'TRUE']
+const [
+  devTABLESAMPLE,
+  devRankFilter
+] = dataform.projectConfig.vars.env_name === 'dev'
+  ? [
+      'TABLESAMPLE SYSTEM (0.001 PERCENT)',
+      'AND rank <= 10000'
+    ]
+  : ['', '']
 
 module.exports = {
   today,
-  current_month,
-  fn_past_month,
-  fn_date_underscored,
+  currentMonth,
+  fnPastMonth,
+  fnDateUnderscored,
   clients,
   booleans,
-  dev_TABLESAMPLE,
-  dev_rank_filter
-};
+  devTABLESAMPLE,
+  devRankFilter
+}

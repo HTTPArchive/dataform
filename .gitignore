@@ -4,6 +4,3 @@ node_modules/
 # Terraform
 tf/.terraform/
 tf/temp
-
-# Dataform
-.df-credentials.json
