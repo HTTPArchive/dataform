@@ -18,7 +18,7 @@ Request body example with trigger name:
 
 ```json
 {
-    "name": "cwv_tech_report"
+  "name": "cwv_tech_report"
 }
 ```
 
