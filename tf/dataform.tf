@@ -4,8 +4,8 @@ locals {
 
 import {
   provider = google-beta
-  id = "projects/${local.project}/locations/${local.region}/repositories/crawl-data"
-  to = google_dataform_repository.production
+  id       = "projects/${local.project}/locations/${local.region}/repositories/crawl-data"
+  to       = google_dataform_repository.production
 }
 
 resource "google_dataform_repository" "production" {

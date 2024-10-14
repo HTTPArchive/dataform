@@ -15,8 +15,8 @@ resource "google_storage_bucket_object" "object" {
 # Cloud Function to trigger Dataform workflow
 import {
   provider = google-beta
-  id = "projects/${local.project}/locations/${local.region}/functions/dataformTrigger"
-  to = google_cloudfunctions2_function.dataformTrigger
+  id       = "projects/${local.project}/locations/${local.region}/functions/dataformTrigger"
+  to       = google_cloudfunctions2_function.dataformTrigger
 }
 
 resource "google_cloudfunctions2_function" "dataformTrigger" {
@@ -38,8 +38,8 @@ resource "google_cloudfunctions2_function" "dataformTrigger" {
     }
     source {
       storage_source {
-        bucket     = "gcf-v2-sources-226352634162-us-central1"
-        object     = "dataformTrigger/function-source.zip"
+        bucket = "gcf-v2-sources-226352634162-us-central1"
+        object = "dataformTrigger/function-source.zip"
       }
     }
   }
@@ -116,8 +116,8 @@ EOF
 
 import {
   provider = google-beta
-  id = "projects/${local.project}/locations/us-east4/jobs/bq-poller-cwv-tech-report"
-  to = google_cloud_scheduler_job.bq-poller-cwv-tech-report
+  id       = "projects/${local.project}/locations/us-east4/jobs/bq-poller-cwv-tech-report"
+  to       = google_cloud_scheduler_job.bq-poller-cwv-tech-report
 }
 
 resource "google_cloud_scheduler_job" "bq-poller-cwv-tech-report" {
