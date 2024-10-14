@@ -134,7 +134,10 @@ SELECT
     SAFE.PARSE_JSON(JSON_VALUE(SAFE.PARSE_JSON(payload, wide_number_mode => 'round'), "$._third-parties"), wide_number_mode => 'round'),
     SAFE.PARSE_JSON(JSON_VALUE(SAFE.PARSE_JSON(payload, wide_number_mode => 'round'), "$._well-known"), wide_number_mode => 'round'),
     SAFE.PARSE_JSON(JSON_VALUE(SAFE.PARSE_JSON(payload, wide_number_mode => 'round'), "$._wpt_bodies"), wide_number_mode => 'round'),
-    GET_OTHER_CUSTOM_METRICS(SAFE.PARSE_JSON(payload, wide_number_mode => 'round'), ["_Colordepth", "_Dpi", "_Images", "_Resolution", "_almanac", "_avg_dom_depth", "_css", "_doctype", "_document_height", "_document_width", "_event-names", "_fugu-apis", "_has_shadow_root", "_img-loading-attr", "_initiators", "_inline_style_bytes", "_lib-detector-version", "_localstorage_size", "_meta_viewport", "_num_iframes", "_num_scripts", "_num_scripts_async", "_num_scripts_sync", "_pwa", "_quirks_mode", "_sass", "_sessionstorage_size", "_usertiming"])
+    GET_OTHER_CUSTOM_METRICS(
+      SAFE.PARSE_JSON(payload, wide_number_mode => 'round'),
+      ["_Colordepth", "_Dpi", "_Images", "_Resolution", "_almanac", "_avg_dom_depth", "_css", "_doctype", "_document_height", "_document_width", "_event-names", "_fugu-apis", "_has_shadow_root", "_img-loading-attr", "_initiators", "_inline_style_bytes", "_lib-detector-version", "_localstorage_size", "_meta_viewport", "_num_iframes", "_num_scripts", "_num_scripts_async", "_num_scripts_sync", "_pwa", "_quirks_mode", "_sass", "_sessionstorage_size", "_usertiming"]
+    )
   ) AS custom_metrics,
   NULL AS lighthouse,
   GET_FEATURES(payload) AS features,
