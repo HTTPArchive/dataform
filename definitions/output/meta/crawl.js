@@ -2,7 +2,7 @@ publish('meta_crawl', {
   type: 'table',
   description: 'Used in dashboard: https://lookerstudio.google.com/u/7/reporting/1jh_ScPlCIbSYTf2r2Y6EftqmX9SQy4Gn/page/p_an38lbzywc/edit',
   schema: 'scratchspace',
-  tags: ['crawl_results_all']
+  tags: ['crawl_results_all', 'blink_feature_report', 'cwv_tech_report']
 }).query(`
 WITH metadata AS (
   SELECT * FROM pages.__TABLES__
@@ -21,7 +21,7 @@ WITH metadata AS (
   UNION ALL
   SELECT
     'httparchive' AS project_id,
-    'blink_features' AS dataset_id,
+    'blink_features.usage' AS dataset_id,
     CONCAT(REGEXP_REPLACE(yyyymmdd, r'(\\d{4})(\\d{2})(\\d{2})', r'\\1_\\2_\\3_'), client)  AS table_id,
     NULL AS creation_time,
     NULL AS last_modified_time,
@@ -29,6 +29,20 @@ WITH metadata AS (
     SUM(LENGTH(CONCAT(yyyymmdd, client, id, feature, type, CAST(num_urls AS STRING), CAST(total_urls AS STRING), CAST(pct_urls AS STRING), ARRAY_TO_STRING(sample_urls, ' ')))) AS size_bytes,
     1 AS type
   FROM blink_features.usage
+  GROUP BY
+    table_id,
+    client
+  UNION ALL
+  SELECT
+    'httparchive' AS project_id,
+    'blink_features.features' AS dataset_id,
+    CONCAT(REGEXP_REPLACE(yyyymmdd, r'(\\d{4})(\\d{2})(\\d{2})', r'\\1_\\2_\\3_'), client)  AS table_id,
+    NULL AS creation_time,
+    NULL AS last_modified_time,
+    COUNT(0) AS row_count,
+    SUM(LENGTH(CONCAT(yyyymmdd, client, id, feature, type, CAST(num_urls AS STRING), CAST(total_urls AS STRING), CAST(pct_urls AS STRING), ARRAY_TO_STRING(sample_urls, ' ')))) AS size_bytes,
+    1 AS type
+  FROM blink_features.features
   GROUP BY
     table_id,
     client
