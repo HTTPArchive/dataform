@@ -5,7 +5,7 @@ publish('meta_crawl', {
   tags: ['crawl_results_all', 'blink_feature_report', 'cwv_tech_report']
 }).dependencies([
   'features'
-]).query( ctx => `
+]).query(ctx => `
 WITH metadata AS (
   SELECT * FROM pages.__TABLES__
   UNION ALL
