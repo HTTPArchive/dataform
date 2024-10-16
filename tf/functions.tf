@@ -1,4 +1,5 @@
 # Cloud Function deployment source code
+# Source: https://cloud.google.com/functions/docs/tutorials/terraform
 data "archive_file" "dataformTriggerSrc" {
   type        = "zip"
   source_dir  = "../src/"
