@@ -55,6 +55,18 @@ WITH metadata AS (
     1 AS type
   FROM core_web_vitals.INFORMATION_SCHEMA.PARTITIONS
   WHERE table_name = 'technologies'
+  -- TODO: Remove this when the tables are migrated to the 'all' dataset
+  SELECT
+    'httparchive' AS project_id,
+    'all_dev.' || table_name AS dataset_id,
+    PARTITION_ID AS table_id,
+    NULL AS creation_time,
+    NULL AS last_modified_time,
+    TOTAL_ROWS AS row_count,
+    TOTAL_LOGICAL_BYTES AS size_bytes,
+    1 AS type
+  FROM \`all_dev.INFORMATION_SCHEMA.PARTITIONS\`
+  UNION ALL
 )
 
 SELECT
