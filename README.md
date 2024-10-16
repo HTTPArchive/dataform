@@ -1,4 +1,4 @@
-# HTTP Archive BigQuery pipeline with Dataform
+# HTTP Archive datasets pipeline
 
 This repository handles the HTTP Archive data pipeline, which takes the results of the monthly HTTP Archive run and saves this to the `httparchive` dataset in BigQuery.
 
@@ -59,7 +59,7 @@ Tag: `crawl_results_legacy`
 
 ### Triggering workflows
 
-[see here](./src/README.md)
+In order to unify the workflow triggering mechanism, we use [a Cloud Run function](./src/README.md) that can be invoked in a number of ways (e.g. listen to PubSub messages), do intermediate checks and trigger the particular Dataform workflow execution configuration.
 
 ## Contributing
 
