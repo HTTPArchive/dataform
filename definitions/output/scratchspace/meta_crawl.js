@@ -3,7 +3,9 @@ publish('meta_crawl', {
   description: 'Used in dashboard: https://lookerstudio.google.com/u/7/reporting/1jh_ScPlCIbSYTf2r2Y6EftqmX9SQy4Gn/page/p_an38lbzywc/edit',
   schema: 'scratchspace',
   tags: ['crawl_results_all', 'blink_feature_report', 'cwv_tech_report']
-}).query(`
+}).dependencies([
+  'features'
+]).query( ctx => `
 WITH metadata AS (
   SELECT * FROM pages.__TABLES__
   UNION ALL
@@ -28,7 +30,7 @@ WITH metadata AS (
     COUNT(0) AS row_count,
     SUM(LENGTH(CONCAT(yyyymmdd, client, id, feature, type, CAST(num_urls AS STRING), CAST(total_urls AS STRING), CAST(pct_urls AS STRING), ARRAY_TO_STRING(sample_urls, ' ')))) AS size_bytes,
     1 AS type
-  FROM blink_features.usage
+  FROM ${ctx.ref('blink_features', 'usage')}
   GROUP BY
     table_id,
     client
