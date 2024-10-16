@@ -58,7 +58,7 @@ FROM (
     payload,
     rank,
     feature
-  FROM ${ctx.resolve('all', 'pages')},
+  FROM ${ctx.ref('all', 'pages')},
     UNNEST(features) AS feature
   WHERE
     date = '${constants.currentMonth}' AND
