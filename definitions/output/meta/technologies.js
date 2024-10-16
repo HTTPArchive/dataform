@@ -13,7 +13,7 @@ WITH source AS (
     tech.technology,
     tech.categories,
     tech.info as version
-  FROM ${ctx.resolve('all', 'pages')},
+  FROM ${ctx.ref('all', 'pages')},
     UNNEST(technologies) AS tech
   WHERE date >= "${pastMonth}" ${constants.devRankFilter}
     AND client = 'mobile'
