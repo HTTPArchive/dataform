@@ -36,16 +36,13 @@ WITH metadata AS (
   SELECT
     'httparchive' AS project_id,
     'blink_features.features' AS dataset_id,
-    CONCAT(REGEXP_REPLACE(yyyymmdd, r'(\\d{4})(\\d{2})(\\d{2})', r'\\1_\\2_\\3_'), client)  AS table_id,
+    PARTITION_ID AS table_id,
     NULL AS creation_time,
     NULL AS last_modified_time,
-    COUNT(0) AS row_count,
-    SUM(LENGTH(CONCAT(yyyymmdd, client, id, feature, type, CAST(num_urls AS STRING), CAST(total_urls AS STRING), CAST(pct_urls AS STRING), ARRAY_TO_STRING(sample_urls, ' ')))) AS size_bytes,
+    TOTAL_ROWS AS row_count,
+    TOTAL_LOGICAL_BYTES AS size_bytes,
     1 AS type
-  FROM blink_features.features
-  GROUP BY
-    table_id,
-    client
+  FROM \`blink_features.INFORMATION_SCHEMA.PARTITIONS\`
   UNION ALL
   SELECT
     'httparchive' AS project_id,
@@ -70,6 +67,7 @@ WITH metadata AS (
   FROM core_web_vitals.INFORMATION_SCHEMA.PARTITIONS
   WHERE table_name = 'technologies'
   -- TODO: Remove this when the tables are migrated to the 'all' dataset
+  UNION ALL
   SELECT
     'httparchive' AS project_id,
     'all_dev.' || table_name AS dataset_id,
@@ -80,7 +78,6 @@ WITH metadata AS (
     TOTAL_LOGICAL_BYTES AS size_bytes,
     1 AS type
   FROM \`all_dev.INFORMATION_SCHEMA.PARTITIONS\`
-  UNION ALL
 )
 
 SELECT
