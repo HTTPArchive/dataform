@@ -44,7 +44,7 @@ WITH metadata AS (
     TOTAL_ROWS AS row_count,
     TOTAL_LOGICAL_BYTES AS size_bytes,
     1 AS type
-  FROM \`blink_features.INFORMATION_SCHEMA.PARTITIONS\`
+  FROM blink_features.INFORMATION_SCHEMA.PARTITIONS
   UNION ALL
   SELECT
     'httparchive' AS project_id,
@@ -55,7 +55,7 @@ WITH metadata AS (
     TOTAL_ROWS AS row_count,
     TOTAL_LOGICAL_BYTES AS size_bytes,
     1 AS type
-  FROM \`all.INFORMATION_SCHEMA.PARTITIONS\`
+  FROM \`all\`.INFORMATION_SCHEMA.PARTITIONS
   UNION ALL
   SELECT
     'httparchive' AS project_id,
@@ -79,7 +79,7 @@ WITH metadata AS (
     TOTAL_ROWS AS row_count,
     TOTAL_LOGICAL_BYTES AS size_bytes,
     1 AS type
-  FROM \`all_dev.INFORMATION_SCHEMA.PARTITIONS\`
+  FROM all_dev.INFORMATION_SCHEMA.PARTITIONS
 )
 
 SELECT

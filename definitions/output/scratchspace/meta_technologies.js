@@ -14,7 +14,6 @@ WITH source AS (
   FROM ${ctx.ref('all', 'pages')},
     UNNEST(technologies) AS tech
   WHERE date >= "${pastMonth}" ${constants.devRankFilter}
-    AND client = 'mobile'
 ),
 -- Technology in the previous month (August)
 tech_before AS (
