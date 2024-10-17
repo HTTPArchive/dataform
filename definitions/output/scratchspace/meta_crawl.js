@@ -2,10 +2,9 @@ publish('meta_crawl', {
   type: 'table',
   description: 'Used in dashboard: https://lookerstudio.google.com/u/7/reporting/1jh_ScPlCIbSYTf2r2Y6EftqmX9SQy4Gn/page/p_an38lbzywc/edit',
   schema: 'scratchspace',
-  tags: ['crawl_results_all', 'blink_feature_report', 'cwv_tech_report']
-}).dependencies([
-  'features'
-]).query(ctx => `
+  tags: ['crawl_results_all', 'blink_feature_report', 'cwv_tech_report'],
+  dependencies: ['features']
+}).query(ctx => `
 WITH metadata AS (
   SELECT * FROM pages.__TABLES__
   UNION ALL
