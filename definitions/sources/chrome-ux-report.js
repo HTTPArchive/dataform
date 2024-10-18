@@ -1,36 +1,34 @@
-const pastMonthYYYYMMDD = constants.fnPastMonth(constants.currentMonth).substring(0, 7).replace('-', '')
-const pastMonthYYYYMM = pastMonthYYYYMMDD.substring(0, 6)
+const pastMonth = constants.fnPastMonth(constants.currentMonth),
+  pastMonthYYYYMM = pastMonth.substring(0, 7).replace('-', '');
 
 declare({
   database: 'chrome-ux-report',
   schema: 'materialized',
-  name: 'country_summary',
-  dependencies: ['country_summary_not_empty']
+  name: 'country_summary'
 })
 
 assert('country_summary_not_empty').query(ctx => `
 SELECT
   'No data for the specified date' AS error_message
-FROM chrome-ux-report.materialized.INFORMATION_SCHEMA.PARTITIONS
-WHERE table_name = 'country_summary'
-  AND partition_id = ${pastMonthYYYYMM}
-  AND total_rows < 20000000
+FROM ${ctx.ref('chrome-ux-report', 'materialized', 'country_summary')}
+WHERE yyyymm = ${pastMonthYYYYMM}
+GROUP BY yyyymm
+HAVING COUNT(0) < 20000000
 `)
 
 declare({
   database: 'chrome-ux-report',
   schema: 'materialized',
   name: 'device_summary',
-  dependencies: ['device_summary_not_empty']
 })
 
 assert('device_summary_not_empty').query(ctx => `
 SELECT
   'No data for the specified date' AS error_message
-FROM chrome-ux-report.materialized.INFORMATION_SCHEMA.PARTITIONS
-WHERE table_name = 'device_summary'
-  AND partition_id = ${pastMonthYYYYMMDD}
-  AND total_rows < 20000000
+FROM ${ctx.ref('chrome-ux-report', 'materialized', 'device_summary')}
+WHERE date = '${pastMonth}'
+GROUP BY date
+HAVING COUNT(0) < 20000000
 `)
 
 declare({
