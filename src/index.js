@@ -6,21 +6,24 @@ const TRIGGERS = {
     query: `
 DECLARE previousMonth STRING DEFAULT FORMAT_DATE('%Y%m%d', DATE_SUB(DATE_TRUNC(CURRENT_DATE(), MONTH), INTERVAL 1 MONTH));
 
-SELECT LOGICAL_AND(condition)
-FROM (
+WITH crux AS (
   SELECT
-    total_rows > 20000000
-      AND TIMESTAMP_DIFF(CURRENT_TIMESTAMP(), last_modified_time, HOUR) < 7 AS condition
+    total_rows > 20000000 AS source_data_ready,
+    TIMESTAMP_DIFF(CURRENT_TIMESTAMP(), last_modified_time, HOUR) < 7 AS source_data_updated
   FROM chrome-ux-report.materialized.INFORMATION_SCHEMA.PARTITIONS
   WHERE table_name IN ('device_summary', 'country_summary')
     AND partition_id = previousMonth
-  UNION ALL
-  SELECT
-    NOT total_rows > 0 AS condition
+), report AS (
+  SELECT TOTAL_ROWS > 0 AS report_exists
   FROM httparchive.core_web_vitals.INFORMATION_SCHEMA.PARTITIONS
   WHERE table_name = 'technologies'
     AND partition_id = previousMonth
-);
+)
+
+SELECT
+  (source_data_ready AND NOT report_exists)
+    OR (source_data_updated AND source_data_ready) AS condition
+FROM crux, report;
     `,
     action: 'runDataformRepo',
     actionArgs: {
