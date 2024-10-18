@@ -1,5 +1,5 @@
-const pastMonth = constants.fnPastMonth(constants.currentMonth),
-  pastMonthYYYYMM = pastMonth.substring(0, 7).replace('-', '');
+const pastMonth = constants.fnPastMonth(constants.currentMonth)
+const pastMonthYYYYMM = pastMonth.substring(0, 7).replace('-', '')
 
 declare({
   database: 'chrome-ux-report',
@@ -19,7 +19,7 @@ HAVING COUNT(0) < 20000000
 declare({
   database: 'chrome-ux-report',
   schema: 'materialized',
-  name: 'device_summary',
+  name: 'device_summary'
 })
 
 assert('device_summary_not_empty').query(ctx => `
