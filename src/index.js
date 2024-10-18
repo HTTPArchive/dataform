@@ -1,26 +1,25 @@
 const functions = require('@google-cloud/functions-framework')
 
-const currentDate = new Date().toISOString().substring(0, 10)
 const TRIGGERS = {
   cwv_tech_report: {
     type: 'poller',
     query: `
+DECLARE previousMonth STRING DEFAULT FORMAT_DATE('%Y%m%d', DATE_SUB(DATE_TRUNC(CURRENT_DATE(), MONTH), INTERVAL 1 MONTH));
+
 SELECT LOGICAL_AND(condition)
 FROM (
-  SELECT TOTAL_ROWS > 0 AS condition
-  FROM \`chrome-ux-report.materialized.INFORMATION_SCHEMA.PARTITIONS\`
-  WHERE TABLE_NAME = 'device_summary'
-    AND PARTITION_ID = FORMAT_DATE('%Y%m%d', DATE_SUB(DATE_TRUNC(DATE '${currentDate}', MONTH), INTERVAL 1 MONTH))
+  SELECT
+    total_rows > 20000000
+      AND TIMESTAMP_DIFF(CURRENT_TIMESTAMP(), last_modified_time, HOUR) < 7 AS condition
+  FROM chrome-ux-report.materialized.INFORMATION_SCHEMA.PARTITIONS
+  WHERE table_name IN ('device_summary', 'country_summary')
+    AND partition_id = previousMonth
   UNION ALL
-  SELECT TOTAL_ROWS > 0 AS condition
-  FROM \`chrome-ux-report.materialized.INFORMATION_SCHEMA.PARTITIONS\`
-  WHERE TABLE_NAME = 'device_summary'
-    AND PARTITION_ID = FORMAT_DATE('%Y%m%d', DATE_SUB(DATE_TRUNC(DATE '${currentDate}', MONTH), INTERVAL 1 MONTH))
-  UNION ALL
-  SELECT NOT TOTAL_ROWS > 0 AS condition
-  FROM \`httparchive.core_web_vitals.INFORMATION_SCHEMA.PARTITIONS\`
-  WHERE TABLE_NAME = 'technologies'
-    AND PARTITION_ID = FORMAT_DATE('%Y%m%d', DATE_SUB(DATE_TRUNC(DATE '${currentDate}', MONTH), INTERVAL 1 MONTH))
+  SELECT
+    NOT total_rows > 0 AS condition
+  FROM httparchive.core_web_vitals.INFORMATION_SCHEMA.PARTITIONS
+  WHERE table_name = 'technologies'
+    AND partition_id = previousMonth
 );
     `,
     action: 'runDataformRepo',
