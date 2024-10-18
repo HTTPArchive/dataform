@@ -1,3 +1,4 @@
+// HTTP Archive crawl staging tables
 const stagingTables = ['pages', 'requests', 'parsed_css']
 for (const table of stagingTables) {
   declare({
@@ -6,6 +7,7 @@ for (const table of stagingTables) {
   })
 }
 
+// CrUX tables
 const cruxTables = ['country_summary', 'device_summary']
 const pastMonth = constants.fnPastMonth(constants.currentMonth).substring(0, 7).replace('-', '')
 for (const table of cruxTables) {
