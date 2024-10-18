@@ -5,24 +5,25 @@ const TRIGGERS = {
     type: 'poller',
     query: `
 DECLARE previousMonth STRING DEFAULT FORMAT_DATE('%Y%m%d', DATE_SUB(DATE_TRUNC(CURRENT_DATE(), MONTH), INTERVAL 1 MONTH));
+DECLARE previousMonth_YYYYMM STRING DEFAULT SUBSTR(previousMonth, 1, 6);
 
 WITH crux AS (
   SELECT
-    total_rows > 20000000 AS source_data_ready,
-    TIMESTAMP_DIFF(CURRENT_TIMESTAMP(), last_modified_time, HOUR) < 7 AS source_data_updated
+    LOGICAL_AND(total_rows > 20000000) AS min_rows_available,
+    LOGICAL_AND(TIMESTAMP_DIFF(CURRENT_TIMESTAMP(), last_modified_time, HOUR) < 7) AS recent_last_modified
   FROM chrome-ux-report.materialized.INFORMATION_SCHEMA.PARTITIONS
   WHERE table_name IN ('device_summary', 'country_summary')
-    AND partition_id = previousMonth
+    AND partition_id IN (previousMonth, previousMonth_YYYYMM)
 ), report AS (
   SELECT TOTAL_ROWS > 0 AS report_exists
   FROM httparchive.core_web_vitals.INFORMATION_SCHEMA.PARTITIONS
   WHERE table_name = 'technologies'
-    AND partition_id = previousMonth
+    AND partition_id IN (previousMonth, previousMonth_YYYYMM)
 )
 
 SELECT
-  (source_data_ready AND NOT report_exists)
-    OR (source_data_updated AND source_data_ready) AS condition
+  (min_rows_available AND NOT report_exists)
+    OR (min_rows_available AND recent_last_modified) AS condition
 FROM crux, report;
     `,
     action: 'runDataformRepo',
