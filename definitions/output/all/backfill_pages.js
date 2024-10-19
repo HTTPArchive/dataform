@@ -3,8 +3,8 @@ const clients = constants.clients
 
 let midMonth
 for (
-  let date = '2016-01-01'; // 2022-06-01
-  date >= '2016-01-01'; // 2016-01-01
+  let date = '2016-01-01';
+  date >= '2016-01-01';
   date = constants.fnPastMonth(date)
 ) {
   clients.forEach((client) => {
@@ -33,8 +33,9 @@ iterations.forEach((iteration, i) => {
   ]).dependencies([
     i === 0 ? '' : `backfill_pages ${iterations[i - 1].date} ${iterations[i - 1].client}`
   ]).queries(ctx => `
-DELETE FROM \`all_dev.pages_stable\`
-WHERE date = '${iteration.date}' AND client = '${iteration.client}';
+DELETE FROM all_dev.pages_stable
+WHERE date = '${iteration.date}'
+  AND client = '${iteration.client}';
 
 CREATE TEMPORARY FUNCTION GET_OTHER_CUSTOM_METRICS(
   jsonObject JSON,
@@ -52,7 +53,7 @@ try {
 }
 """;
 
-CREATE TEMP FUNCTION GET_FEATURES(payload STRING)
+CREATE TEMP FUNCTION GET_FEATURES(payload JSON)
 RETURNS ARRAY<STRUCT<feature STRING, id STRING, type STRING>> LANGUAGE js AS
 '''
   function getFeatureNames(featureMap, featureType) {
@@ -74,16 +75,16 @@ RETURNS ARRAY<STRUCT<feature STRING, id STRING, type STRING>> LANGUAGE js AS
     }
   }
 
-  var $ = JSON.parse(payload);
-  if (!$._blinkFeatureFirstUsed) return [];
+  let blinkFeatureFirstUsed = payload._blinkFeatureFirstUsed;
+  if (!blinkFeatureFirstUsed) return [];
 
   var idPattern = new RegExp('^Feature_(\\\\d+)$');
-  return getFeatureNames($._blinkFeatureFirstUsed.Features, 'default')
-    .concat(getFeatureNames($._blinkFeatureFirstUsed.CSSFeatures, 'css'))
-    .concat(getFeatureNames($._blinkFeatureFirstUsed.AnimatedCSSFeatures, 'animated-css'));
+  return getFeatureNames(blinkFeatureFirstUsed.Features, 'default')
+    .concat(getFeatureNames(blinkFeatureFirstUsed.CSSFeatures, 'css'))
+    .concat(getFeatureNames(blinkFeatureFirstUsed.AnimatedCSSFeatures, 'animated-css'));
 ''';
 
-INSERT INTO \`all_dev.pages_stable\`  --${ctx.resolve('all', 'pages')}
+INSERT INTO all_dev.pages_stable
 SELECT
   DATE('${iteration.date}') AS date,
   '${iteration.client}' AS client,
@@ -91,9 +92,140 @@ SELECT
   TRUE AS is_root_page,
   pages.url AS root_page,
   crux.rank AS rank,
-  JSON_VALUE(payload, "$.testID") AS wptid,
-  SAFE.PARSE_JSON(payload, wide_number_mode => 'round') AS payload,
-  NULL AS summary,
+  STRING(payload.testID) AS wptid,
+  JSON_REMOVE(
+    payload,
+    '$._metadata',
+    '$._detected',
+    '$._detected_apps',
+    '$._detected_technologies',
+    '$._detected_raw',
+    '$._custom',
+    '$._00_reset',
+    '$._a11y',
+    '$._ads',
+    '$._almanac',
+    '$._aurora',
+    '$._avg_dom_depth',
+    '$._cms',
+    '$._Colordepth',
+    '$._cookies',
+    '$._crawl_links',
+    '$._css-variables',
+    '$._css',
+    '$._doctype',
+    '$._document_height',
+    '$._document_width',
+    '$._Dpi',
+    '$._ecommerce',
+    '$._element_count',
+    '$._event-names',
+    '$._fugu-apis',
+    '$._generated-content',
+    '$._has_shadow_root',
+    '$._Images',
+    '$._img-loading-attr',
+    '$._initiators',
+    '$._inline_style_bytes',
+    '$._javascript',
+    '$._lib-detector-version',
+    '$._localstorage_size',
+    '$._markup',
+    '$._media',
+    '$._meta_viewport',
+    '$._num_iframes',
+    '$._num_scripts_async',
+    '$._num_scripts_sync',
+    '$._num_scripts',
+    '$._observers',
+    '$._origin-trials',
+    '$._parsed_css',
+    '$._performance',
+    '$._privacy-sandbox',
+    '$._privacy',
+    '$._pwa',
+    '$._quirks_mode',
+    '$._Resolution',
+    '$._responsive_images',
+    '$._robots_meta',
+    '$._robots_txt',
+    '$._sass',
+    '$._security',
+    '$._sessionstorage_size',
+    '$._structured-data',
+    '$._third-parties',
+    '$._usertiming',
+    '$._valid-head',
+    '$._well-known',
+    '$._wpt_bodies',
+    '$._blinkFeatureFirstUsed',
+    '$._CrUX'
+  ) AS payload,
+  TO_JSON( STRUCT(
+    SpeedIndex,
+    TTFB,
+    _connections,
+    bytesAudio,
+    bytesCSS,
+    bytesFlash,
+    bytesFont,
+    bytesGif,
+    bytesHtml,
+    bytesHtmlDoc,
+    bytesImg,
+    bytesJpg,
+    bytesJS,
+    bytesJson,
+    bytesOther,
+    bytesPng,
+    bytesSvg,
+    bytesText,
+    bytesTotal,
+    bytesVideo,
+    bytesWebp,
+    bytesXml,
+    cdn,
+    payload._CrUX,
+    fullyLoaded,
+    gzipSavings,
+    gzipTotal,
+    maxDomainReqs,
+    maxage0,
+    maxage1,
+    maxage30,
+    maxage365,
+    maxageMore,
+    maxageNull,
+    numCompressed,
+    numDomElements,
+    numDomains,
+    numErrors,
+    numGlibs,
+    numHttps,
+    numRedirects,
+    onContentLoaded,
+    onLoad,
+    renderStart,
+    reqAudio,
+    reqCSS,
+    reqFlash,
+    reqFont,
+    reqGif,
+    reqHtml,
+    reqImg,
+    reqJpg,
+    reqJS,
+    reqJson,
+    reqOther,
+    reqPng,
+    reqSvg,
+    reqText,
+    reqTotal,
+    reqVideo,
+    reqWebp,
+    reqXml,
+    visualComplete
+  )) AS summary,
   STRUCT<
     a11y JSON,
     cms JSON,
@@ -116,35 +248,44 @@ SELECT
     wpt_bodies JSON,
     other JSON
   >(
-    SAFE.PARSE_JSON(JSON_VALUE(SAFE.PARSE_JSON(payload, wide_number_mode => 'round'), "$._a11y"), wide_number_mode => 'round'),
-    SAFE.PARSE_JSON(JSON_VALUE(SAFE.PARSE_JSON(payload, wide_number_mode => 'round'), "$._cms"), wide_number_mode => 'round'),
-    SAFE.PARSE_JSON(JSON_VALUE(SAFE.PARSE_JSON(payload, wide_number_mode => 'round'), "$._cookies"), wide_number_mode => 'round'),
-    SAFE.PARSE_JSON(JSON_VALUE(SAFE.PARSE_JSON(payload, wide_number_mode => 'round'), "$._css-variables"), wide_number_mode => 'round'),
-    SAFE.PARSE_JSON(JSON_VALUE(SAFE.PARSE_JSON(payload, wide_number_mode => 'round'), "$._ecommerce"), wide_number_mode => 'round'),
-    SAFE.PARSE_JSON(JSON_VALUE(SAFE.PARSE_JSON(payload, wide_number_mode => 'round'), "$._element_count"), wide_number_mode => 'round'),
-    SAFE.PARSE_JSON(JSON_VALUE(SAFE.PARSE_JSON(payload, wide_number_mode => 'round'), "$._javascript"), wide_number_mode => 'round'),
-    SAFE.PARSE_JSON(JSON_VALUE(SAFE.PARSE_JSON(payload, wide_number_mode => 'round'), "$._markup"), wide_number_mode => 'round'),
-    SAFE.PARSE_JSON(JSON_VALUE(SAFE.PARSE_JSON(payload, wide_number_mode => 'round'), "$._media"), wide_number_mode => 'round'),
-    SAFE.PARSE_JSON(JSON_VALUE(SAFE.PARSE_JSON(payload, wide_number_mode => 'round'), "$._origin-trials"), wide_number_mode => 'round'),
-    SAFE.PARSE_JSON(JSON_VALUE(SAFE.PARSE_JSON(payload, wide_number_mode => 'round'), "$._performance"), wide_number_mode => 'round'),
-    SAFE.PARSE_JSON(JSON_VALUE(SAFE.PARSE_JSON(payload, wide_number_mode => 'round'), "$._privacy"), wide_number_mode => 'round'),
-    SAFE.PARSE_JSON(JSON_VALUE(SAFE.PARSE_JSON(payload, wide_number_mode => 'round'), "$._responsive_images"), wide_number_mode => 'round'),
-    SAFE.PARSE_JSON(JSON_VALUE(SAFE.PARSE_JSON(payload, wide_number_mode => 'round'), "$._robots_txt"), wide_number_mode => 'round'),
-    SAFE.PARSE_JSON(JSON_VALUE(SAFE.PARSE_JSON(payload, wide_number_mode => 'round'), "$._security"), wide_number_mode => 'round'),
-    SAFE.PARSE_JSON(JSON_VALUE(SAFE.PARSE_JSON(payload, wide_number_mode => 'round'), "$._structured-data"), wide_number_mode => 'round'),
-    SAFE.PARSE_JSON(JSON_VALUE(SAFE.PARSE_JSON(payload, wide_number_mode => 'round'), "$._third-parties"), wide_number_mode => 'round'),
-    SAFE.PARSE_JSON(JSON_VALUE(SAFE.PARSE_JSON(payload, wide_number_mode => 'round'), "$._well-known"), wide_number_mode => 'round'),
-    SAFE.PARSE_JSON(JSON_VALUE(SAFE.PARSE_JSON(payload, wide_number_mode => 'round'), "$._wpt_bodies"), wide_number_mode => 'round'),
+    payload._a11y,
+    payload._cms,
+    payload._cookies,
+    payload["_css-variables"],
+    payload._ecommerce,
+    payload._element_count,
+    payload._javascript,
+    payload._markup,
+    payload._media,
+    payload["_origin-trials"],
+    payload._performance,
+    payload._privacy,
+    payload._responsive_images,
+    payload._robots_txt,
+    payload._security,
+    payload["_structured-data"],
+    payload["_third-parties"],
+    payload["_well-known"],
+    payload._wpt_bodies,
     GET_OTHER_CUSTOM_METRICS(
-      SAFE.PARSE_JSON(payload, wide_number_mode => 'round'),
+      payload,
       ["_Colordepth", "_Dpi", "_Images", "_Resolution", "_almanac", "_avg_dom_depth", "_css", "_doctype", "_document_height", "_document_width", "_event-names", "_fugu-apis", "_has_shadow_root", "_img-loading-attr", "_initiators", "_inline_style_bytes", "_lib-detector-version", "_localstorage_size", "_meta_viewport", "_num_iframes", "_num_scripts", "_num_scripts_async", "_num_scripts_sync", "_pwa", "_quirks_mode", "_sass", "_sessionstorage_size", "_usertiming"]
     )
   ) AS custom_metrics,
   NULL AS lighthouse,
-  GET_FEATURES(payload) AS features,
-  NULL AS technologies,
-  JSON_QUERY(SAFE.PARSE_JSON(payload, wide_number_mode => 'round'), "$._metadata") AS metadata
-FROM pages.${constants.fnDateUnderscored(iteration.date)}_${iteration.client} AS pages ${constants.dev_TABLESAMPLE}
+  GET_FEATURES(pages.payload) AS features,
+  tech.technologies AS technologies,
+  pages.payload._metadata AS metadata
+FROM (
+  SELECT
+    * EXCEPT(payload),
+    SAFE.PARSE_JSON(payload, wide_number_mode => 'round') AS payload
+  FROM pages.${constants.fnDateUnderscored(iteration.date)}_${iteration.client} ${constants.devTABLESAMPLE}
+) AS pages
+
+LEFT JOIN summary_pages.${constants.fnDateUnderscored(iteration.date)}_${iteration.client} ${constants.devTABLESAMPLE} AS summary_pages
+ON pages.url = summary_pages.url
+
 LEFT JOIN (
   SELECT DISTINCT
     CONCAT(origin, '/') AS page,
@@ -152,6 +293,29 @@ LEFT JOIN (
   FROM ${ctx.resolve('chrome-ux-report', 'experimental', 'global')}
   WHERE yyyymm = ${constants.fnPastMonth(iteration.date).substring(0, 7).replace('-', '')}
 ) AS crux
-ON pages.url = crux.page;
+ON pages.url = crux.page
+
+LEFT JOIN (
+  SELECT
+    page,
+    ARRAY_AGG(technology) AS technologies
+  FROM(
+    SELECT
+      url AS page,
+      STRUCT<
+        technology STRING,
+        categories ARRAY<STRING>,
+        info ARRAY<STRING>
+      >(
+        app,
+        ARRAY_AGG(category),
+        ARRAY_AGG(info)
+      ) AS technology
+    FROM technologies.${constants.fnDateUnderscored(iteration.date)}_${iteration.client} ${constants.devTABLESAMPLE}
+    GROUP BY page, app
+  )
+  GROUP BY page
+) AS tech
+ON pages.url = tech.page;
   `)
 })
