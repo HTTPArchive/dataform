@@ -27,7 +27,6 @@ for (
 
 function summaryObject (date) {
   let list = ''
-
   if (date >= '2010-11-15') {
     list += `
       fullyLoaded,
@@ -80,12 +79,10 @@ function summaryObject (date) {
       TTFB,
       visualComplete,`
   }
-
   if (date >= '2014-05-15') {
     list += `
       _connections,`
   }
-
   if (date >= '2015-05-01') {
     list += `
       bytesAudio,
@@ -101,13 +98,11 @@ function summaryObject (date) {
       reqWebp,
       reqXml,`
   }
-
   return list
 }
 
 function customMetrics (date) {
   let list = ''
-
   if (date >= '2014-06-01' && date !== '2014-05-15') {
     list += `
       avg_dom_depth,
@@ -120,13 +115,11 @@ function customMetrics (date) {
       num_scripts,
       sessionstorage_size,`
   }
-
   if (date >= '2015-11-01') {
     list += `
       num_scripts_async,
       num_scripts_sync,`
   }
-
   return list
 }
 
@@ -206,6 +199,6 @@ SELECT
   NULL AS features,
   NULL AS technologies,
   NULL AS metadata
-FROM summary_pages.${constants.fnDateUnderscored(iteration.date)}_${iteration.client} AS pages ${constants.dev_TABLESAMPLE};
+FROM summary_pages.${constants.fnDateUnderscored(iteration.date)}_${iteration.client} AS pages ${constants.devTABLESAMPLE};
   `)
 })

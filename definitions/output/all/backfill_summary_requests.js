@@ -231,9 +231,9 @@ FROM (
   SELECT
     *,
     get_ext_from_url(requests.url) AS ext_from_url
-  FROM summary_requests.${constants.fnDateUnderscored(iteration.date)}_${iteration.client} ${constants.dev_TABLESAMPLE}
+  FROM summary_requests.${constants.fnDateUnderscored(iteration.date)}_${iteration.client} ${constants.devTABLESAMPLE}
 ) AS requests
-LEFT JOIN summary_pages.${constants.fnDateUnderscored(iteration.date)}_${iteration.client} AS pages ${constants.dev_TABLESAMPLE}
+LEFT JOIN summary_pages.${constants.fnDateUnderscored(iteration.date)}_${iteration.client} AS pages ${constants.devTABLESAMPLE}
 ON requests.pageid = pages.pageid;
   `)
 })

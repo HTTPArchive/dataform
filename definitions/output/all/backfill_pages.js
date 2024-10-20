@@ -283,7 +283,7 @@ FROM (
   FROM pages.${constants.fnDateUnderscored(iteration.date)}_${iteration.client} ${constants.devTABLESAMPLE}
 ) AS pages
 
-LEFT JOIN summary_pages.${constants.fnDateUnderscored(iteration.date)}_${iteration.client} ${constants.devTABLESAMPLE} AS summary_pages
+LEFT JOIN summary_pages.${constants.fnDateUnderscored(iteration.date)}_${iteration.client} AS summary_pages ${constants.devTABLESAMPLE}
 ON pages.url = summary_pages.url
 
 LEFT JOIN (
