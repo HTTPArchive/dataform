@@ -35,8 +35,9 @@ iterations.forEach((iteration, i) => {
   ]).dependencies([
     i === 0 ? '' : `backfill_requests ${iterations[i - 1].date} ${iterations[i - 1].client}`
   ]).queries(ctx => `
-DELETE FROM ${ctx.resolve('all', 'requests')}
-WHERE date = '${iteration.date}' AND client = '${iteration.client}';
+DELETE FROM all_dev.requests_stable
+WHERE date = '${iteration.date}'
+  AND client = '${iteration.client}';
 
 CREATE TEMP FUNCTION get_ext_from_url(url STRING)
 RETURNS STRING
@@ -124,12 +125,12 @@ AS """
   }
 """;
 
-CREATE TEMP FUNCTION parse_headers(headers STRING)
+CREATE TEMP FUNCTION parse_headers(headers JSON)
 RETURNS ARRAY<STRUCT<name STRING, value STRING>>
 LANGUAGE js
 AS """
   try {
-    return JSON.parse(headers).map(header => {
+    return headers.map(header => {
       return { name: header.name, value: header.value };
     });
   } catch (e) {
@@ -137,7 +138,7 @@ AS """
   }
 """;
 
-INSERT INTO \`all_dev.requests_stable\` --${ctx.resolve('all', 'requests')}
+INSERT INTO all_dev.requests_stable
 SELECT
   DATE('${iteration.date}') AS date,
   '${iteration.client}' AS client,
@@ -147,39 +148,51 @@ SELECT
   crux.rank AS rank,
   requests.url AS url,
   IF(
-    SAFE_CAST(JSON_EXTRACT_SCALAR(payload, '$._request_type') AS STRING) = "Document" AND
-      MIN(SAFE_CAST(JSON_EXTRACT_SCALAR(payload, '$._index') AS INT64)) OVER (PARTITION BY requests.page) = SAFE_CAST(JSON_EXTRACT_SCALAR(payload, '$._index') AS INT64),
+    SAFE_CAST(payload._request_type AS STRING) = "Document" AND
+      MIN(SAFE_CAST(payload._index AS INT64)) OVER (PARTITION BY requests.page) = SAFE_CAST(payload._index AS INT64),
     TRUE,
     FALSE
   ) AS is_main_document,
-  get_type(JSON_VALUE(requests.payload, '$.response.content.mimeType'), get_ext_from_url(requests.url)) AS type,
-  SAFE_CAST(JSON_EXTRACT_SCALAR(payload, '$._index') AS INT64) AS index,
-  SAFE.PARSE_JSON(requests.payload, wide_number_mode => 'round') AS payload,
+  get_type(SAFE_CAST(payload.response.content.mimeType AS STRING), ext_from_url) AS type,
+  SAFE_CAST(payload._index AS INT64) AS index,
+  JSON_REMOVE(
+    payload,
+    '$._headers',
+    '$.request.headers',
+    '$.response.headers'
+  ) AS payload,
   TO_JSON( STRUCT(
-    SAFE_CAST(JSON_VALUE(requests.payload, '$.time') AS INTEGER) AS time,
-    JSON_VALUE(requests.payload, '$._method') AS method,
+    payload.time,
+    payload._method AS method,
     NULL AS redirectUrl,
-    JSON_VALUE(requests.payload, '$.request.httpVersion') AS reqHttpVersion,
-    JSON_VALUE(requests.payload, '$.request.headersSize') AS reqHeadersSize,
-    JSON_VALUE(requests.payload, '$.request.bodySize') AS reqBodySize,
+    IFNULL(SAFE_CAST(payload._protocol AS STRING), SAFE_CAST(payload.request.httpVersion AS STRING) AS reqHttpVersion,
+    payload.request.headersSize AS reqHeadersSize,
+    payload.request.bodySize AS reqBodySize,
     NULL AS reqCookieLen,
-    JSON_VALUE(requests.payload, '$.response.status') AS status,
-    JSON_VALUE(requests.payload, '$.response.httpVersion') AS respHttpVersion,
-    JSON_VALUE(requests.payload, '$.response.headersSize') AS respHeadersSize,
-    JSON_VALUE(requests.payload, '$.response.bodySize') AS respBodySize,
-    JSON_VALUE(requests.payload, '$.response.content.size') AS respSize,
+    payload.response.status,
+    payload.response.httpVersion AS respHttpVersion,
+    payload.response.headersSize AS respHeadersSize,
+    payload.response.bodySize AS respBodySize,
+    payload.response.content.size AS respSize,
     NULL AS respCookieLen,
     NULL AS expAge,
-    JSON_VALUE(requests.payload, '$.response.content.mimeType') AS mimeType,
-    JSON_VALUE(requests.payload, '$._cdn_provider') AS _cdn_provide,
-    JSON_VALUE(requests.payload, '$._gzip_save') AS _gzip_save,
-    NULL AS ext,
+    payload.response.content.mimeType,
+    payload._cdn_provider,
+    payload._gzip_save,
+    ext_from_url AS ext,
     NULL AS format
   )) AS summary,
-  parse_headers(JSON_QUERY(payload, '$.request.headers')) AS request_headers,
-  parse_headers(JSON_QUERY(payload, '$.response.headers')) AS response_headers,
+  parse_headers(payload.request.headers) AS request_headers,
+  parse_headers(payload.response.headers) AS response_headers,
   response_bodies.body AS response_body
-FROM requests.${constants.fnDateUnderscored(iteration.date)}_${iteration.client} AS requests ${constants.dev_TABLESAMPLE}
+FROM (
+  SELECT
+    * EXCEPT (payload),
+    SAFE.PARSE_JSON(payload, wide_number_mode => 'round') AS payload,
+    get_ext_from_url(requests.url) AS ext_from_url
+  FROM requests.${constants.fnDateUnderscored(iteration.date)}_${iteration.client} ${constants.dev_TABLESAMPLE}
+) AS requests
+
 LEFT JOIN (
   SELECT DISTINCT
     CONCAT(origin, '/') AS page,
@@ -188,7 +201,9 @@ LEFT JOIN (
   WHERE yyyymm = ${constants.fnPastMonth(iteration.date).substring(0, 7).replace('-', '')}
 ) AS crux
 ON requests.page = crux.page
+
 LEFT JOIN response_bodies.${constants.fnDateUnderscored(iteration.date)}_${iteration.client} AS response_bodies ${constants.dev_TABLESAMPLE}
-ON requests.page = response_bodies.page AND requests.url = response_bodies.url;
+ON requests.page = response_bodies.page
+  AND requests.url = response_bodies.url;
   `)
 })
