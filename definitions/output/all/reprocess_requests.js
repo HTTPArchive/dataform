@@ -53,7 +53,7 @@ iterations.forEach((iteration, i) => {
   operate(`all_requests_stable ${iteration.month} ${iteration.client} ${iteration.isRootPage}`).tags(
     ['all_requests_stable']
   ).dependencies([
-    i === 0 ? 'all_requests_stable_pre' : `all_requests_stable3 ${iterations[i - 1].month} ${iterations[i - 1].client} ${iterations[i - 1].isRootPage}`
+    i === 0 ? 'all_requests_stable_pre' : `all_requests_stable ${iterations[i - 1].month} ${iterations[i - 1].client} ${iterations[i - 1].isRootPage}`
   ]).queries(ctx => `
 DELETE FROM \`all_dev.requests_stable\`
 WHERE date = '${iteration.month}'
