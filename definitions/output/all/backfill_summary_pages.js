@@ -77,14 +77,14 @@ function summaryObject (date) {
       reqTotal,
       SpeedIndex,
       TTFB,
-      visualComplete,`
+      visualComplete`
   }
   if (date >= '2014-05-15') {
-    list += `
-      _connections,`
+    list += `,
+      _connections`
   }
   if (date >= '2015-05-01') {
-    list += `
+    list += `,
       bytesAudio,
       bytesSvg,
       bytesText,
@@ -96,7 +96,7 @@ function summaryObject (date) {
       reqText,
       reqVideo,
       reqWebp,
-      reqXml,`
+      reqXml`
   }
   return list
 }
@@ -116,9 +116,9 @@ function customMetrics (date) {
       sessionstorage_size,`
   }
   if (date >= '2015-11-01') {
-    list += `
+    list += `,
       num_scripts_async,
-      num_scripts_sync,`
+      num_scripts_sync`
   }
   return list
 }

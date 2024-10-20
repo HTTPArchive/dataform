@@ -42,19 +42,19 @@ function summaryObject (date) {
       respHttpVersion,
       respSize,
       status,
-      time,`
+      time`
   }
   if (date >= '2014-05-15') {
-    list += `
-      _cdn_provider,`
+    list += `,
+      _cdn_provider`
   }
   if (date >= '2014-05-01') {
-    list += `
-      _gzip_save,`
+    list += `,
+      _gzip_save`
   }
   if (date >= '2015-05-01') {
-    list += `
-      format,`
+    list += `,
+      format`
   }
   return list
 }
