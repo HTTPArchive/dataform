@@ -3,8 +3,8 @@ const clients = constants.clients
 
 let midMonth
 for (
-  let date = '2016-01-01'; // 2022-06-01
-  date >= '2016-01-01'; // 2016-01-01
+  let date = '2016-01-01';
+  date >= '2016-01-01';
   date = constants.fnPastMonth(date)
 ) {
   clients.forEach((client) => {
@@ -148,13 +148,13 @@ SELECT
   crux.rank AS rank,
   requests.url AS url,
   IF(
-    SAFE_CAST(payload._request_type AS STRING) = "Document" AND
-      MIN(SAFE_CAST(payload._index AS INT64)) OVER (PARTITION BY requests.page) = SAFE_CAST(payload._index AS INT64),
+    STRING(payload._request_type) = "Document" AND
+      MIN(INT64(payload._index)) OVER (PARTITION BY requests.page) = INT64(payload._index),
     TRUE,
     FALSE
   ) AS is_main_document,
-  get_type(SAFE_CAST(payload.response.content.mimeType AS STRING), ext_from_url) AS type,
-  SAFE_CAST(payload._index AS INT64) AS index,
+  get_type(STRING(payload.response.content.mimeType), ext_from_url) AS type,
+  INT64(payload._index) AS index,
   JSON_REMOVE(
     payload,
     '$._headers',
@@ -165,7 +165,7 @@ SELECT
     payload.time,
     payload._method AS method,
     NULL AS redirectUrl,
-    IFNULL(SAFE_CAST(payload._protocol AS STRING), SAFE_CAST(payload.request.httpVersion AS STRING) AS reqHttpVersion,
+    IFNULL(STRING(payload._protocol), STRING(payload.request.httpVersion)) AS reqHttpVersion,
     payload.request.headersSize AS reqHeadersSize,
     payload.request.bodySize AS reqBodySize,
     NULL AS reqCookieLen,
@@ -189,8 +189,8 @@ FROM (
   SELECT
     * EXCEPT (payload),
     SAFE.PARSE_JSON(payload, wide_number_mode => 'round') AS payload,
-    get_ext_from_url(requests.url) AS ext_from_url
-  FROM requests.${constants.fnDateUnderscored(iteration.date)}_${iteration.client} ${constants.dev_TABLESAMPLE}
+    get_ext_from_url(url) AS ext_from_url
+  FROM requests.${constants.fnDateUnderscored(iteration.date)}_${iteration.client} ${constants.devTABLESAMPLE}
 ) AS requests
 
 LEFT JOIN (
@@ -202,7 +202,7 @@ LEFT JOIN (
 ) AS crux
 ON requests.page = crux.page
 
-LEFT JOIN response_bodies.${constants.fnDateUnderscored(iteration.date)}_${iteration.client} AS response_bodies ${constants.dev_TABLESAMPLE}
+LEFT JOIN response_bodies.${constants.fnDateUnderscored(iteration.date)}_${iteration.client} AS response_bodies ${constants.devTABLESAMPLE}
 ON requests.page = response_bodies.page
   AND requests.url = response_bodies.url;
   `)
