@@ -92,7 +92,7 @@ SELECT
   TRUE AS is_root_page,
   pages.url AS root_page,
   crux.rank AS rank,
-  STRING(payload.testID) AS wptid,
+  summary_pages.wptid,
   JSON_REMOVE(
     payload,
     '$._metadata',
