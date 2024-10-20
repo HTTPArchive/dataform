@@ -25,14 +25,41 @@ for (
   })
 }
 
-let addDimensions
-iterations.forEach((iteration, i) => {
-  if (iteration.date > '2014-06-01') {
-    addDimensions = true
-  } else {
-    addDimensions = false
+function summaryObject (date) {
+  let list = ''
+  if (date >= '2010-11-15') {
+    list += `
+      expAge,
+      method,
+      mimeType,
+      redirectUrl,
+      reqBodySize,
+      reqCookieLen,
+      reqHeadersSize,
+      respBodySize,
+      respCookieLen,
+      respHeadersSize,
+      respHttpVersion,
+      respSize,
+      status,
+      time,`
   }
+  if (date >= '2014-05-15') {
+    list += `
+      _cdn_provider,`
+  }
+  if (date >= '2014-05-01') {
+    list += `
+      _gzip_save,`
+  }
+  if (date >= '2015-05-01') {
+    list += `
+      format,`
+  }
+  return list
+}
 
+iterations.forEach((iteration, i) => {
   operate(`backfill_summary_requests ${iteration.date} ${iteration.client}`).tags([
     'requests_backfill'
   ]).dependencies([
@@ -132,152 +159,81 @@ RETURNS ARRAY<STRUCT<name STRING, value STRING>>
 LANGUAGE js
 AS """
   try {
-    return JSON.parse(headers).map(header => {
-      return { name: header.name, value: header.value };
+    return headers.split(', ').map(header => {
+      const [name, value] = header.split(' = ');
+      return { name: name.trim(), value: value.trim() };
     });
   } catch (e) {
     return [];
   }
 """;
 
-INSERT INTO \`all_dev.requests_stable\` --${ctx.resolve('all', 'requests')}
+INSERT INTO all_dev.requests_stable
 SELECT
   DATE('${iteration.date}') AS date,
   '${iteration.client}' AS client,
   pages.url AS page,
   TRUE AS is_root_page,
   pages.url AS root_page,
-  crux.rank AS rank,
+  pages.rank AS rank,
   requests.url AS url,
   requests.firstHTML AS is_main_document,
-  get_type(requests.mimeType, get_ext_from_url(requests.url)) AS type,
+  get_type(requests.mimeType, requests.ext_from_url) AS type,
   IF(requests.firstReq, 1, NULL) AS index,
+  NULL AS payload,
   TO_JSON( STRUCT(
-    requests.requestid,
-    requests.pageid,
-    requests.startedDateTime,
-    requests.time,
-    requests.method,
-    requests.url,
-    requests.urlShort,
-    requests.redirectUrl,
-    requests.firstReq,
-    requests.firstHtml,
-    requests.reqHttpVersion,
-    requests.reqHeadersSize,
-    requests.reqBodySize,
-    requests.reqCookieLen,
-    requests.reqOtherHeaders,
-    requests.status,
-    requests.respHttpVersion,
-    requests.respHeadersSize,
-    requests.respBodySize,
-    requests.respSize,
-    requests.respCookieLen,
-    requests.expAge,
-    requests.mimeType,
-    requests.respOtherHeaders,
-    requests.req_accept,
-    requests.req_accept_charset,
-    requests.req_accept_encoding,
-    requests.req_accept_language,
-    requests.req_connection,
-    requests.req_host,
-    requests.req_if_modified_since,
-    requests.req_if_none_match,
-    requests.req_referer,
-    requests.req_user_agent,
-    requests.resp_accept_ranges,
-    requests.resp_age,
-    requests.resp_cache_control,
-    requests.resp_connection,
-    requests.resp_content_encoding,
-    requests.resp_content_language,
-    requests.resp_content_length,
-    requests.resp_content_location,
-    requests.resp_content_type,
-    requests.resp_date,
-    requests.resp_etag,
-    requests.resp_expires,
-    requests.resp_keep_alive,
-    requests.resp_last_modified,
-    requests.resp_location,
-    requests.resp_pragma,
-    requests.resp_server,
-    requests.resp_transfer_encoding,
-    requests.resp_vary,
-    requests.resp_via,
-    requests.resp_x_powered_by,
-    requests._cdn_provider,
-    requests._gzip_save,
-    requests.crawlid
-  )) AS payload,
-  TO_JSON( STRUCT(
-    requests.time AS time,
-    requests.method AS method,
-    requests.redirectUrl AS redirectUrl,
-    requests.reqHttpVersion AS reqHttpVersion,
-    requests.reqHeadersSize AS reqHeadersSize,
-    requests.reqBodySize AS reqBodySize,
-    requests.reqCookieLen AS reqCookieLen,
-    requests.reqOtherHeaders AS reqOtherHeaders,
-    requests.status AS status,
-    requests.respHttpVersion AS respHttpVersion,
-    requests.respHeadersSize AS respHeadersSize,
-    requests.respBodySize AS respBodySize,
-    requests.respSize AS respSize,
-    requests.respCookieLen AS respCookieLen,
-    requests.respOtherHeaders AS respOtherHeaders,
-    requests.expAge AS expAge,
-    requests.mimeType AS mimeType
-    ${addDimensions ? ',requests._cdn_provider AS _cdn_provider,requests._gzip_save AS _gzip_save' : ''}
+    ext_from_url AS ext,
+    ${summaryObject(iteration.date)}
   )) AS summary,
-  ARRAY<STRUCT<name string, value string>>[
-    ('Accept', requests.req_accept),
-    ("Accept-Charset", requests.req_accept_charset),
-    ("Accept-Encoding", requests.req_accept_encoding),
-    ("Accept-Language", requests.req_accept_language),
-    ("Connection", requests.req_connection),
-    ("Host", requests.req_host),
-    ("If-Modified-Since", requests.req_if_modified_since),
-    ("If-None-Match", requests.req_if_none_match),
-    ("Referer", requests.req_referer),
-    ("User-Agent", requests.req_user_agent)
-  ] AS request_headers,
-  ARRAY<STRUCT<name string, value string>>[
-    ("Accept-Ranges", requests.resp_accept_ranges),
-    ("Age", requests.resp_age),
-    ("Cache-Control", requests.resp_cache_control),
-    ("Connection", requests.resp_connection),
-    ("Content-Encoding", requests.resp_content_encoding),
-    ("Content-Length", requests.resp_content_language),
-    ("Content-Length", requests.resp_content_length),
-    ("Content-Location", requests.resp_content_location),
-    ("Content-Type", requests.resp_content_type),
-    ("Date", requests.resp_date),
-    ("ETag", requests.resp_etag),
-    ("Expires", requests.resp_expires),
-    ("Keep-Alive", requests.resp_keep_alive),
-    ("Last-Modified", requests.resp_last_modified),
-    ("Location", requests.resp_location),
-    ("Pragma", requests.resp_pragma),
-    ("Server", requests.resp_server),
-    ("Transfer-Encoding", requests.resp_transfer_encoding),
-    ("Vary", requests.resp_vary),
-    ("Via", requests.resp_via),
-    ("X-Powered-By", requests.resp_x_powered_by)
-  ] AS response_headers,
+  ARRAY_CONCAT(
+    ARRAY<STRUCT<name string, value string>>[
+      ('Accept', requests.req_accept),
+      ("Accept-Charset", requests.req_accept_charset),
+      ("Accept-Encoding", requests.req_accept_encoding),
+      ("Accept-Language", requests.req_accept_language),
+      ("Connection", requests.req_connection),
+      ("Host", requests.req_host),
+      ("If-Modified-Since", requests.req_if_modified_since),
+      ("If-None-Match", requests.req_if_none_match),
+      ("Referer", requests.req_referer),
+      ("User-Agent", requests.req_user_agent)
+    ],
+    parse_headers(requests.reqOtherHeaders)
+  ) AS request_headers,
+  ARRAY_CONCAT(
+    ARRAY<STRUCT<name string, value string>>[
+      ("Accept-Ranges", requests.resp_accept_ranges),
+      ("Age", requests.resp_age),
+      ("Cache-Control", requests.resp_cache_control),
+      ("Connection", requests.resp_connection),
+      ("Content-Encoding", requests.resp_content_encoding),
+      ("Content-Language", requests.resp_content_language),
+      ("Content-Length", requests.resp_content_length),
+      ("Content-Location", requests.resp_content_location),
+      ("Content-Type", requests.resp_content_type),
+      ("Date", requests.resp_date),
+      ("ETag", requests.resp_etag),
+      ("Expires", requests.resp_expires),
+      ("Keep-Alive", requests.resp_keep_alive),
+      ("Last-Modified", requests.resp_last_modified),
+      ("Location", requests.resp_location),
+      ("Pragma", requests.resp_pragma),
+      ("Server", requests.resp_server),
+      ("Transfer-Encoding", requests.resp_transfer_encoding),
+      ("Vary", requests.resp_vary),
+      ("Via", requests.resp_via),
+      ("X-Powered-By", requests.resp_x_powered_by)
+    ],
+    parse_headers(requests.respOtherHeaders)
+  ) AS response_headers,
   NULL AS response_body
-FROM summary_requests.${constants.fnDateUnderscored(iteration.date)}_${iteration.client} AS requests ${constants.dev_TABLESAMPLE}
+FROM (
+  SELECT
+    *,
+    get_ext_from_url(requests.url) AS ext_from_url
+  FROM summary_requests.${constants.fnDateUnderscored(iteration.date)}_${iteration.client} ${constants.dev_TABLESAMPLE}
+) AS requests
 LEFT JOIN summary_pages.${constants.fnDateUnderscored(iteration.date)}_${iteration.client} AS pages ${constants.dev_TABLESAMPLE}
-ON requests.pageid = pages.pageid
-LEFT JOIN (
-  SELECT DISTINCT
-    CONCAT(origin, '/') AS page,
-    experimental.popularity.rank AS rank
-  FROM ${ctx.resolve('chrome-ux-report', 'experimental', 'global')}
-  WHERE yyyymm = ${constants.fnPastMonth(iteration.date).substring(0, 7).replace('-', '')}
-) AS crux
-ON pages.url = crux.page;
+ON requests.pageid = pages.pageid;
   `)
 })
