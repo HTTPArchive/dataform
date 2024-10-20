@@ -113,7 +113,7 @@ function customMetrics (date) {
       meta_viewport,
       num_iframes,
       num_scripts,
-      sessionstorage_size,`
+      sessionstorage_size`
   }
   if (date >= '2015-11-01') {
     list += `,
