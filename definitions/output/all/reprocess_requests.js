@@ -3,8 +3,6 @@ operate('all_requests_stable_pre').tags(
 ).queries(`
 CREATE SCHEMA IF NOT EXISTS all_dev;
 
--- DROP TABLE IF EXISTS \`all_dev.requests_stable\`;
-
 CREATE TABLE IF NOT EXISTS \`all_dev.requests_stable\`
 (
   date DATE NOT NULL OPTIONS(description='YYYY-MM-DD format of the HTTP Archive monthly crawl'),
@@ -37,36 +35,30 @@ OPTIONS(
 `)
 
 const iterations = []
-const types = ['= "script"', '= "image"', 'NOT IN ("script", "image")']
 
-// From 2022-07-01 till today
 for (
-  let month = constants.currentMonth; month >= '2024-09-01'; month = constants.fnPastMonth(month)) {
+  let month = '2022-03-01'; month >= '2022-03-01'; month = constants.fnPastMonth(month)) {
   constants.clients.forEach((client) => {
     constants.booleans.forEach((isRootPage) => {
-      types.forEach((type) => {
-        iterations.push({
-          month,
-          client,
-          isRootPage,
-          type
-        })
+      iterations.push({
+        month,
+        client,
+        isRootPage
       })
     })
   })
 }
 
 iterations.forEach((iteration, i) => {
-  operate(`all_requests_stable ${iteration.month} ${iteration.client} ${iteration.isRootPage} ${i}`).tags(
+  operate(`all_requests_stable ${iteration.month} ${iteration.client} ${iteration.isRootPage}`).tags(
     ['all_requests_stable']
   ).dependencies([
-    i === 0 ? 'all_requests_stable_pre' : `all_requests_stable ${iterations[i - 1].month} ${iterations[i - 1].client} ${iterations[i - 1].isRootPage} ${i - 1}`
+    i === 0 ? 'all_requests_stable_pre' : `all_requests_stable3 ${iterations[i - 1].month} ${iterations[i - 1].client} ${iterations[i - 1].isRootPage}`
   ]).queries(ctx => `
 DELETE FROM \`all_dev.requests_stable\`
 WHERE date = '${iteration.month}'
   AND client = '${iteration.client}'
-  AND is_root_page = ${iteration.isRootPage}
-  AND type ${iteration.type};
+  AND is_root_page = ${iteration.isRootPage};
 
 CREATE TEMP FUNCTION PRUNE_HEADERS(
   jsonObject JSON
@@ -86,25 +78,25 @@ try {
 
 INSERT INTO \`all_dev.requests_stable\`
 SELECT
-  requests.date,
-  requests.client,
+  date,
+  client,
   requests.page,
-  requests.is_root_page,
-  requests.root_page,
+  is_root_page,
+  root_page,
   crux.rank,
-  requests.url,
-  requests.is_main_document,
-  requests.type,
-  requests.index,
+  url,
+  is_main_document,
+  type,
+  index,
   JSON_REMOVE(
-    SAFE.PARSE_JSON(payload, wide_number_mode => 'round'),
+    payload,
     '$._headers',
     '$.request.headers',
     '$.response.headers'
   ) AS payload,
   PRUNE_HEADERS(
     JSON_REMOVE(
-      SAFE.PARSE_JSON(requests.summary, wide_number_mode => 'round'),
+      summary,
       '$.crawlid',
       '$.firstHtml',
       '$.firstReq',
@@ -118,16 +110,18 @@ SELECT
       '$.urlShort'
     )
   ) as summary,
-  requests.request_headers,
-  requests.response_headers,
-  requests.response_body
+  request_headers,
+  response_headers,
+  response_body
 FROM (
-  SELECT *
+  SELECT
+    * EXCEPT (payload, summary),
+    SAFE.PARSE_JSON(payload, wide_number_mode => 'round') AS payload,
+    SAFE.PARSE_JSON(summary, wide_number_mode => 'round') AS summary
   FROM \`all.requests\` ${constants.devTABLESAMPLE}
   WHERE date = '${iteration.month}'
     AND client = '${iteration.client}'
     AND is_root_page = ${iteration.isRootPage}
-    AND type ${iteration.type}
 ) AS requests
 LEFT JOIN (
   SELECT DISTINCT
