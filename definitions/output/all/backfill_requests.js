@@ -184,7 +184,7 @@ SELECT
   )) AS summary,
   parse_headers(payload.request.headers) AS request_headers,
   parse_headers(payload.response.headers) AS response_headers,
-  response_bodies.body AS response_body
+  IF(requests.type = 'image', NULL, response_bodies.body) AS response_body
 FROM (
   SELECT
     * EXCEPT (payload),
