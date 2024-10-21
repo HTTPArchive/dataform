@@ -72,7 +72,7 @@ try {
   }
   return jsonObject;
 } catch (e) {
-  return null;
+  return jsonObject;
 }
 ''';
 
