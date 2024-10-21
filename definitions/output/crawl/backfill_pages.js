@@ -37,23 +37,29 @@ DELETE FROM crawl.pages
 WHERE date = '${iteration.date}'
   AND client = '${iteration.client}';
 
-CREATE TEMPORARY FUNCTION GET_OTHER_CUSTOM_METRICS(
-  jsonObject JSON,
+CREATE TEMPORARY FUNCTION getOtherCustomMetrics(
+  payload JSON,
   keys ARRAY<STRING>
 ) RETURNS JSON
 LANGUAGE js AS """
 try {
-  let other_metrics = {};
-  keys.forEach(function(key) {
-    other_metrics[key.substr(1)] = JSON.parse(jsonObject[key]);
+  let otherMetrics = {};
+  let value = null;
+  keys.forEach(function (key) {
+    try {
+      value = JSON.parse(payload[key])
+    } catch (e) {
+      value = payload[key]
+    }
+    otherMetrics[key.substr(1)] = value
   });
-  return other_metrics;
+  return otherMetrics;
 } catch (e) {
   return null;
 }
 """;
 
-CREATE TEMP FUNCTION getFeatures(payload JSON)
+CREATE TEMP FUNCTION getFeatures(blinkFeatureFirstUsed JSON)
 RETURNS ARRAY<STRUCT<feature STRING, id STRING, type STRING>>
 LANGUAGE js AS
 '''
@@ -76,7 +82,6 @@ LANGUAGE js AS
     }
   }
 
-  let blinkFeatureFirstUsed = payload._blinkFeatureFirstUsed;
   if (!blinkFeatureFirstUsed) return [];
 
   var idPattern = new RegExp('^Feature_(\\\\d+)$');
@@ -92,7 +97,14 @@ SELECT
   pages.url AS page,
   TRUE AS is_root_page,
   pages.url AS root_page,
-  crux.rank AS rank,
+  COALESCE(
+    summary_pages.rank,
+    CASE
+      WHEN summary_pages.rank <= 1000 THEN 1000
+      WHEN summary_pages.rank <= 5000 THEN 5000
+      ELSE NULL
+    END
+  ) AS rank,
   summary_pages.wptid,
   JSON_REMOVE(
     payload,
@@ -249,39 +261,39 @@ SELECT
     wpt_bodies JSON,
     other JSON
   >(
-    payload._a11y,
-    payload._cms,
-    payload._cookies,
+    SAFE.PARSE_JSON(JSON_VALUE(payload, "$._a11y"), wide_number_mode => 'round'),
+    SAFE.PARSE_JSON(JSON_VALUE(payload, "$._cms"), wide_number_mode => 'round'),
+    SAFE.PARSE_JSON(JSON_VALUE(payload, "$._cookies"), wide_number_mode => 'round'),
     payload["_css-variables"],
-    payload._ecommerce,
-    payload._element_count,
-    payload._javascript,
-    payload._markup,
-    payload._media,
+    SAFE.PARSE_JSON(JSON_VALUE(payload, "$._ecommerce"), wide_number_mode => 'round'),
+    SAFE.PARSE_JSON(JSON_VALUE(payload, "$._element_count"), wide_number_mode => 'round'),
+    SAFE.PARSE_JSON(JSON_VALUE(payload, "$._javascript"), wide_number_mode => 'round'),
+    SAFE.PARSE_JSON(JSON_VALUE(payload, "$._markup"), wide_number_mode => 'round'),
+    SAFE.PARSE_JSON(JSON_VALUE(payload, "$._media"), wide_number_mode => 'round'),
     payload["_origin-trials"],
     payload._performance,
-    payload._privacy,
-    payload._responsive_images,
-    payload._robots_txt,
-    payload._security,
-    payload["_structured-data"],
-    payload["_third-parties"],
-    payload["_well-known"],
-    payload._wpt_bodies,
-    GET_OTHER_CUSTOM_METRICS(
+    SAFE.PARSE_JSON(JSON_VALUE(payload, "$._privacy"), wide_number_mode => 'round'),
+    SAFE.PARSE_JSON(JSON_VALUE(payload, "$._responsive_images"), wide_number_mode => 'round'),
+    SAFE.PARSE_JSON(JSON_VALUE(payload, "$._robots_txt"), wide_number_mode => 'round'),
+    SAFE.PARSE_JSON(JSON_VALUE(payload, "$._security"), wide_number_mode => 'round'),
+    SAFE.PARSE_JSON(JSON_VALUE(payload, "$._structured-data"), wide_number_mode => 'round'),
+    SAFE.PARSE_JSON(JSON_VALUE(payload, "$._third-parties"), wide_number_mode => 'round'),
+    SAFE.PARSE_JSON(JSON_VALUE(payload, "$._well-known"), wide_number_mode => 'round'),
+    SAFE.PARSE_JSON(JSON_VALUE(payload, "$._wpt_bodies"), wide_number_mode => 'round'),
+    getOtherCustomMetrics(
       payload,
       ["_Colordepth", "_Dpi", "_Images", "_Resolution", "_almanac", "_avg_dom_depth", "_css", "_doctype", "_document_height", "_document_width", "_event-names", "_fugu-apis", "_has_shadow_root", "_img-loading-attr", "_initiators", "_inline_style_bytes", "_lib-detector-version", "_localstorage_size", "_meta_viewport", "_num_iframes", "_num_scripts", "_num_scripts_async", "_num_scripts_sync", "_pwa", "_quirks_mode", "_sass", "_sessionstorage_size", "_usertiming"]
     )
   ) AS custom_metrics,
   NULL AS lighthouse,
-  getFeatures(pages.payload) AS features,
+  getFeatures(payload._blinkFeatureFirstUsed) AS features,
   tech.technologies AS technologies,
   pages.payload._metadata AS metadata
 FROM (
   SELECT
     * EXCEPT(payload),
     SAFE.PARSE_JSON(payload, wide_number_mode => 'round') AS payload
-  FROM pages.${constants.fnDateUnderscored(iteration.date)}_${iteration.client} ${constants.devTABLESAMPLE}
+  FROM \`pages.${constants.fnDateUnderscored(iteration.date)}_${iteration.client}\` ${constants.devTABLESAMPLE}
 ) AS pages
 
 LEFT JOIN summary_pages.${constants.fnDateUnderscored(iteration.date)}_${iteration.client} AS summary_pages ${constants.devTABLESAMPLE}
