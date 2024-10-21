@@ -53,8 +53,9 @@ try {
 }
 """;
 
-CREATE TEMP FUNCTION GET_FEATURES(payload JSON)
-RETURNS ARRAY<STRUCT<feature STRING, id STRING, type STRING>> LANGUAGE js AS
+CREATE TEMP FUNCTION getFeatures(payload JSON)
+RETURNS ARRAY<STRUCT<feature STRING, id STRING, type STRING>>
+LANGUAGE js AS
 '''
   function getFeatureNames(featureMap, featureType) {
     try {
@@ -273,7 +274,7 @@ SELECT
     )
   ) AS custom_metrics,
   NULL AS lighthouse,
-  GET_FEATURES(pages.payload) AS features,
+  getFeatures(pages.payload) AS features,
   tech.technologies AS technologies,
   pages.payload._metadata AS metadata
 FROM (
