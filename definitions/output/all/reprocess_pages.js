@@ -3,8 +3,6 @@ operate('all_pages_stable_pre').tags(
 ).queries(`
 CREATE SCHEMA IF NOT EXISTS all_dev;
 
--- DROP TABLE IF EXISTS \`all_dev.pages_stable\`;
-
 CREATE TABLE IF NOT EXISTS \`all_dev.pages_stable\`
 (
   date DATE NOT NULL OPTIONS(description='YYYY-MM-DD format of the HTTP Archive monthly crawl'),
@@ -61,9 +59,8 @@ OPTIONS(
 const iterations = []
 const clients = constants.clients
 
-// From 2022-07-01 till today
 for (
-  let month = constants.currentMonth; month >= '2024-09-01'; month = constants.fnPastMonth(month)) {
+  let month = '2022-03-01'; month >= '2022-03-01'; month = constants.fnPastMonth(month)) {
   clients.forEach((client) => {
     iterations.push({
       month,
@@ -92,7 +89,7 @@ SELECT
   rank,
   wptid,
   JSON_REMOVE(
-    SAFE.PARSE_JSON(payload, wide_number_mode => 'round'),
+    payload,
     '$._metadata',
     '$._detected',
     '$._detected_apps',
@@ -161,7 +158,7 @@ SELECT
   ) AS payload,
   JSON_SET(
     JSON_REMOVE(
-      SAFE.PARSE_JSON(summary, wide_number_mode => 'round'),
+      summary,
       '$._adult_site',
       '$.archive',
       '$.avg_dom_depth',
@@ -191,7 +188,7 @@ SELECT
       '$.wptrun'
     ),
     '$.crux',
-    JSON_QUERY(SAFE.PARSE_JSON(payload, wide_number_mode => 'round'), '$._CrUX')
+    payload._CrUX
   ) AS summary,
   STRUCT<
     a11y JSON,
@@ -215,27 +212,27 @@ SELECT
     wpt_bodies JSON,
     other JSON
   >(
-    JSON_QUERY(SAFE.PARSE_JSON(custom_metrics, wide_number_mode => 'round'), '$.a11y'),
-    JSON_QUERY(SAFE.PARSE_JSON(custom_metrics, wide_number_mode => 'round'), '$.cms'),
-    JSON_QUERY(SAFE.PARSE_JSON(custom_metrics, wide_number_mode => 'round'), '$.cookies'),
-    JSON_QUERY(SAFE.PARSE_JSON(custom_metrics, wide_number_mode => 'round'), '$.css-variables'),
-    JSON_QUERY(SAFE.PARSE_JSON(custom_metrics, wide_number_mode => 'round'), '$.ecommerce'),
-    JSON_QUERY(SAFE.PARSE_JSON(custom_metrics, wide_number_mode => 'round'), '$.element_count'),
-    JSON_QUERY(SAFE.PARSE_JSON(custom_metrics, wide_number_mode => 'round'), '$.javascript'),
-    JSON_QUERY(SAFE.PARSE_JSON(custom_metrics, wide_number_mode => 'round'), '$.markup'),
-    JSON_QUERY(SAFE.PARSE_JSON(custom_metrics, wide_number_mode => 'round'), '$.media'),
-    JSON_QUERY(SAFE.PARSE_JSON(custom_metrics, wide_number_mode => 'round'), '$.origin-trials'),
-    JSON_QUERY(SAFE.PARSE_JSON(custom_metrics, wide_number_mode => 'round'), '$.performance'),
-    JSON_QUERY(SAFE.PARSE_JSON(custom_metrics, wide_number_mode => 'round'), '$.privacy'),
-    JSON_QUERY(SAFE.PARSE_JSON(custom_metrics, wide_number_mode => 'round'), '$.responsive_images'),
-    JSON_QUERY(SAFE.PARSE_JSON(custom_metrics, wide_number_mode => 'round'), '$.robots_txt'),
-    JSON_QUERY(SAFE.PARSE_JSON(custom_metrics, wide_number_mode => 'round'), '$.security'),
-    JSON_QUERY(SAFE.PARSE_JSON(custom_metrics, wide_number_mode => 'round'), '$.structured-data'),
-    JSON_QUERY(SAFE.PARSE_JSON(custom_metrics, wide_number_mode => 'round'), '$.third-parties'),
-    JSON_QUERY(SAFE.PARSE_JSON(custom_metrics, wide_number_mode => 'round'), '$.well-known'),
-    JSON_QUERY(SAFE.PARSE_JSON(custom_metrics, wide_number_mode => 'round'), '$.wpt_bodies'),
+    custom_metrics.a11y,
+    custom_metrics.cms,
+    custom_metrics.cookies,
+    custom_metrics["css-variables"],
+    custom_metrics.ecommerce,
+    custom_metrics.element_count,
+    custom_metrics.javascript,
+    custom_metrics.markup,
+    custom_metrics.media,
+    custom_metrics["origin-trials"],
+    custom_metrics.performance,
+    custom_metrics.privacy,
+    custom_metrics.responsive_images,
+    custom_metrics.robots_txt,
+    custom_metrics.security,
+    custom_metrics["structured-data"],
+    custom_metrics["third-parties"],
+    custom_metrics["well-known"],
+    custom_metrics.wpt_bodies,
     JSON_REMOVE(
-      SAFE.PARSE_JSON(custom_metrics, wide_number_mode => 'round'),
+      custom_metrics,
       '$.a11y',
       '$.cms',
       '$.cookies',
@@ -257,18 +254,26 @@ SELECT
       '$.wpt_bodies'
     )
   ) AS custom_metrics,
-  SAFE.PARSE_JSON(lighthouse, wide_number_mode => 'round') AS lighthouse,
+  lighthouse,
   features,
   technologies,
   JSON_REMOVE(
-    SAFE.PARSE_JSON(metadata, wide_number_mode => 'round'),
+    metadata,
     '$.page_id',
     '$.parent_page_id',
     '$.root_page_id'
   ) AS metadata
-FROM \`all.pages\`
-WHERE
-  date = '${iteration.month}' AND
-  client = '${iteration.client}' ${constants.devRankFilter};
+FROM (
+  SELECT
+    * EXCEPT (custom_metrics, lighthouse, metadata, payload, summary),
+    SAFE.PARSE_JSON(custom_metrics, wide_number_mode => 'round') AS custom_metrics,
+    SAFE.PARSE_JSON(lighthouse, wide_number_mode => 'round') AS lighthouse,
+    SAFE.PARSE_JSON(metadata, wide_number_mode => 'round') AS metadata,
+    SAFE.PARSE_JSON(payload, wide_number_mode => 'round') AS payload,
+    SAFE.PARSE_JSON(summary, wide_number_mode => 'round') AS summary
+  FROM \`all.pages\`
+  WHERE date = '${iteration.month}' AND
+    client = '${iteration.client}' ${constants.devRankFilter}
+);
   `)
 })
