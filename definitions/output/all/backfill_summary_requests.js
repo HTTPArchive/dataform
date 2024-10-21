@@ -159,12 +159,15 @@ RETURNS ARRAY<STRUCT<name STRING, value STRING>>
 LANGUAGE js
 AS """
   try {
-    return headers.split(', ').map(header => {
-      const [name, value] = header.split(' = ');
-      return { name: name.trim(), value: value.trim() };
-    });
+    const parsedHeaders = headers.split(', ').map(header => {
+      const [name, value] = header.split(' = ')
+      if (name && value) {
+        return { name: name.trim(), value: value.trim() }
+      }
+    })
+    return parsedHeaders.filter(Object)
   } catch (e) {
-    return [];
+    return e
   }
 """;
 
