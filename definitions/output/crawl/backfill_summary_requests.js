@@ -65,7 +65,7 @@ iterations.forEach((iteration, i) => {
   ]).dependencies([
     i === 0 ? '' : `backfill_summary_requests ${iterations[i - 1].date} ${iterations[i - 1].client}`
   ]).queries(ctx => `
-DELETE FROM ${ctx.resolve('all', 'requests')}
+DELETE FROM crawl.requests
 WHERE date = '${iteration.date}' AND client = '${iteration.client}';
 
 CREATE TEMP FUNCTION get_ext_from_url(url STRING)
@@ -171,7 +171,7 @@ AS """
   }
 """;
 
-INSERT INTO all_dev.requests_stable
+INSERT INTO crawl.requests
 SELECT
   DATE('${iteration.date}') AS date,
   '${iteration.client}' AS client,

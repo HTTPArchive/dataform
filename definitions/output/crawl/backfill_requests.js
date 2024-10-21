@@ -35,7 +35,7 @@ iterations.forEach((iteration, i) => {
   ]).dependencies([
     i === 0 ? '' : `backfill_requests ${iterations[i - 1].date} ${iterations[i - 1].client}`
   ]).queries(ctx => `
-DELETE FROM all_dev.requests_stable
+DELETE FROM crawl.requests
 WHERE date = '${iteration.date}'
   AND client = '${iteration.client}';
 
@@ -227,7 +227,7 @@ AS """
   }
 """;
 
-INSERT INTO all_dev.requests_stable
+INSERT INTO crawl.requests
 SELECT
   DATE('${iteration.date}') AS date,
   '${iteration.client}' AS client,
