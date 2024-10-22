@@ -1,60 +1,4 @@
-operate('reprocess_pages_pre').tags(
-  ['reprocess_pages']
-).queries(`
-CREATE SCHEMA IF NOT EXISTS crawl;
-
-CREATE TABLE IF NOT EXISTS crawl.pages
-(
-  date DATE NOT NULL OPTIONS(description='YYYY-MM-DD format of the HTTP Archive monthly crawl'),
-  client STRING NOT NULL OPTIONS(description='Test environment: desktop or mobile'),
-  page STRING NOT NULL OPTIONS(description='The URL of the page being tested'),
-  is_root_page BOOL NOT NULL OPTIONS(description='Whether the page is the root of the origin'),
-  root_page STRING NOT NULL OPTIONS(description='The URL of the root page being tested, the origin followed by /'),
-  rank INT64 OPTIONS(description='Site popularity rank, from CrUX'),
-  wptid STRING OPTIONS(description='ID of the WebPageTest results'),
-  payload JSON OPTIONS(description='JSON-encoded WebPageTest results for the page'),
-  summary JSON OPTIONS(description='JSON-encoded summarization of the page-level data'),
-  custom_metrics STRUCT<
-    a11y JSON,
-    cms JSON,
-    cookies JSON,
-    css_variables JSON,
-    ecommerce JSON,
-    element_count JSON,
-    javascript JSON,
-    markup JSON,
-    media JSON,
-    origin_trials JSON,
-    performance JSON,
-    privacy JSON,
-    responsive_images JSON,
-    robots_txt JSON,
-    security JSON,
-    structured_data JSON,
-    third_parties JSON,
-    well_known JSON,
-    wpt_bodies JSON,
-    other JSON
-    > OPTIONS(description='Custom metrics from WebPageTest'),
-  lighthouse JSON OPTIONS(description='JSON-encoded Lighthouse report'),
-  features ARRAY<STRUCT<
-    feature STRING OPTIONS(description='Blink feature name'),
-    id STRING OPTIONS(description='Blink feature ID'),
-    type STRING OPTIONS(description='Blink feature type (css, default)')
-    >> OPTIONS(description='Blink features detected at runtime (see https://chromestatus.com/features)'),
-  technologies ARRAY<STRUCT<
-    technology STRING OPTIONS(description='Name of the detected technology'),
-    categories ARRAY<STRING> OPTIONS(description='List of categories to which this technology belongs'),
-    info ARRAY<STRING> OPTIONS(description='Additional metadata about the detected technology, ie version number')
-    >> OPTIONS(description='Technologies detected at runtime (see https://www.wappalyzer.com/)'),
-  metadata JSON OPTIONS(description='Additional metadata about the test')
-)
-PARTITION BY date
-CLUSTER BY client, is_root_page, rank, page
-OPTIONS(
-  require_partition_filter=true
-);
-`)
+operate('reprocess')
 
 const iterations = []
 const clients = constants.clients
@@ -73,7 +17,7 @@ iterations.forEach((iteration, i) => {
   operate(`reprocess_pages ${iteration.month} ${iteration.client}`).tags([
     'reprocess_pages'
   ]).dependencies([
-    i === 0 ? 'reprocess_pages_pre' : `reprocess_pages ${iterations[i - 1].month} ${iterations[i - 1].client}`
+    i === 0 ? 'reprocess' : `reprocess_pages ${iterations[i - 1].month} ${iterations[i - 1].client}`
   ]).queries(ctx => `
 DELETE FROM crawl.pages
 WHERE date = '${iteration.month}' AND

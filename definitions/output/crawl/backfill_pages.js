@@ -1,6 +1,8 @@
 const iterations = []
 const clients = constants.clients
 
+operate('backfill')
+
 let midMonth
 for (
   let date = '2016-01-01';
@@ -31,7 +33,7 @@ iterations.forEach((iteration, i) => {
   operate(`backfill_pages ${iteration.date} ${iteration.client}`).tags([
     'backfill_pages'
   ]).dependencies([
-    i === 0 ? '' : `backfill_pages ${iterations[i - 1].date} ${iterations[i - 1].client}`
+    i === 0 ? 'backfill' : `backfill_pages ${iterations[i - 1].date} ${iterations[i - 1].client}`
   ]).queries(ctx => `
 DELETE FROM crawl.pages
 WHERE date = '${iteration.date}'

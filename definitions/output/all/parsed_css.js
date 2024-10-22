@@ -12,5 +12,5 @@ publish('parsed_css', {
 DROP SNAPSHOT TABLE IF EXISTS ${ctx.self()};
 
 CREATE SNAPSHOT TABLE ${ctx.self()}
-CLONE ${ctx.resolve('crawl', 'parsed_css')};
+CLONE ${ctx.ref('crawl', 'parsed_css')};
 `)

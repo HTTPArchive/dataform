@@ -63,7 +63,7 @@ iterations.forEach((iteration, i) => {
   operate(`backfill_summary_requests ${iteration.date} ${iteration.client}`).tags([
     'requests_backfill'
   ]).dependencies([
-    i === 0 ? '' : `backfill_summary_requests ${iterations[i - 1].date} ${iterations[i - 1].client}`
+    i === 0 ? 'backfill' : `backfill_summary_requests ${iterations[i - 1].date} ${iterations[i - 1].client}`
   ]).queries(ctx => `
 DELETE FROM crawl.requests
 WHERE date = '${iteration.date}' AND client = '${iteration.client}';

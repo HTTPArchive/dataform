@@ -1,39 +1,3 @@
-operate('reprocess_requests_pre').tags(
-  ['reprocess_requests']
-).queries(`
-CREATE SCHEMA IF NOT EXISTS crawl;
-
-CREATE TABLE IF NOT EXISTS crawl.requests
-(
-  date DATE NOT NULL OPTIONS(description='YYYY-MM-DD format of the HTTP Archive monthly crawl'),
-  client STRING NOT NULL OPTIONS(description='Test environment: desktop or mobile'),
-  page STRING NOT NULL OPTIONS(description='The URL of the page being tested'),
-  is_root_page BOOL OPTIONS(description='Whether the page is the root of the origin.'),
-  root_page STRING NOT NULL OPTIONS(description='The URL of the root page being tested'),
-  rank INT64 OPTIONS(description='Site popularity rank, from CrUX'),
-  url STRING NOT NULL OPTIONS(description='The URL of the request'),
-  is_main_document BOOL NOT NULL OPTIONS(description='Whether this request corresponds with the main HTML document of the page, which is the first HTML request after redirects'),
-  type STRING OPTIONS(description='Simplified description of the type of resource (script, html, css, text, other, etc)'),
-  index INT64 OPTIONS(description='The sequential 0-based index of the request'),
-  payload JSON OPTIONS(description='JSON-encoded WebPageTest result data for this request'),
-  summary JSON OPTIONS(description='JSON-encoded summarization of request data'),
-  request_headers ARRAY<STRUCT<
-    name STRING OPTIONS(description='Request header name'),
-    value STRING OPTIONS(description='Request header value')
-    >> OPTIONS(description='Request headers'),
-  response_headers ARRAY<STRUCT<
-    name STRING OPTIONS(description='Response header name'),
-    value STRING OPTIONS(description='Response header value')
-    >> OPTIONS(description='Response headers'),
-  response_body STRING OPTIONS(description='Text-based response body')
-)
-PARTITION BY date
-CLUSTER BY client, is_root_page, type, rank
-OPTIONS(
-  require_partition_filter=true
-);
-`)
-
 const iterations = []
 
 for (
@@ -53,7 +17,7 @@ iterations.forEach((iteration, i) => {
   operate(`reprocess_requests ${iteration.month} ${iteration.client} ${iteration.isRootPage}`).tags(
     ['reprocess_requests']
   ).dependencies([
-    i === 0 ? 'reprocess_requests_pre' : `reprocess_requests ${iterations[i - 1].month} ${iterations[i - 1].client} ${iterations[i - 1].isRootPage}`
+    i === 0 ? 'reprocess' : `reprocess_requests ${iterations[i - 1].month} ${iterations[i - 1].client} ${iterations[i - 1].isRootPage}`
   ]).queries(ctx => `
 DELETE FROM crawl.requests
 WHERE date = '${iteration.month}'
