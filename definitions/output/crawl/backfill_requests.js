@@ -39,10 +39,9 @@ DELETE FROM crawl.requests
 WHERE date = '${iteration.date}'
   AND client = '${iteration.client}';
 
-CREATE TEMP FUNCTION get_ext_from_url(url STRING)
+CREATE TEMP FUNCTION getExtFromURL(url STRING)
 RETURNS STRING
-LANGUAGE js
-AS """
+LANGUAGE js AS """
 try {
   let ret_ext = url;
 
@@ -79,8 +78,7 @@ try {
 
 CREATE TEMP FUNCTION prettyType(mimeTyp STRING, ext STRING)
 RETURNS STRING
-LANGUAGE js
-AS """
+LANGUAGE js AS """
 try {
   mimeTyp = mimeTyp.toLowerCase();
 
@@ -127,8 +125,7 @@ try {
 
 CREATE TEMP FUNCTION getFormat(prettyTyp STRING, mimeTyp STRING, ext STRING)
 RETURNS STRING
-LANGUAGE js
-AS """
+LANGUAGE js AS """
 try {
   if (prettyTyp === "image") {
       // Order by most popular first.
@@ -159,13 +156,12 @@ try {
 }
 """;
 
-CREATE TEMP FUNCTION parse_headers(headers JSON)
+CREATE TEMP FUNCTION parseHeaders(headers JSON)
 RETURNS ARRAY<STRUCT<name STRING, value STRING>>
-LANGUAGE js
-AS """
+LANGUAGE js AS """
   try {
     return headers.map(header => {
-      return { name: header.name, value: header.value };
+      return { name: header.name.toLowerCase(), value: header.value };
     });
   } catch (e) {
     return [];
@@ -174,14 +170,11 @@ AS """
 
 CREATE TEMP FUNCTION getCookieLen(headers JSON, cookieName STRING)
 RETURNS INT64
-LANGUAGE js
-AS """
+LANGUAGE js AS """
   try {
-    const cookies = headers.find(header => header.name.toLowerCase() === cookieName)
+    const cookies = headers.filter(header => header.name.toLowerCase() === headerName)
     if (!cookies) {
       return 0
-    } else if (typeof cookies === 'object') {
-      return cookies.value.length
     } else if (Array.isArray(cookies)) {
       return cookies.values().reduce((acc, cookie) => acc + cookie.value.length, 0)
     } else {
@@ -192,38 +185,36 @@ AS """
   }
 """;
 
-CREATE TEMP FUNCTION getExpAge(startedDateTime STRING, request JSON, response JSON)
+CREATE TEMP FUNCTION getExpAge(startedDateTime STRING, responseHeaders JSON)
 RETURNS INT64
-LANGUAGE js
-AS """
+LANGUAGE js AS """
   try {
-    expAge = 0;
+    const cacheControlRegExp = /max-age=(\\\\d+)/
 
     // Get the Cache-Control header value
-    const cacheControl = request.headers.find(header => header.name.toLowerCase() === 'cache-control').value;
+    const cacheControl = responseHeaders.find(header => header.name.toLowerCase() === 'cache-control')?.value
 
     // Handle no-cache scenarios
-    if (cacheControl && (cacheControl.includes("must-revalidate") || cacheControl.includes("no-cache") || cacheControl.includes("no-store"))) {
-      expAge = 0;
+    if (cacheControl && (cacheControl.includes('must-revalidate') || cacheControl.includes('no-cache') || cacheControl.includes('no-store'))) {
+      return 0
+    } else if (cacheControl && cacheControlRegExp.test(cacheControl)) { // Handle max-age directive in Cache-Control header
+      const maxAgeValue = parseInt(cacheControlRegExp.exec(cacheControl)[1])
+      return Math.min(2 ** 63 - 1, maxAgeValue)
+    } else if ( // Handle Expires header in the response
+      responseHeaders.find(header => header.name.toLowerCase() === 'expires')
+    ) {
+      const respDate = responseHeaders.find(header => header.name.toLowerCase() === 'date')?.value
+      const startDate = new Date(respDate)?.getTime() || Date.parse(startedDateTime)
+
+      const expDate = responseHeaders.find(header => header.name.toLowerCase() === 'expires')?.value
+      const endDate = new Date(expDate)?.getTime() || 0
+
+      return Math.max((endDate - startDate) / 1000, 0)
     }
 
-    // Handle max-age directive in Cache-Control header
-    else if (cacheControl && cacheControl.includes("max-age")) {
-      const maxAgeValue = cacheControl.match(/max-age=(\\d+)/)[1];
-      expAge = min(2**63 - 1, parseInt(maxAgeValue);
-    }
-
-    // Handle Expires header in the response
-    else if (response.headers.find(header => header.name.toLowerCase() === 'expires')) {
-      const respDate = response.headers.find(header => header.name.toLowerCase() === 'date').value
-      startDate = new Date(respDate).getTime() ? respDate : startedDateTime;
-      const endDate = new Date(response.headers.find(header => header.name.toLowerCase() === 'expires').value).getTime();
-      expAge = endDate - startDate;
-    }
-
-    return expAge;
+    return 0
   } catch (e) {
-    return 0; // Return 0 in case of any errors
+    return 0 // Return 0 in case of any errors
   }
 """;
 
@@ -234,7 +225,14 @@ SELECT
   requests.page AS page,
   TRUE AS is_root_page,
   requests.page AS root_page,
-  crux.rank AS rank,
+  COALESCE(
+    crux.rank,
+    CASE
+      WHEN summary_pages.rank <= 1000 THEN 1000
+      WHEN summary_pages.rank <= 5000 THEN 5000
+      ELSE NULL
+    END
+  ) AS rank,
   requests.url AS url,
   IF(
     STRING(payload._request_type) = "Document" AND
@@ -259,21 +257,21 @@ SELECT
     response.bodySize AS respBodySize,
     response.content.size AS respSize,
     getCookieLen(response.headers, 'set-cookie') AS respCookieLen,
-    getExpAge(STRING(payload.startedDateTime), request, response) AS expAge,
+    getExpAge(STRING(payload.startedDateTime), response.headers) AS expAge,
     response.content.mimeType,
     payload._cdn_provider,
     payload._gzip_save,
     ext,
-    getFormat(type, response.content.mimeType, ext) AS format
+    getFormat(type, STRING(response.content.mimeType), ext) AS format
   )) AS summary,
-  parse_headers(payload.request.headers) AS request_headers,
-  parse_headers(payload.response.headers) AS response_headers,
+  parseHeaders(request.headers) AS request_headers,
+  parseHeaders(response.headers) AS response_headers,
   IF(requests.type = 'image', NULL, response_bodies.body) AS response_body
 FROM (
-  FROM requests.${constants.fnDateUnderscored(iteration.date)}_${iteration.client} ${constants.devTABLESAMPLE}
+  FROM \`requests.${constants.fnDateUnderscored(iteration.date)}_${iteration.client}\` ${constants.devTABLESAMPLE}
   |> SET payload = SAFE.PARSE_JSON(payload, wide_number_mode => 'round')
-  |> EXTEND get_ext_from_url(url) AS ext
-  |> EXTEND prettyType(STRING(payload.response.content.mimeType), ext_from_url) AS type
+  |> EXTEND getExtFromURL(url) AS ext
+  |> EXTEND prettyType(STRING(payload.response.content.mimeType), ext) AS type
   |> EXTEND INT64(payload._index) AS index
   |> EXTEND payload.request AS request
   |> EXTEND payload.response AS response
@@ -293,6 +291,9 @@ LEFT JOIN (
   WHERE yyyymm = ${constants.fnPastMonth(iteration.date).substring(0, 7).replace('-', '')}
 ) AS crux
 ON requests.page = crux.page
+
+LEFT JOIN summary_pages.${constants.fnDateUnderscored(iteration.date)}_${iteration.client} AS summary_pages ${constants.devTABLESAMPLE}
+ON requests.page = summary_pages.url
 
 LEFT JOIN response_bodies.${constants.fnDateUnderscored(iteration.date)}_${iteration.client} AS response_bodies ${constants.devTABLESAMPLE}
 ON requests.page = response_bodies.page

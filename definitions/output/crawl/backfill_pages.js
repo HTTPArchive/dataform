@@ -98,7 +98,7 @@ SELECT
   TRUE AS is_root_page,
   pages.url AS root_page,
   COALESCE(
-    summary_pages.rank,
+    crux.rank,
     CASE
       WHEN summary_pages.rank <= 1000 THEN 1000
       WHEN summary_pages.rank <= 5000 THEN 5000
