@@ -7,21 +7,10 @@ publish('parsed_css', {
     clusterBy: ['client', 'is_root_page', 'rank', 'page'],
     requirePartitionFilter: true
   },
-  tags: ['crawl_results_all']
+  tags: ['crawl_results_legacy']
 }).preOps(ctx => `
-DELETE FROM ${ctx.self()}
-WHERE date = '${constants.currentMonth}';
-`).query(ctx => `
-SELECT *
-FROM ${ctx.ref('crawl_staging', 'parsed_css')}
-WHERE date = '${constants.currentMonth}'
-  AND client = 'desktop'
-  ${constants.devRankFilter}
-`).postOps(ctx => `
-INSERT INTO ${ctx.self()}
-SELECT *
-FROM ${ctx.ref('crawl_staging', 'parsed_css')}
-WHERE date = '${constants.currentMonth}'
-  AND client = 'mobile'
-  ${constants.devRankFilter};
+DROP SNAPSHOT TABLE IF EXISTS ${ctx.self()};
+
+CREATE SNAPSHOT TABLE ${ctx.self()}
+CLONE ${ctx.resolve('crawl', 'parsed_css')};
 `)

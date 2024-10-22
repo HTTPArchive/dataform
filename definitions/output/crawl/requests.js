@@ -1,9 +1,17 @@
-operate('reprocess_requests_pre').tags(
-  ['reprocess_requests']
-).queries(`
+publish('requests', {
+  type: 'incremental',
+  protected: true,
+  schema: 'crawl',
+  bigquery: {
+    partitionBy: 'date',
+    clusterBy: ['client', 'is_root_page', 'type', 'rank'],
+    requirePartitionFilter: true
+  },
+  tags: ['crawl_complete']
+}).preOps(ctx => `
 CREATE SCHEMA IF NOT EXISTS crawl;
 
-CREATE TABLE IF NOT EXISTS crawl.requests
+CREATE TABLE IF NOT EXISTS ${ctx.self()}
 (
   date DATE NOT NULL OPTIONS(description='YYYY-MM-DD format of the HTTP Archive monthly crawl'),
   client STRING NOT NULL OPTIONS(description='Test environment: desktop or mobile'),
@@ -32,33 +40,6 @@ CLUSTER BY client, is_root_page, type, rank
 OPTIONS(
   require_partition_filter=true
 );
-`)
-
-const iterations = []
-
-for (
-  let month = '2022-03-01'; month >= '2022-03-01'; month = constants.fnPastMonth(month)) {
-  constants.clients.forEach((client) => {
-    constants.booleans.forEach((isRootPage) => {
-      iterations.push({
-        month,
-        client,
-        isRootPage
-      })
-    })
-  })
-}
-
-iterations.forEach((iteration, i) => {
-  operate(`reprocess_requests ${iteration.month} ${iteration.client} ${iteration.isRootPage}`).tags(
-    ['reprocess_requests']
-  ).dependencies([
-    i === 0 ? 'reprocess_requests_pre' : `reprocess_requests ${iterations[i - 1].month} ${iterations[i - 1].client} ${iterations[i - 1].isRootPage}`
-  ]).queries(ctx => `
-DELETE FROM crawl.requests
-WHERE date = '${iteration.month}'
-  AND client = '${iteration.client}'
-  AND is_root_page = ${iteration.isRootPage};
 
 CREATE TEMP FUNCTION pruneHeaders(
   jsonObject JSON
@@ -67,16 +48,19 @@ LANGUAGE js AS '''
 try {
   for (const [key, value] of Object.entries(jsonObject)) {
     if(key.startsWith('req_') || key.startsWith('resp_')) {
-      delete jsonObject[key];
+      delete jsonObject[key]
     }
   }
-  return jsonObject;
+  return jsonObject
 } catch (e) {
-  return jsonObject;
+  return jsonObject
 }
 ''';
 
-INSERT INTO crawl.requests
+DELETE FROM ${ctx.self()}
+WHERE date = '${constants.currentMonth}' AND
+  client = 'desktop';
+`).query(ctx => `
 SELECT
   date,
   client,
@@ -118,18 +102,61 @@ FROM (
     * EXCEPT (payload, summary),
     SAFE.PARSE_JSON(payload, wide_number_mode => 'round') AS payload,
     SAFE.PARSE_JSON(summary, wide_number_mode => 'round') AS summary
-  FROM \`all.requests\` ${constants.devTABLESAMPLE}
-  WHERE date = '${iteration.month}'
-    AND client = '${iteration.client}'
-    AND is_root_page = ${iteration.isRootPage}
-) AS requests
-LEFT JOIN (
-  SELECT DISTINCT
-    CONCAT(origin, '/') AS page,
-    experimental.popularity.rank AS rank
-  FROM ${ctx.resolve('chrome-ux-report', 'experimental', 'global')}
-  WHERE yyyymm = ${constants.fnPastMonth(iteration.month).substring(0, 7).replace('-', '')}
-) AS crux
-ON requests.root_page = crux.page;
-  `)
-})
+  FROM ${ctx.ref('crawl_staging', 'requests')}
+  WHERE date = '${constants.currentMonth}'
+    AND client = 'desktop'
+    ${constants.devTABLESAMPLE}
+)
+`).postOps(ctx => `
+DELETE FROM ${ctx.self()}
+WHERE date = '${constants.currentMonth}' AND
+  client = 'mobile';
+
+INSERT INTO ${ctx.self()}
+SELECT
+  date,
+  client,
+  requests.page,
+  is_root_page,
+  root_page,
+  crux.rank,
+  url,
+  is_main_document,
+  type,
+  index,
+  JSON_REMOVE(
+    payload,
+    '$._headers',
+    '$.request.headers',
+    '$.response.headers'
+  ) AS payload,
+  pruneHeaders(
+    JSON_REMOVE(
+      summary,
+      '$.crawlid',
+      '$.firstHtml',
+      '$.firstReq',
+      '$.pageid',
+      '$.reqOtherHeaders',
+      '$.requestid',
+      '$.respOtherHeaders',
+      '$.startedDateTime',
+      '$.type',
+      '$.url',
+      '$.urlShort'
+    )
+  ) as summary,
+  request_headers,
+  response_headers,
+  response_body
+FROM (
+  SELECT
+    * EXCEPT (payload, summary),
+    SAFE.PARSE_JSON(payload, wide_number_mode => 'round') AS payload,
+    SAFE.PARSE_JSON(summary, wide_number_mode => 'round') AS summary
+  FROM ${ctx.ref('crawl_staging', 'requests')}
+  WHERE date = '${constants.currentMonth}'
+    AND client = 'mobile'
+    ${constants.devTABLESAMPLE}
+)
+`)
