@@ -8,11 +8,11 @@ The pipelines are run in Dataform service in Google Cloud Platform (GCP) and are
 
 ### Crawl results
 
-Tag: `crawl_results_all`
+Tag: `crawl_complete`
 
-- httparchive.all.pages
-- httparchive.all.parsed_css
-- httparchive.all.requests
+- httparchive.crawl.pages
+- httparchive.crawl.parsed_css
+- httparchive.crawl.requests
 
 ### Core Web Vitals Technology Report
 
@@ -39,6 +39,9 @@ Consumers:
 
 Tag: `crawl_results_legacy`
 
+- httparchive.all.pages
+- httparchive.all.parsed_css
+- httparchive.all.requests
 - httparchive.lighthouse.YYYY_MM_DD_client
 - httparchive.pages.YYYY_MM_DD_client
 - httparchive.requests.YYYY_MM_DD_client
@@ -51,7 +54,7 @@ Tag: `crawl_results_legacy`
 
 1. [crawl-complete](https://console.cloud.google.com/cloudpubsub/subscription/detail/dataformTrigger?authuser=7&project=httparchive) PubSub subscription
 
-    Tags: ["crawl_results_all", "blink_features_report", "crawl_results_legacy"]
+    Tags: ["crawl_complete", "blink_features_report", "crawl_results_legacy"]
 
 2. [bq-poller-cwv-tech-report](https://console.cloud.google.com/cloudscheduler/jobs/edit/us-east4/bq-poller-cwv-tech-report?authuser=7&project=httparchive) Scheduler
 

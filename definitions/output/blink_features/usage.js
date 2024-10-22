@@ -42,7 +42,7 @@ JOIN (
     date,
     client,
     COUNT(DISTINCT page) AS total_urls
-  FROM ${ctx.ref('all', 'pages')}
+  FROM ${ctx.ref('crawl', 'pages')}
   WHERE
     date = '${constants.currentMonth}' AND
     is_root_page = TRUE

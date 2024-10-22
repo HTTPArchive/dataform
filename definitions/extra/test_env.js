@@ -1,4 +1,5 @@
 const date = constants.currentMonth
+operate('test')
 
 // List of resources to be copied to the test environment. Comment out the ones you don't need.
 const resourcesList = [
@@ -15,7 +16,7 @@ const resourcesList = [
 resourcesList.forEach(resource => {
   operate(
     `test_table ${resource.datasetId}_dev_dev_${resource.tableId}`
-  ).queries(`
+  ).dependencies(['test']).queries(`
 CREATE SCHEMA IF NOT EXISTS ${resource.datasetId}_dev;
 DROP TABLE IF EXISTS ${resource.datasetId}_dev.dev_${resource.tableId};
 

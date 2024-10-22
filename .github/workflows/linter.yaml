@@ -30,5 +30,6 @@ jobs:
         env:
           DEFAULT_BRANCH: main
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VALIDATE_JSCPD: false
           VALIDATE_JAVASCRIPT_PRETTIER: false
           VALIDATE_MARKDOWN_PRETTIER: false

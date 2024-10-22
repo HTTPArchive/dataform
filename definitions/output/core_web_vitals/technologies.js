@@ -22,23 +22,6 @@ CREATE TEMP FUNCTION IS_GOOD(good FLOAT64, needs_improvement FLOAT64, poor FLOAT
 CREATE TEMP FUNCTION IS_NON_ZERO(good FLOAT64, needs_improvement FLOAT64, poor FLOAT64) RETURNS BOOL AS (
   good + needs_improvement + poor > 0
 );
-
-CREATE TEMP FUNCTION GET_LIGHTHOUSE_CATEGORY_SCORES(categories STRING)
-RETURNS STRUCT<accessibility NUMERIC, best_practices NUMERIC, performance NUMERIC, pwa NUMERIC, seo NUMERIC>
-LANGUAGE js AS '''
-try {
-  const $ = JSON.parse(categories);
-  return {
-    accessibility: $.accessibility?.score,
-    best_practices: $['best-practices']?.score,
-    performance: $.performance?.score,
-    pwa: $.pwa?.score,
-    seo: $.seo?.score
-  };
-} catch (e) {
-  return {};
-}
-''';
 `).query(ctx => `
 WITH geo_summary AS (
   SELECT
@@ -111,7 +94,7 @@ technologies AS (
     client,
     page AS url
   FROM
-    ${ctx.resolve('all', 'pages')},
+    ${ctx.ref('crawl', 'pages')},
     UNNEST(technologies) AS technology
   WHERE
     date = '${pastMonth}'
@@ -124,7 +107,7 @@ UNION ALL
     client,
     page AS url
   FROM
-    ${ctx.resolve('all', 'pages')}
+    ${ctx.ref('crawl', 'pages')}
   WHERE
     date = '${pastMonth}'
     ${constants.devRankFilter}
@@ -135,7 +118,7 @@ categories AS (
     technology.technology AS app,
     ARRAY_TO_STRING(ARRAY_AGG(DISTINCT category IGNORE NULLS ORDER BY category), ', ') AS category
   FROM
-    ${ctx.resolve('all', 'pages')},
+    ${ctx.ref('crawl', 'pages')},
     UNNEST(technologies) AS technology,
     UNNEST(technology.categories) AS category
   WHERE
@@ -148,7 +131,7 @@ UNION ALL
     'ALL' AS app,
     ARRAY_TO_STRING(ARRAY_AGG(DISTINCT category IGNORE NULLS ORDER BY category), ', ') AS category
   FROM
-    ${ctx.resolve('all', 'pages')},
+    ${ctx.ref('crawl', 'pages')},
     UNNEST(technologies) AS technology,
     UNNEST(technology.categories) AS category
   WHERE
@@ -162,12 +145,16 @@ summary_stats AS (
     client,
     page AS url,
     root_page AS root_page_url,
-    CAST(JSON_VALUE(summary, '$.bytesTotal') AS INT64) AS bytesTotal,
-    CAST(JSON_VALUE(summary, '$.bytesJS') AS INT64) AS bytesJS,
-    CAST(JSON_VALUE(summary, '$.bytesImg') AS INT64) AS bytesImg,
-    GET_LIGHTHOUSE_CATEGORY_SCORES(JSON_QUERY(lighthouse, '$.categories')) AS lighthouse_category
+    SAFE.INT64(summary.bytesTotal) AS bytesTotal,
+    SAFE.INT64(summary.bytesJS) AS bytesJS,
+    SAFE.INT64(summary.bytesImg) AS bytesImg,
+    SAFE.FLOAT64(lighthouse_category.accessibility.score) AS accessibility,
+    SAFE.FLOAT64(lighthouse_category['best-practices'].score) AS best_practices,
+    SAFE.FLOAT64(lighthouse_category.performance.score) AS performance,
+    SAFE.FLOAT64(lighthouse_category.pwa.score) AS pwa,
+    SAFE.FLOAT64(lighthouse_category.seo.score) AS seo
   FROM
-    ${ctx.resolve('all', 'pages')}
+    ${ctx.ref('crawl', 'pages')}
   WHERE
     date = '${pastMonth}'
     ${constants.devRankFilter}
@@ -179,14 +166,14 @@ lab_data AS (
     root_page_url,
     app,
     ANY_VALUE(category) AS category,
-    CAST(AVG(bytesTotal) AS INT64) AS bytesTotal,
-    CAST(AVG(bytesJS) AS INT64) AS bytesJS,
-    CAST(AVG(bytesImg) AS INT64) AS bytesImg,
-    CAST(AVG(lighthouse_category.accessibility) AS NUMERIC) AS accessibility,
-    CAST(AVG(lighthouse_category.best_practices) AS NUMERIC) AS best_practices,
-    CAST(AVG(lighthouse_category.performance) AS NUMERIC) AS performance,
-    CAST(AVG(lighthouse_category.pwa) AS NUMERIC) AS pwa,
-    CAST(AVG(lighthouse_category.seo) AS NUMERIC) AS seo
+    AVG(bytesTotal) AS bytesTotal,
+    AVG(bytesJS) AS bytesJS,
+    AVG(bytesImg) AS bytesImg,
+    AVG(accessibility) AS accessibility,
+    AVG(best_practices) AS best_practices,
+    AVG(performance) AS performance,
+    AVG(pwa) AS pwa,
+    AVG(seo) AS seo
   FROM
     summary_stats
   JOIN
