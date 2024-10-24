@@ -10,12 +10,12 @@ declare({
 })
 
 assert('country_summary_not_empty').query(ctx => `
-SELECT
-  'No data for the specified date' AS error_message
+-- Check if the table has data for all 238 countries
 FROM ${ctx.ref(database, 'materialized', 'country_summary')}
-WHERE yyyymm = ${pastMonthYYYYMM}
-GROUP BY yyyymm
-HAVING COUNT(0) < 20000000
+|> WHERE yyyymm = ${pastMonthYYYYMM}
+|> AGGREGATE COUNT(DISTINCT country_code) AS cnt_countries
+|> WHERE cnt_countries != 238
+|> SELECT 'Table data is not complete' AS error_message;
 `)
 
 declare({
@@ -25,12 +25,12 @@ declare({
 })
 
 assert('device_summary_not_empty').query(ctx => `
-SELECT
-  'No data for the specified date' AS error_message
+-- Check if the table has data for all 3 devices and 10 ranks
 FROM ${ctx.ref(database, 'materialized', 'device_summary')}
-WHERE date = '${pastMonth}'
-GROUP BY date
-HAVING COUNT(0) < 20000000
+|> WHERE date = ''${pastMonth}''
+|> AGGREGATE COUNT(DISTINCT device) AS cnt_devices, COUNT(DISTINCT rank) AS cnt_ranks
+|> WHERE cnt_devices != 3 OR cnt_ranks != 10
+|> SELECT 'Table data is not complete' AS error_message;
 `)
 
 declare({
