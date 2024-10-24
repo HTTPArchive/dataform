@@ -9,7 +9,7 @@ DECLARE previousMonth_YYYYMM STRING DEFAULT SUBSTR(previousMonth, 1, 6);
 
 WITH crux AS (
   SELECT
-    LOGICAL_AND(total_rows > 20000000) AS min_rows_available,
+    LOGICAL_AND(total_rows > 0) AS rows_available,
     LOGICAL_AND(TIMESTAMP_DIFF(CURRENT_TIMESTAMP(), last_modified_time, HOUR) < 7) AS recent_last_modified
   FROM chrome-ux-report.materialized.INFORMATION_SCHEMA.PARTITIONS
   WHERE table_name IN ('device_summary', 'country_summary')
@@ -18,12 +18,12 @@ WITH crux AS (
   SELECT TOTAL_ROWS > 0 AS report_exists
   FROM httparchive.core_web_vitals.INFORMATION_SCHEMA.PARTITIONS
   WHERE table_name = 'technologies'
-    AND partition_id IN (previousMonth, previousMonth_YYYYMM)
+    AND partition_id = previousMonth
 )
 
 SELECT
-  (min_rows_available AND NOT report_exists)
-    OR (min_rows_available AND recent_last_modified) AS condition
+  (rows_available AND NOT report_exists)
+    OR (rows_available AND recent_last_modified) AS condition
 FROM crux, report;
     `,
     action: 'runDataformRepo',
