@@ -5,16 +5,12 @@ publish('requests_10k', {
     partitionBy: 'date',
     clusterBy: ['client', 'is_root_page', 'is_main_document', 'type']
   },
-  tags: ['crawl_results_all']
+  tags: ['crawl_complete']
 }).preOps(ctx => `
 DROP TABLE IF EXISTS ${ctx.self()};
 `).query(ctx => `
 SELECT *
-FROM ${ctx.ref('all', 'requests')}
+FROM ${ctx.ref('crawl', 'requests')}
 WHERE date = '${constants.currentMonth}' AND
-    -- rank <= 10000 -- TODO: use rank filtering when https://github.com/HTTPArchive/dataform/pull/5 is complete
-    page IN (
-        SELECT page
-        FROM ${ctx.ref('sample_data', 'pages_10k')}
-    )
+    rank <= 10000
 `)
