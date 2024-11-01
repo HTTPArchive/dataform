@@ -27,8 +27,8 @@ for (
   }
 }
 
-function getResponseBodiesColumnName(date) {
-  return date >= '2024-02-01' ? 'response_body' : 'body';
+function getResponseBodiesColumnName (date) {
+  return date >= '2024-02-01' ? 'response_body' : 'body'
 }
 
 iterations.forEach((iteration, i) => {
