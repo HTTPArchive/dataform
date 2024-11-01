@@ -27,6 +27,10 @@ for (
   }
 }
 
+function getResponseBodiesColumnName(date) {
+  return date >= '2024-02-01' ? 'response_body' : 'body';
+}
+
 iterations.forEach((iteration, i) => {
   operate(`backfill_requests ${iteration.date} ${iteration.client}`).tags([
     'backfill_requests'
@@ -264,7 +268,7 @@ SELECT
   )) AS summary,
   parseHeaders(request.headers) AS request_headers,
   parseHeaders(response.headers) AS response_headers,
-  IF(requests.type = 'image', NULL, response_bodies.body) AS response_body
+  IF(requests.type = 'image', NULL, response_bodies.response_body) AS response_body
 FROM (
   FROM \`requests.${constants.fnDateUnderscored(iteration.date)}_${iteration.client}\` ${constants.devTABLESAMPLE}
   |> SET payload = SAFE.PARSE_JSON(payload, wide_number_mode => 'round')
@@ -293,7 +297,14 @@ ON requests.page = crux.page
 LEFT JOIN summary_pages.${constants.fnDateUnderscored(iteration.date)}_${iteration.client} AS summary_pages ${constants.devTABLESAMPLE}
 ON requests.page = summary_pages.url
 
-LEFT JOIN response_bodies.${constants.fnDateUnderscored(iteration.date)}_${iteration.client} AS response_bodies ${constants.devTABLESAMPLE}
+LEFT JOIN (
+  SELECT
+    page,
+    url,
+    ANY_VALUE(${getResponseBodiesColumnName(iteration.date)}) AS response_body
+  FROM response_bodies.${constants.fnDateUnderscored(iteration.date)}_${iteration.client}
+  GROUP BY page, url
+) AS response_bodies ${constants.devTABLESAMPLE}
 ON requests.page = response_bodies.page
   AND requests.url = response_bodies.url;
   `)
