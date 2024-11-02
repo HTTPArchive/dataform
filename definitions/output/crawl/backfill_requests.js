@@ -189,9 +189,9 @@ LANGUAGE js AS """
 
 CREATE TEMP FUNCTION getExpAge(startedDateTime STRING, responseHeaders JSON)
 RETURNS INT64
-LANGUAGE js AS """
+LANGUAGE js AS r"""
   try {
-    const cacheControlRegExp = /max-age=(\\\\d+)/
+    const cacheControlRegExp = /max-age=(\\d+)/
 
     // Get the Cache-Control header value
     const cacheControl = responseHeaders.find(header => header.name.toLowerCase() === 'cache-control')?.value

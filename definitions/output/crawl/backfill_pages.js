@@ -64,7 +64,7 @@ try {
 CREATE TEMP FUNCTION getFeatures(blinkFeatureFirstUsed JSON)
 RETURNS ARRAY<STRUCT<feature STRING, id STRING, type STRING>>
 LANGUAGE js AS
-'''
+r'''
   function getFeatureNames(featureMap, featureType) {
     try {
       return Object.entries(featureMap).map(([key, value]) => {
@@ -86,7 +86,7 @@ LANGUAGE js AS
 
   if (!blinkFeatureFirstUsed) return [];
 
-  var idPattern = new RegExp('^Feature_(\\\\d+)$');
+  var idPattern = new RegExp('^Feature_(\\d+)$');
   return getFeatureNames(blinkFeatureFirstUsed.Features, 'default')
     .concat(getFeatureNames(blinkFeatureFirstUsed.CSSFeatures, 'css'))
     .concat(getFeatureNames(blinkFeatureFirstUsed.AnimatedCSSFeatures, 'animated-css'));
