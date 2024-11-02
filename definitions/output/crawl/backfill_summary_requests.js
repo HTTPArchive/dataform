@@ -61,7 +61,7 @@ function summaryObject (date) {
 
 iterations.forEach((iteration, i) => {
   operate(`backfill_summary_requests ${iteration.date} ${iteration.client}`).tags([
-    'requests_backfill'
+    'backfill_summary_requests'
   ]).dependencies([
     i === 0 ? 'backfill' : `backfill_summary_requests ${iterations[i - 1].date} ${iterations[i - 1].client}`
   ]).queries(ctx => `

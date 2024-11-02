@@ -125,7 +125,7 @@ function customMetrics (date) {
 
 iterations.forEach((iteration, i) => {
   operate(`backfill_summary_pages ${iteration.date} ${iteration.client}`).tags([
-    'pages_backfill'
+    'backfill_summary_pages'
   ]).dependencies([
     i === 0 ? 'backfill' : `backfill_summary_pages ${iterations[i - 1].date} ${iterations[i - 1].client}`
   ]).queries(ctx => `
