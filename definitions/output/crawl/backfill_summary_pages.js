@@ -149,6 +149,7 @@ SELECT
   TRUE AS is_root_page,
   url AS root_page,
   CASE
+    WHEN rank = 0 THEN NULL
     WHEN rank<=1000 THEN 1000
     WHEN rank<=5000 THEN 5000
     WHEN rank<=10000 THEN 10000

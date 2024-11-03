@@ -3,25 +3,37 @@ const clients = constants.clients
 
 let midMonth
 for (
-  let date = '2015-12-01';
-  date >= '2015-12-01';
+  let date = '2012-12-01';
+  date >= '2011-06-01';
   date = constants.fnPastMonth(date)
 ) {
   clients.forEach((client) => {
-    iterations.push({
-      date,
-      client
-    })
+    if (
+      (date === '2015-09-01' && client === 'mobile') ||
+      (date === '2015-06-01' && client === 'mobile') ||
+      (date === '2013-12-01')
+    ) { return true } else {
+      iterations.push({
+        date,
+        client
+      })
+    }
   })
 
   midMonth = new Date(date)
   midMonth.setDate(15)
+  midMonth = midMonth.toISOString().substring(0, 10)
 
   clients.forEach((client) => {
-    iterations.push({
-      date: midMonth.toISOString().substring(0, 10),
-      client
-    })
+    if (
+      (midMonth === '2014-06-15' && client === 'mobile') ||
+      (midMonth === '2013-07-15')
+    ) { return true } else {
+      iterations.push({
+        date: midMonth,
+        client
+      })
+    }
   })
 }
 
@@ -48,7 +60,7 @@ function summaryObject (date) {
     list += `,
       _cdn_provider`
   }
-  if (date >= '2014-05-01') {
+  if (date >= '2014-06-01') {
     list += `,
       _gzip_save`
   }
@@ -157,17 +169,21 @@ AS """
 CREATE TEMP FUNCTION parse_headers(headers STRING)
 RETURNS ARRAY<STRUCT<name STRING, value STRING>>
 LANGUAGE js
-AS """
+AS r"""
+  if (!headers) return []
+
   try {
-    const parsedHeaders = headers.split(', ').map(header => {
-      const [name, value] = header.split(' = ')
-      if (name && value) {
-        return { name: name.trim(), value: value.trim() }
+    const parsedHeaders = headers.split(/,\\s/).map(header => {
+      const [name, ...valueParts] = header.split(/\\s=\\s/);
+      if (name && valueParts.length > 0) {
+        return { name: name.trim(), value: valueParts.join('=').trim() };
       }
-    })
-    return parsedHeaders.filter(Object)
+      return null;
+    });
+
+    return parsedHeaders.filter(Boolean);
   } catch (e) {
-    return e
+    return [];
   }
 """;
 
@@ -178,7 +194,20 @@ SELECT
   pages.url AS page,
   TRUE AS is_root_page,
   pages.url AS root_page,
-  pages.rank AS rank,
+  CASE
+    WHEN rank = 0 THEN NULL
+    WHEN rank<=1000 THEN 1000
+    WHEN rank<=5000 THEN 5000
+    WHEN rank<=10000 THEN 10000
+    WHEN rank<=50000 THEN 50000
+    WHEN rank<=100000 THEN 100000
+    WHEN rank<=500000 THEN 500000
+    WHEN rank<=1000000 THEN 1000000
+    WHEN rank<=5000000 THEN 5000000
+    WHEN rank<=10000000 THEN 10000000
+    WHEN rank<=50000000 THEN 50000000
+    ELSE NULL
+    END AS rank,
   requests.url AS url,
   requests.firstHTML AS is_main_document,
   get_type(requests.mimeType, requests.ext_from_url) AS type,
