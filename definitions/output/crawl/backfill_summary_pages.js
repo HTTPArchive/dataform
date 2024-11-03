@@ -3,25 +3,35 @@ const clients = constants.clients
 
 let midMonth
 for (
-  let date = '2015-12-01';
-  date >= '2015-12-01';
+  let date = '2012-12-01';
+  date >= '2011-06-01';
   date = constants.fnPastMonth(date)
 ) {
   clients.forEach((client) => {
-    iterations.push({
-      date,
-      client
-    })
+    if (
+      (date === '2013-12-01' && client === 'mobile')
+    ) { return true } else {
+      iterations.push({
+        date,
+        client
+      })
+    }
   })
 
   midMonth = new Date(date)
   midMonth.setDate(15)
+  midMonth = midMonth.toISOString().substring(0, 10)
 
   clients.forEach((client) => {
-    iterations.push({
-      date: midMonth.toISOString().substring(0, 10),
-      client
-    })
+    if (
+      (midMonth === '2014-06-15' && client === 'mobile') ||
+      (midMonth === '2013-07-15')
+    ) { return true } else {
+      iterations.push({
+        date: midMonth,
+        client
+      })
+    }
   })
 }
 
