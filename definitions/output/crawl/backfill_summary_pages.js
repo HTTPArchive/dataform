@@ -28,75 +28,74 @@ for (
 function summaryObject (date) {
   let list = ''
   if (date >= '2010-11-15') {
-    list += `
-      fullyLoaded,
-      bytesCSS,
-      bytesFlash,
-      bytesFont,
-      bytesGif,
-      bytesHtml,
-      bytesHtmlDoc,
-      bytesImg,
-      bytesJpg,
-      bytesJS,
-      bytesJson,
-      bytesOther,
-      bytesPng,
-      bytesTotal,
-      cdn,
-      gzipSavings,
-      gzipTotal,
-      maxage0,
-      maxage1,
-      maxage30,
-      maxage365,
-      maxageMore,
-      maxageNull,
-      maxDomainReqs,
-      numCompressed,
-      numDomains,
-      numDomElements,
-      numErrors,
-      numGlibs,
-      numHttps,
-      numRedirects,
-      onContentLoaded,
-      onLoad,
-      renderStart,
-      reqCSS,
-      reqFlash,
-      reqFont,
-      reqGif,
-      reqHtml,
-      reqImg,
-      reqJpg,
-      reqJS,
-      reqJson,
-      reqOther,
-      reqPng,
-      reqTotal,
-      SpeedIndex,
-      TTFB,
-      visualComplete`
+    list += `fullyLoaded,
+    bytesCSS,
+    bytesFlash,
+    bytesFont,
+    bytesGif,
+    bytesHtml,
+    bytesHtmlDoc,
+    bytesImg,
+    bytesJpg,
+    bytesJS,
+    bytesJson,
+    bytesOther,
+    bytesPng,
+    bytesTotal,
+    cdn,
+    gzipSavings,
+    gzipTotal,
+    maxage0,
+    maxage1,
+    maxage30,
+    maxage365,
+    maxageMore,
+    maxageNull,
+    maxDomainReqs,
+    numCompressed,
+    numDomains,
+    numDomElements,
+    numErrors,
+    numGlibs,
+    numHttps,
+    numRedirects,
+    onContentLoaded,
+    onLoad,
+    renderStart,
+    reqCSS,
+    reqFlash,
+    reqFont,
+    reqGif,
+    reqHtml,
+    reqImg,
+    reqJpg,
+    reqJS,
+    reqJson,
+    reqOther,
+    reqPng,
+    reqTotal,
+    SpeedIndex,
+    TTFB,
+    visualComplete`
   }
   if (date >= '2014-05-15') {
     list += `,
-      _connections`
+    _connections`
   }
   if (date >= '2015-05-01') {
     list += `,
-      bytesAudio,
-      bytesSvg,
-      bytesText,
-      bytesVideo,
-      bytesWebp,
-      bytesXml,
-      reqAudio,
-      reqSvg,
-      reqText,
-      reqVideo,
-      reqWebp,
-      reqXml`
+    bytesAudio,
+    bytesSvg,
+    bytesText,
+    bytesVideo,
+    bytesWebp,
+    bytesXml,
+    reqAudio,
+    reqSvg,
+    reqText,
+    reqVideo,
+    reqWebp,
+    reqXml`
   }
   return list
 }
@@ -104,8 +103,7 @@ function summaryObject (date) {
 function customMetrics (date) {
   let list = ''
   if (date >= '2014-06-01' && date !== '2014-05-15') {
-    list += `
-      avg_dom_depth,
+    list += `avg_dom_depth,
       doctype,
       document_height,
       document_width,
@@ -137,12 +135,20 @@ INSERT INTO crawl.pages
 SELECT
   DATE('${iteration.date}') AS date,
   '${iteration.client}' AS client,
-  pages.url AS page,
+  url AS page,
   TRUE AS is_root_page,
-  pages.url AS root_page,
+  url AS root_page,
   CASE
     WHEN rank<=1000 THEN 1000
     WHEN rank<=5000 THEN 5000
+    WHEN rank<=10000 THEN 10000
+    WHEN rank<=50000 THEN 50000
+    WHEN rank<=100000 THEN 100000
+    WHEN rank<=500000 THEN 500000
+    WHEN rank<=1000000 THEN 1000000
+    WHEN rank<=5000000 THEN 5000000
+    WHEN rank<=10000000 THEN 10000000
+    WHEN rank<=50000000 THEN 50000000
     ELSE NULL
     END AS rank,
   wptid,
@@ -199,6 +205,6 @@ SELECT
   NULL AS features,
   NULL AS technologies,
   NULL AS metadata
-FROM summary_pages.${constants.fnDateUnderscored(iteration.date)}_${iteration.client} AS pages ${constants.devTABLESAMPLE};
+FROM summary_pages.${constants.fnDateUnderscored(iteration.date)}_${iteration.client} ${constants.devTABLESAMPLE};
   `)
 })
