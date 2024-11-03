@@ -43,13 +43,13 @@ CREATE TEMPORARY FUNCTION getOtherCustomMetrics(
   payload JSON,
   keys ARRAY<STRING>
 ) RETURNS JSON
-LANGUAGE js AS """
+LANGUAGE js AS r'''
 try {
   let otherMetrics = {};
   let value = null;
   keys.forEach(function (key) {
     try {
-      value = JSON.parse(payload[key])
+      value = JSON.parse(payload[key].replace(/\\\\u[a-f0-9]{4}/g, ''))
     } catch (e) {
       value = payload[key]
     }
@@ -59,7 +59,7 @@ try {
 } catch (e) {
   return null;
 }
-""";
+''';
 
 CREATE TEMP FUNCTION getFeatures(blinkFeatureFirstUsed JSON)
 RETURNS ARRAY<STRUCT<feature STRING, id STRING, type STRING>>
