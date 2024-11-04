@@ -1,7 +1,7 @@
 {
   "name": "crawl-data",
   "dependencies": {
-    "@dataform/core": "3.0.7"
+    "@dataform/core": "3.0.8"
   },
   "scripts": {
     "format": "npx standard --fix; npx markdownlint --ignore-path .gitignore --config package.json --configPointer /markdownlint . --fix",
