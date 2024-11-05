@@ -10,14 +10,10 @@ for (
   date = constants.fnPastMonth(date)
 ) {
   clients.forEach((client) => {
-    if (
-      !date
-    ) { return true } else {
-      iterations.push({
-        date,
-        client
-      })
-    }
+    iterations.push({
+      date,
+      client
+    })
   })
 
   if (date <= '2018-12-01') {
@@ -26,14 +22,10 @@ for (
     midMonth = midMonth.toISOString().substring(0, 10)
 
     clients.forEach((client) => {
-      if (
-        !midMonth
-      ) { return true } else {
-        iterations.push({
-          date: midMonth,
-          client
-        })
-      }
+      iterations.push({
+        date: midMonth,
+        client
+      })
     })
   }
 }
@@ -353,10 +345,36 @@ SELECT
     SAFE.PARSE_JSON(JSON_VALUE(payload, "$._third-parties"), wide_number_mode => 'round'),
     SAFE.PARSE_JSON(JSON_VALUE(payload, "$._well-known"), wide_number_mode => 'round'),
     SAFE.PARSE_JSON(JSON_VALUE(payload, "$._wpt_bodies"), wide_number_mode => 'round'),
-    getOtherCustomMetrics(
-      payload,
-      ["_Colordepth", "_Dpi", "_Images", "_Resolution", "_almanac", "_avg_dom_depth", "_css", "_doctype", "_document_height", "_document_width", "_event-names", "_fugu-apis", "_has_shadow_root", "_img-loading-attr", "_initiators", "_inline_style_bytes", "_lib-detector-version", "_localstorage_size", "_meta_viewport", "_num_iframes", "_num_scripts", "_num_scripts_async", "_num_scripts_sync", "_pwa", "_quirks_mode", "_sass", "_sessionstorage_size", "_usertiming"]
-    )
+    TO_JSON(STRUCT(
+      SAFE.PARSE_JSON(JSON_VALUE(payload, '$._Colordepth'), wide_number_mode => 'round') AS Colordepth,
+      SAFE.PARSE_JSON(JSON_VALUE(payload, '$._Dpi'), wide_number_mode => 'round') AS Dpi,
+      SAFE.PARSE_JSON(JSON_VALUE(payload, '$._Images'), wide_number_mode => 'round') AS Images,
+      SAFE.PARSE_JSON(JSON_VALUE(payload, '$._Resolution'), wide_number_mode => 'round') AS Resolution,
+      SAFE.PARSE_JSON(JSON_VALUE(payload, '$._almanac'), wide_number_mode => 'round') AS almanac,
+      SAFE.PARSE_JSON(JSON_VALUE(payload, '$._avg_dom_depth'), wide_number_mode => 'round') AS avg_dom_depth,
+      SAFE.PARSE_JSON(JSON_VALUE(payload, '$._css'), wide_number_mode => 'round') AS css,
+      SAFE.PARSE_JSON(JSON_VALUE(payload, '$._doctype'), wide_number_mode => 'round') AS doctype,
+      SAFE.PARSE_JSON(JSON_VALUE(payload, '$._document_height'), wide_number_mode => 'round') AS document_height,
+      SAFE.PARSE_JSON(JSON_VALUE(payload, '$._document_width'), wide_number_mode => 'round') AS document_width,
+      SAFE.PARSE_JSON(JSON_VALUE(payload, '$._event-names'), wide_number_mode => 'round') AS \`event-names\`,
+      SAFE.PARSE_JSON(JSON_VALUE(payload, '$._fugu-apis'), wide_number_mode => 'round') AS \`fugu-apis\`,
+      SAFE.PARSE_JSON(JSON_VALUE(payload, '$._has_shadow_root'), wide_number_mode => 'round') AS has_shadow_root,
+      SAFE.PARSE_JSON(JSON_VALUE(payload, '$._img-loading-attr'), wide_number_mode => 'round') AS \`img-loading-attr\`,
+      SAFE.PARSE_JSON(JSON_VALUE(payload, '$._initiators'), wide_number_mode => 'round') AS initiators,
+      SAFE.PARSE_JSON(JSON_VALUE(payload, '$._inline_style_bytes'), wide_number_mode => 'round') AS inline_style_bytes,
+      SAFE.PARSE_JSON(JSON_VALUE(payload, '$._lib-detector-version'), wide_number_mode => 'round') AS \`lib-detector-version\`,
+      SAFE.PARSE_JSON(JSON_VALUE(payload, '$._localstorage_size'), wide_number_mode => 'round') AS localstorage_size,
+      SAFE.PARSE_JSON(JSON_VALUE(payload, '$._meta_viewport'), wide_number_mode => 'round') AS meta_viewport,
+      SAFE.PARSE_JSON(JSON_VALUE(payload, '$._num_iframes'), wide_number_mode => 'round') AS num_iframes,
+      SAFE.PARSE_JSON(JSON_VALUE(payload, '$._num_scripts'), wide_number_mode => 'round') AS num_scripts,
+      SAFE.PARSE_JSON(JSON_VALUE(payload, '$._num_scripts_async'), wide_number_mode => 'round') AS num_scripts_async,
+      SAFE.PARSE_JSON(JSON_VALUE(payload, '$._num_scripts_sync'), wide_number_mode => 'round') AS num_scripts_sync,
+      SAFE.PARSE_JSON(JSON_VALUE(payload, '$._pwa'), wide_number_mode => 'round') AS pwa,
+      SAFE.PARSE_JSON(JSON_VALUE(payload, '$._quirks_mode'), wide_number_mode => 'round') AS quirks_mode,
+      SAFE.PARSE_JSON(JSON_VALUE(payload, '$._sass'), wide_number_mode => 'round') AS sass,
+      SAFE.PARSE_JSON(JSON_VALUE(payload, '$._sessionstorage_size'), wide_number_mode => 'round') AS sessionstorage_size,
+      SAFE.PARSE_JSON(JSON_VALUE(payload, '$._usertiming'), wide_number_mode => 'round') AS usertiming
+    ))
   ) AS custom_metrics,
   ${lighthouseReport(iteration.date, iteration.client).column} AS lighthouse,
   getFeatures(payload._blinkFeatureFirstUsed) AS features,
