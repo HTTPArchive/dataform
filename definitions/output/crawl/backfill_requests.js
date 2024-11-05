@@ -3,7 +3,7 @@ const clients = constants.clients
 
 let midMonth
 for (
-    // 2016-01 till 2021-06
+// 2016-01 till 2021-06
   let date = '2021-05-01';
   date >= '2020-11-01';
   date = constants.fnPastMonth(date)

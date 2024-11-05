@@ -3,7 +3,7 @@ const clients = constants.clients
 
 let midMonth
 for (
-  let date = '2012-12-01';
+  let date = '2011-06-01';
   date >= '2011-06-01';
   date = constants.fnPastMonth(date)
 ) {
