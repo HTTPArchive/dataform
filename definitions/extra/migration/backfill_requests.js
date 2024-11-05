@@ -3,40 +3,42 @@ const clients = constants.clients
 
 let midMonth
 for (
-// 2016-01 till 2021-06
-  let date = '2021-05-01';
-  date >= '2020-11-01';
+  let date = '2020-10-01';
+  date >= '2020-01-01';
   date = constants.fnPastMonth(date)
 ) {
   clients.forEach((client) => {
-    iterations.push({
-      date,
-      client
-    })
+    if (
+      !date
+    ) { return true } else {
+      iterations.push({
+        date,
+        client
+      })
+    }
   })
 
   if (date <= '2018-12-01') {
     midMonth = new Date(date)
     midMonth.setDate(15)
+    midMonth = midMonth.toISOString().substring(0, 10)
 
     clients.forEach((client) => {
-      iterations.push({
-        date: midMonth.toISOString().substring(0, 10),
-        client
-      })
+      if (
+        !midMonth
+      ) { return true } else {
+        iterations.push({
+          date: midMonth,
+          client
+        })
+      }
     })
   }
-}
-
-function getResponseBodiesColumnName (date) {
-  return date >= '2024-02-01' ? 'response_body' : 'body'
 }
 
 iterations.forEach((iteration, i) => {
   operate(`backfill_requests ${iteration.date} ${iteration.client}`).tags([
     'backfill_requests'
-  ]).dependencies([
-    i === 0 ? 'backfill' : `backfill_requests ${iterations[i - 1].date} ${iterations[i - 1].client}`
   ]).queries(ctx => `
 DELETE FROM crawl.requests
 WHERE date = '${iteration.date}'
@@ -255,7 +257,7 @@ SELECT
   ) AS rank,
   requests.url AS url,
   IF(
-    STRING(payload._request_type) = 'Document' AND
+    SAFE.STRING(payload._request_type) = 'Document' AND
       MIN(index) OVER (PARTITION BY requests.page) = index,
     TRUE,
     FALSE
@@ -267,7 +269,7 @@ SELECT
     payload.time,
     payload._method AS method,
     response.url AS redirectUrl,
-    IFNULL(STRING(payload._protocol), STRING(request.httpVersion)) AS reqHttpVersion,
+    IFNULL(SAFE.STRING(payload._protocol), SAFE.STRING(request.httpVersion)) AS reqHttpVersion,
     request.headersSize AS reqHeadersSize,
     request.bodySize AS reqBodySize,
     getCookieLen(request.headers, 'cookie') AS reqCookieLen,
@@ -277,12 +279,12 @@ SELECT
     response.bodySize AS respBodySize,
     response.content.size AS respSize,
     getCookieLen(response.headers, 'set-cookie') AS respCookieLen,
-    getExpAge(STRING(payload.startedDateTime), response.headers) AS expAge,
+    getExpAge(SAFE.STRING(payload.startedDateTime), response.headers) AS expAge,
     response.content.mimeType,
     payload._cdn_provider,
     payload._gzip_save,
     ext,
-    getFormat(type, STRING(response.content.mimeType), ext) AS format
+    getFormat(type, SAFE.STRING(response.content.mimeType), ext) AS format
   )) AS summary,
   parseHeaders(request.headers) AS request_headers,
   parseHeaders(response.headers) AS response_headers,
@@ -291,7 +293,7 @@ FROM (
   FROM \`requests.${constants.fnDateUnderscored(iteration.date)}_${iteration.client}\` ${constants.devTABLESAMPLE}
   |> SET payload = SAFE.PARSE_JSON(payload, wide_number_mode => 'round')
   |> EXTEND getExtFromURL(url) AS ext
-  |> EXTEND prettyType(STRING(payload.response.content.mimeType), ext) AS type
+  |> EXTEND prettyType(SAFE.STRING(payload.response.content.mimeType), ext) AS type
   |> EXTEND SAFE.INT64(payload._index) AS index
   |> EXTEND payload.request AS request
   |> EXTEND payload.response AS response
@@ -312,14 +314,19 @@ LEFT JOIN (
 ) AS crux
 ON requests.page = crux.page
 
-LEFT JOIN summary_pages.${constants.fnDateUnderscored(iteration.date)}_${iteration.client} AS summary_pages ${constants.devTABLESAMPLE}
+LEFT JOIN (
+  SELECT DISTINCT
+    url,
+    rank
+  FROM summary_pages.${constants.fnDateUnderscored(iteration.date)}_${iteration.client} ${constants.devTABLESAMPLE}
+) AS summary_pages
 ON requests.page = summary_pages.url
 
 LEFT JOIN (
   SELECT
     page,
     url,
-    ANY_VALUE(${getResponseBodiesColumnName(iteration.date)}) AS response_body
+    ANY_VALUE(body) AS response_body
   FROM response_bodies.${constants.fnDateUnderscored(iteration.date)}_${iteration.client}
   GROUP BY page, url
 ) AS response_bodies ${constants.devTABLESAMPLE}

@@ -5,26 +5,35 @@ operate('backfill')
 
 let midMonth
 for (
-  let date = '2016-01-01';
-  date >= '2016-01-01';
+  let date = '2021-02-01';
+  date >= '2021-02-01';
   date = constants.fnPastMonth(date)
 ) {
   clients.forEach((client) => {
-    iterations.push({
-      date,
-      client
-    })
+    if (
+      !date
+    ) { return true } else {
+      iterations.push({
+        date,
+        client
+      })
+    }
   })
 
   if (date <= '2018-12-01') {
     midMonth = new Date(date)
     midMonth.setDate(15)
+    midMonth = midMonth.toISOString().substring(0, 10)
 
     clients.forEach((client) => {
-      iterations.push({
-        date: midMonth.toISOString().substring(0, 10),
-        client
-      })
+      if (
+        !midMonth
+      ) { return true } else {
+        iterations.push({
+          date: midMonth,
+          client
+        })
+      }
     })
   }
 }
@@ -32,17 +41,48 @@ for (
 iterations.forEach((iteration, i) => {
   operate(`backfill_pages ${iteration.date} ${iteration.client}`).tags([
     'backfill_pages'
-  ]).dependencies([
-    i === 0 ? 'backfill' : `backfill_pages ${iterations[i - 1].date} ${iterations[i - 1].client}`
   ]).queries(ctx => `
 DELETE FROM crawl.pages
 WHERE date = '${iteration.date}'
   AND client = '${iteration.client}';
 
+CREATE TEMP FUNCTION parseDetectedApps(
+  detected JSON,
+  detected_apps JSON
+)
+RETURNS ARRAY<STRUCT<technology STRING, categories ARRAY<STRING>, info ARRAY<STRING>>>
+LANGUAGE js AS '''
+  // Initialize the result array to store the structs
+  const result = []
+
+  // Loop through each entry in detected_apps
+  for (const technology in detected_apps) {
+    const info = detected_apps[technology] ? [detected_apps[technology]] : []
+    const categories = []
+
+    // Search for this technology in each category of detected
+    for (const category in detected) {
+      if (detected[category].includes(technology)) {
+        categories.push(category)
+      }
+    }
+
+    // Add a struct with the technology, its categories, and info
+    result.push({
+      technology: technology,
+      categories: categories,
+      info: info
+    })
+  }
+
+  return result
+''';
+
 CREATE TEMPORARY FUNCTION getOtherCustomMetrics(
   payload JSON,
   keys ARRAY<STRING>
-) RETURNS JSON
+)
+RETURNS JSON
 LANGUAGE js AS r'''
 try {
   let otherMetrics = {}
@@ -63,33 +103,34 @@ try {
 
 CREATE TEMP FUNCTION getFeatures(blinkFeatureFirstUsed JSON)
 RETURNS ARRAY<STRUCT<feature STRING, id STRING, type STRING>>
-LANGUAGE js AS
-r'''
-  function getFeatureNames(featureMap, featureType) {
-    try {
-      return Object.entries(featureMap).map(([key, value]) => {
-        // After Feb 2020 keys are feature IDs.
-        if (value.name) {
-          return {'feature': value.name, 'type': featureType, 'id': key}
-        }
-        // Prior to Feb 2020 keys fell back to IDs if the name was unknown.
-        if (idPattern.test(key)) {
-          return {'feature': '', 'type': featureType, 'id': key.match(idPattern)[1]}
-        }
-        // Prior to Feb 2020 keys were names by default.
-        return {'feature': key, 'type': featureType, 'id': ''}
-      })
-    } catch (e) {
-      return []
-    }
+LANGUAGE js AS r'''
+function getFeatureNames(featureMap, featureType) {
+  try {
+    return Object.entries(featureMap).map(([key, value]) => {
+      // After Feb 2020 keys are feature IDs.
+      if (value.name) {
+        return {'feature': value.name, 'type': featureType, 'id': key}
+      }
+
+      // Prior to Feb 2020 keys fell back to IDs if the name was unknown.
+      if (idPattern.test(key)) {
+        return {'feature': '', 'type': featureType, 'id': key.match(idPattern)[1]}
+      }
+
+      // Prior to Feb 2020 keys were names by default.
+      return {'feature': key, 'type': featureType, 'id': ''}
+    })
+  } catch (e) {
+    return []
   }
+}
 
-  if (!blinkFeatureFirstUsed) return []
+if (!blinkFeatureFirstUsed) return []
 
-  var idPattern = new RegExp('^Feature_(\\d+)$')
-  return getFeatureNames(blinkFeatureFirstUsed.Features, 'default')
-    .concat(getFeatureNames(blinkFeatureFirstUsed.CSSFeatures, 'css'))
-    .concat(getFeatureNames(blinkFeatureFirstUsed.AnimatedCSSFeatures, 'animated-css'))
+var idPattern = new RegExp('^Feature_(\\d+)$')
+return getFeatureNames(blinkFeatureFirstUsed.Features, 'default')
+  .concat(getFeatureNames(blinkFeatureFirstUsed.CSSFeatures, 'css'))
+  .concat(getFeatureNames(blinkFeatureFirstUsed.AnimatedCSSFeatures, 'animated-css'))
 ''';
 
 INSERT INTO crawl.pages
@@ -102,8 +143,17 @@ SELECT
   COALESCE(
     crux.rank,
     CASE
+      WHEN summary_pages.rank = 0 THEN NULL
       WHEN summary_pages.rank <= 1000 THEN 1000
       WHEN summary_pages.rank <= 5000 THEN 5000
+      WHEN summary_pages.rank <= 10000 THEN 10000
+      WHEN summary_pages.rank <= 50000 THEN 50000
+      WHEN summary_pages.rank <= 100000 THEN 100000
+      WHEN summary_pages.rank <= 500000 THEN 500000
+      WHEN summary_pages.rank <= 1000000 THEN 1000000
+      WHEN summary_pages.rank <= 5000000 THEN 5000000
+      WHEN summary_pages.rank <= 10000000 THEN 10000000
+      WHEN summary_pages.rank <= 50000000 THEN 50000000
       ELSE NULL
     END
   ) AS rank,
@@ -200,7 +250,7 @@ SELECT
     bytesWebp,
     bytesXml,
     cdn,
-    payload._CrUX,
+    payload._CrUX AS crux,
     fullyLoaded,
     gzipSavings,
     gzipTotal,
@@ -263,33 +313,33 @@ SELECT
     wpt_bodies JSON,
     other JSON
   >(
-    SAFE.PARSE_JSON(JSON_VALUE(payload, '$._a11y'), wide_number_mode => 'round'),
-    SAFE.PARSE_JSON(JSON_VALUE(payload, '$._cms'), wide_number_mode => 'round'),
-    SAFE.PARSE_JSON(JSON_VALUE(payload, '$._cookies'), wide_number_mode => 'round'),
-    payload['_css-variables'],
-    SAFE.PARSE_JSON(JSON_VALUE(payload, '$._ecommerce'), wide_number_mode => 'round'),
-    SAFE.PARSE_JSON(JSON_VALUE(payload, '$._element_count'), wide_number_mode => 'round'),
-    SAFE.PARSE_JSON(JSON_VALUE(payload, '$._javascript'), wide_number_mode => 'round'),
-    SAFE.PARSE_JSON(JSON_VALUE(payload, '$._markup'), wide_number_mode => 'round'),
-    SAFE.PARSE_JSON(JSON_VALUE(payload, '$._media'), wide_number_mode => 'round'),
-    payload['_origin-trials'],
+    SAFE.PARSE_JSON(JSON_VALUE(payload, "$._a11y"), wide_number_mode => 'round'),
+    SAFE.PARSE_JSON(JSON_VALUE(payload, "$._cms"), wide_number_mode => 'round'),
+    SAFE.PARSE_JSON(JSON_VALUE(payload, "$._cookies"), wide_number_mode => 'round'),
+    payload["_css-variables"],
+    SAFE.PARSE_JSON(JSON_VALUE(payload, "$._ecommerce"), wide_number_mode => 'round'),
+    SAFE.PARSE_JSON(JSON_VALUE(payload, "$._element_count"), wide_number_mode => 'round'),
+    SAFE.PARSE_JSON(JSON_VALUE(payload, "$._javascript"), wide_number_mode => 'round'),
+    SAFE.PARSE_JSON(JSON_VALUE(payload, "$._markup"), wide_number_mode => 'round'),
+    SAFE.PARSE_JSON(JSON_VALUE(payload, "$._media"), wide_number_mode => 'round'),
+    payload["_origin-trials"],
     payload._performance,
-    SAFE.PARSE_JSON(JSON_VALUE(payload, '$._privacy'), wide_number_mode => 'round'),
-    SAFE.PARSE_JSON(JSON_VALUE(payload, '$._responsive_images'), wide_number_mode => 'round'),
-    SAFE.PARSE_JSON(JSON_VALUE(payload, '$._robots_txt'), wide_number_mode => 'round'),
-    SAFE.PARSE_JSON(JSON_VALUE(payload, '$._security'), wide_number_mode => 'round'),
-    SAFE.PARSE_JSON(JSON_VALUE(payload, '$._structured-data'), wide_number_mode => 'round'),
-    SAFE.PARSE_JSON(JSON_VALUE(payload, '$._third-parties'), wide_number_mode => 'round'),
-    SAFE.PARSE_JSON(JSON_VALUE(payload, '$._well-known'), wide_number_mode => 'round'),
-    SAFE.PARSE_JSON(JSON_VALUE(payload, '$._wpt_bodies'), wide_number_mode => 'round'),
+    SAFE.PARSE_JSON(JSON_VALUE(payload, "$._privacy"), wide_number_mode => 'round'),
+    SAFE.PARSE_JSON(JSON_VALUE(payload, "$._responsive_images"), wide_number_mode => 'round'),
+    SAFE.PARSE_JSON(JSON_VALUE(payload, "$._robots_txt"), wide_number_mode => 'round'),
+    SAFE.PARSE_JSON(JSON_VALUE(payload, "$._security"), wide_number_mode => 'round'),
+    SAFE.PARSE_JSON(JSON_VALUE(payload, "$._structured-data"), wide_number_mode => 'round'),
+    SAFE.PARSE_JSON(JSON_VALUE(payload, "$._third-parties"), wide_number_mode => 'round'),
+    SAFE.PARSE_JSON(JSON_VALUE(payload, "$._well-known"), wide_number_mode => 'round'),
+    SAFE.PARSE_JSON(JSON_VALUE(payload, "$._wpt_bodies"), wide_number_mode => 'round'),
     getOtherCustomMetrics(
       payload,
-      ['_Colordepth', '_Dpi', '_Images', '_Resolution', '_almanac', '_avg_dom_depth', '_css', '_doctype', '_document_height', '_document_width', '_event-names', '_fugu-apis', '_has_shadow_root', '_img-loading-attr', '_initiators', '_inline_style_bytes', '_lib-detector-version', '_localstorage_size', '_meta_viewport', '_num_iframes', '_num_scripts', '_num_scripts_async', '_num_scripts_sync', '_pwa', '_quirks_mode', '_sass', '_sessionstorage_size', '_usertiming']
+      ["_Colordepth", "_Dpi", "_Images", "_Resolution", "_almanac", "_avg_dom_depth", "_css", "_doctype", "_document_height", "_document_width", "_event-names", "_fugu-apis", "_has_shadow_root", "_img-loading-attr", "_initiators", "_inline_style_bytes", "_lib-detector-version", "_localstorage_size", "_meta_viewport", "_num_iframes", "_num_scripts", "_num_scripts_async", "_num_scripts_sync", "_pwa", "_quirks_mode", "_sass", "_sessionstorage_size", "_usertiming"]
     )
   ) AS custom_metrics,
   NULL AS lighthouse,
   getFeatures(payload._blinkFeatureFirstUsed) AS features,
-  tech.technologies AS technologies,
+  parseDetectedApps(payload._detected, payload._detected_apps) AS technologies,
   pages.payload._metadata AS metadata
 FROM (
   SELECT
@@ -308,29 +358,6 @@ LEFT JOIN (
   FROM ${ctx.resolve('chrome-ux-report', 'experimental', 'global')}
   WHERE yyyymm = ${constants.fnPastMonth(iteration.date).substring(0, 7).replace('-', '')}
 ) AS crux
-ON pages.url = crux.page
-
-LEFT JOIN (
-  SELECT
-    page,
-    ARRAY_AGG(technology) AS technologies
-  FROM(
-    SELECT
-      url AS page,
-      STRUCT<
-        technology STRING,
-        categories ARRAY<STRING>,
-        info ARRAY<STRING>
-      >(
-        app,
-        ARRAY_AGG(category),
-        ARRAY_AGG(info)
-      ) AS technology
-    FROM technologies.${constants.fnDateUnderscored(iteration.date)}_${iteration.client} ${constants.devTABLESAMPLE}
-    GROUP BY page, app
-  )
-  GROUP BY page
-) AS tech
-ON pages.url = tech.page;
+ON pages.url = crux.page;
   `)
 })
