@@ -3,8 +3,9 @@ const clients = constants.clients
 
 let midMonth
 for (
-  let date = '2016-01-01';
-  date >= '2016-01-01';
+    // 2016-01 till 2021-06
+  let date = '2021-05-01';
+  date >= '2020-11-01';
   date = constants.fnPastMonth(date)
 ) {
   clients.forEach((client) => {
@@ -43,155 +44,160 @@ WHERE date = '${iteration.date}'
 
 CREATE TEMP FUNCTION getExtFromURL(url STRING)
 RETURNS STRING
-LANGUAGE js AS """
+LANGUAGE js AS '''
 try {
   let ret_ext = url;
 
   // Remove query parameters
-  const i_q = ret_ext.indexOf("?");
+  const i_q = ret_ext.indexOf('?');
   if (i_q > -1) {
-    ret_ext = ret_ext.substring(0, i_q);
+    ret_ext = ret_ext.substring(0, i_q)
   }
 
-  // Get the last segment of the path after the last "/"
-  ret_ext = ret_ext.substring(ret_ext.lastIndexOf("/") + 1);
+  // Get the last segment of the path after the last '/'
+  ret_ext = ret_ext.substring(ret_ext.lastIndexOf('/') + 1)
 
   // Find the position of the last dot
-  const i_dot = ret_ext.lastIndexOf(".");
+  const i_dot = ret_ext.lastIndexOf('.')
 
   if (i_dot === -1) {
     // No dot means no extension
-    ret_ext = "";
+    ret_ext = ''
   } else {
     // Extract the extension
-    ret_ext = ret_ext.substring(i_dot + 1);
+    ret_ext = ret_ext.substring(i_dot + 1)
 
     // Weed out overly long extensions
     if (ret_ext.length > 5) {
-      ret_ext = "";
+      ret_ext = ''
     }
   }
 
-  return ret_ext.toLowerCase();
+  return ret_ext.toLowerCase()
 } catch (e) {
-  return ""; // Return an empty string in case of any errors
+  return '' // Return an empty string in case of any errors
 }
-""";
+''';
 
 CREATE TEMP FUNCTION prettyType(mimeTyp STRING, ext STRING)
 RETURNS STRING
-LANGUAGE js AS """
+LANGUAGE js AS '''
 try {
-  mimeTyp = mimeTyp.toLowerCase();
+  mimeTyp = mimeTyp.toLowerCase()
 
   // Order by most unique first.
-  // Do NOT do html because "text/html" is often misused for other types. We catch it below.
-  const types = ["font", "css", "image", "script", "video", "audio", "xml"];
+  // Do NOT do html because 'text/html' is often misused for other types. We catch it below.
+  const types = ['font', 'css', 'image', 'script', 'video', 'audio', 'xml'];
   for (const typ of types) {
     if (mimeTyp.includes(typ)) {
-      return typ;
+      return typ
     }
   }
 
   // Special cases found manually
-  if (ext === "js") {
-    return "script";
-  } else if (mimeTyp.includes("json") || ext === "json") {
-    return "json";
-  } else if (["eot", "ttf", "woff", "woff2", "otf"].includes(ext)) {
-    return "font";
-  } else if (["png", "gif", "jpg", "jpeg", "webp", "ico", "svg", "avif", "jxl", "heic", "heif"].includes(ext)) {
-    return "image";
-  } else if (ext === "css") {
-    return "css";
-  } else if (ext === "xml") {
-    return "xml";
+  if (ext === 'js') {
+    return 'script'
+  } else if (mimeTyp.includes('json') || ext === 'json') {
+    return 'json'
+  } else if (['eot', 'ttf', 'woff', 'woff2', 'otf'].includes(ext)) {
+    return 'font'
+  } else if (['png', 'gif', 'jpg', 'jpeg', 'webp', 'ico', 'svg', 'avif', 'jxl', 'heic', 'heif'].includes(ext)) {
+    return 'image'
+  } else if (ext === 'css') {
+    return 'css'
+  } else if (ext === 'xml') {
+    return 'xml'
   } else if (
-    ["flash", "webm", "mp4", "flv"].some((typ) => mimeTyp.includes(typ)) ||
-    ["mp4", "webm", "ts", "m4v", "m4s", "mov", "ogv", "swf", "f4v", "flv"].includes(ext)
+    ['flash', 'webm', 'mp4', 'flv'].some((typ) => mimeTyp.includes(typ)) ||
+    ['mp4', 'webm', 'ts', 'm4v', 'm4s', 'mov', 'ogv', 'swf', 'f4v', 'flv'].includes(ext)
   ) {
-    return "video";
-  } else if (mimeTyp.includes("wasm") || ext === "wasm") {
-    return "wasm";
-  } else if (mimeTyp.includes("html") || ["html", "htm"].includes(ext)) {
-    return "html"; // Catch "text/html" mime type
-  } else if (mimeTyp.includes("text")) {
-    return "text"; // Put "text" LAST because it's often misused, so ext should take precedence
+    return 'video'
+  } else if (mimeTyp.includes('wasm') || ext === 'wasm') {
+    return 'wasm'
+  } else if (mimeTyp.includes('html') || ['html', 'htm'].includes(ext)) {
+    return 'html' // Catch 'text/html' mime type
+  } else if (mimeTyp.includes('text')) {
+    return 'text' // Put 'text' LAST because it's often misused, so ext should take precedence
   } else {
-    return "other";
+    return 'other'
   }
 } catch (e) {
-  return "other"; // Return "other" if there's any error
+  return 'other'
 }
-""";
+''';
 
 CREATE TEMP FUNCTION getFormat(prettyTyp STRING, mimeTyp STRING, ext STRING)
 RETURNS STRING
-LANGUAGE js AS """
+LANGUAGE js AS '''
 try {
-  if (prettyTyp === "image") {
+  if (prettyTyp === 'image') {
       // Order by most popular first.
-      const imageTypes = ["jpg", "png", "gif", "webp", "svg", "ico", "avif", "jxl", "heic", "heif"];
+      const imageTypes = ['jpg', 'png', 'gif', 'webp', 'svg', 'ico', 'avif', 'jxl', 'heic', 'heif'];
       for (const typ of imageTypes) {
           if (mimeTyp.includes(typ) || typ === ext) {
-              return typ;
+              return typ
           }
       }
-      if (mimeTyp.includes("jpeg")) {
-          return "jpg";
+      if (mimeTyp.includes('jpeg')) {
+          return 'jpg'
       }
   }
 
-  if (prettyTyp === "video") {
+  if (prettyTyp === 'video') {
       // Order by most popular first.
-      const videoTypes = ["flash", "swf", "mp4", "flv", "f4v"];
+      const videoTypes = ['flash', 'swf', 'mp4', 'flv', 'f4v']
       for (const typ of videoTypes) {
           if (mimeTyp.includes(typ) || typ === ext) {
-              return typ;
+              return typ
           }
       }
   }
 
-  return "";
+  return ''
 } catch (e) {
-  return "";
+  return ''
 }
-""";
+''';
 
 CREATE TEMP FUNCTION parseHeaders(headers JSON)
 RETURNS ARRAY<STRUCT<name STRING, value STRING>>
-LANGUAGE js AS """
+LANGUAGE js AS '''
   try {
     return headers.map(header => {
-      return { name: header.name.toLowerCase(), value: header.value };
-    });
+      return { name: header.name.toLowerCase(), value: header.value }
+    })
   } catch (e) {
-    return [];
+    return []
   }
-""";
+''';
 
 CREATE TEMP FUNCTION getCookieLen(headers JSON, cookieName STRING)
 RETURNS INT64
-LANGUAGE js AS """
+LANGUAGE js AS '''
   try {
     const cookies = headers.filter(header => header.name.toLowerCase() === headerName)
     if (!cookies) {
       return 0
     } else if (Array.isArray(cookies)) {
-      return cookies.values().reduce((acc, cookie) => acc + cookie.value.length, 0)
+      const MAX_INT64 = 2 ** 63 - 600
+      // Get the cookie length value
+      const cookieValue = cookies.values().reduce((acc, cookie) => acc + cookie.value.length, 0)
+
+      return Math.min(cookieValue, MAX_INT64)
     } else {
       return 0
     }
   } catch (e) {
-    return 0; // Return 0 in case of any errors
+    return 0 // Return 0 in case of any errors
   }
-""";
+''';
 
 CREATE TEMP FUNCTION getExpAge(startedDateTime STRING, responseHeaders JSON)
 RETURNS INT64
-LANGUAGE js AS r"""
+LANGUAGE js AS r'''
   try {
     const cacheControlRegExp = /max-age=(\\d+)/
+    const MAX_INT64 = 2 ** 63 - 600
 
     // Get the Cache-Control header value
     const cacheControl = responseHeaders.find(header => header.name.toLowerCase() === 'cache-control')?.value
@@ -199,26 +205,29 @@ LANGUAGE js AS r"""
     // Handle no-cache scenarios
     if (cacheControl && (cacheControl.includes('must-revalidate') || cacheControl.includes('no-cache') || cacheControl.includes('no-store'))) {
       return 0
-    } else if (cacheControl && cacheControlRegExp.test(cacheControl)) { // Handle max-age directive in Cache-Control header
+    } else if (cacheControl && cacheControlRegExp.test(cacheControl)) {
+      // Handle max-age directive in Cache-Control header
       const maxAgeValue = parseInt(cacheControlRegExp.exec(cacheControl)[1])
-      return Math.min(2 ** 63 - 1, maxAgeValue)
-    } else if ( // Handle Expires header in the response
-      responseHeaders.find(header => header.name.toLowerCase() === 'expires')
-    ) {
+      return Math.min(MAX_INT64, maxAgeValue)
+    }
+
+    // Handle Expires header in the response
+    const expiresHeader = responseHeaders.find(header => header.name.toLowerCase() === 'expires')?.value
+    if (expiresHeader) {
       const respDate = responseHeaders.find(header => header.name.toLowerCase() === 'date')?.value
       const startDate = new Date(respDate)?.getTime() || Date.parse(startedDateTime)
+      const endDate = new Date(expiresHeader)?.getTime() || 0
 
-      const expDate = responseHeaders.find(header => header.name.toLowerCase() === 'expires')?.value
-      const endDate = new Date(expDate)?.getTime() || 0
-
-      return Math.max((endDate - startDate) / 1000, 0)
+      // Calculate the difference in seconds, cap within INT64 range
+      const diffSeconds = Math.max((endDate - startDate) / 1000, 0)
+      return Math.min(MAX_INT64, diffSeconds)
     }
 
     return 0
   } catch (e) {
     return 0 // Return 0 in case of any errors
   }
-""";
+''';
 
 INSERT INTO crawl.requests
 SELECT
@@ -230,14 +239,23 @@ SELECT
   COALESCE(
     crux.rank,
     CASE
+      WHEN summary_pages.rank = 0 THEN NULL
       WHEN summary_pages.rank <= 1000 THEN 1000
       WHEN summary_pages.rank <= 5000 THEN 5000
+      WHEN summary_pages.rank <= 10000 THEN 10000
+      WHEN summary_pages.rank <= 50000 THEN 50000
+      WHEN summary_pages.rank <= 100000 THEN 100000
+      WHEN summary_pages.rank <= 500000 THEN 500000
+      WHEN summary_pages.rank <= 1000000 THEN 1000000
+      WHEN summary_pages.rank <= 5000000 THEN 5000000
+      WHEN summary_pages.rank <= 10000000 THEN 10000000
+      WHEN summary_pages.rank <= 50000000 THEN 50000000
       ELSE NULL
     END
   ) AS rank,
   requests.url AS url,
   IF(
-    STRING(payload._request_type) = "Document" AND
+    STRING(payload._request_type) = 'Document' AND
       MIN(index) OVER (PARTITION BY requests.page) = index,
     TRUE,
     FALSE
@@ -274,7 +292,7 @@ FROM (
   |> SET payload = SAFE.PARSE_JSON(payload, wide_number_mode => 'round')
   |> EXTEND getExtFromURL(url) AS ext
   |> EXTEND prettyType(STRING(payload.response.content.mimeType), ext) AS type
-  |> EXTEND INT64(payload._index) AS index
+  |> EXTEND SAFE.INT64(payload._index) AS index
   |> EXTEND payload.request AS request
   |> EXTEND payload.response AS response
   |> SET payload = JSON_REMOVE(

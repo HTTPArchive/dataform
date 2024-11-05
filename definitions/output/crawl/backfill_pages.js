@@ -45,8 +45,8 @@ CREATE TEMPORARY FUNCTION getOtherCustomMetrics(
 ) RETURNS JSON
 LANGUAGE js AS r'''
 try {
-  let otherMetrics = {};
-  let value = null;
+  let otherMetrics = {}
+  let value = null
   keys.forEach(function (key) {
     try {
       value = JSON.parse(payload[key].replace(/\\\\u[a-f0-9]{4}/g, ''))
@@ -54,10 +54,10 @@ try {
       value = payload[key]
     }
     otherMetrics[key.substr(1)] = value
-  });
-  return otherMetrics;
+  })
+  return otherMetrics
 } catch (e) {
-  return null;
+  return null
 }
 ''';
 
@@ -70,26 +70,26 @@ r'''
       return Object.entries(featureMap).map(([key, value]) => {
         // After Feb 2020 keys are feature IDs.
         if (value.name) {
-          return {'feature': value.name, 'type': featureType, 'id': key};
+          return {'feature': value.name, 'type': featureType, 'id': key}
         }
         // Prior to Feb 2020 keys fell back to IDs if the name was unknown.
         if (idPattern.test(key)) {
-          return {'feature': '', 'type': featureType, 'id': key.match(idPattern)[1]};
+          return {'feature': '', 'type': featureType, 'id': key.match(idPattern)[1]}
         }
         // Prior to Feb 2020 keys were names by default.
-        return {'feature': key, 'type': featureType, 'id': ''};
-      });
+        return {'feature': key, 'type': featureType, 'id': ''}
+      })
     } catch (e) {
-      return [];
+      return []
     }
   }
 
-  if (!blinkFeatureFirstUsed) return [];
+  if (!blinkFeatureFirstUsed) return []
 
-  var idPattern = new RegExp('^Feature_(\\d+)$');
+  var idPattern = new RegExp('^Feature_(\\d+)$')
   return getFeatureNames(blinkFeatureFirstUsed.Features, 'default')
     .concat(getFeatureNames(blinkFeatureFirstUsed.CSSFeatures, 'css'))
-    .concat(getFeatureNames(blinkFeatureFirstUsed.AnimatedCSSFeatures, 'animated-css'));
+    .concat(getFeatureNames(blinkFeatureFirstUsed.AnimatedCSSFeatures, 'animated-css'))
 ''';
 
 INSERT INTO crawl.pages
@@ -263,28 +263,28 @@ SELECT
     wpt_bodies JSON,
     other JSON
   >(
-    SAFE.PARSE_JSON(JSON_VALUE(payload, "$._a11y"), wide_number_mode => 'round'),
-    SAFE.PARSE_JSON(JSON_VALUE(payload, "$._cms"), wide_number_mode => 'round'),
-    SAFE.PARSE_JSON(JSON_VALUE(payload, "$._cookies"), wide_number_mode => 'round'),
-    payload["_css-variables"],
-    SAFE.PARSE_JSON(JSON_VALUE(payload, "$._ecommerce"), wide_number_mode => 'round'),
-    SAFE.PARSE_JSON(JSON_VALUE(payload, "$._element_count"), wide_number_mode => 'round'),
-    SAFE.PARSE_JSON(JSON_VALUE(payload, "$._javascript"), wide_number_mode => 'round'),
-    SAFE.PARSE_JSON(JSON_VALUE(payload, "$._markup"), wide_number_mode => 'round'),
-    SAFE.PARSE_JSON(JSON_VALUE(payload, "$._media"), wide_number_mode => 'round'),
-    payload["_origin-trials"],
+    SAFE.PARSE_JSON(JSON_VALUE(payload, '$._a11y'), wide_number_mode => 'round'),
+    SAFE.PARSE_JSON(JSON_VALUE(payload, '$._cms'), wide_number_mode => 'round'),
+    SAFE.PARSE_JSON(JSON_VALUE(payload, '$._cookies'), wide_number_mode => 'round'),
+    payload['_css-variables'],
+    SAFE.PARSE_JSON(JSON_VALUE(payload, '$._ecommerce'), wide_number_mode => 'round'),
+    SAFE.PARSE_JSON(JSON_VALUE(payload, '$._element_count'), wide_number_mode => 'round'),
+    SAFE.PARSE_JSON(JSON_VALUE(payload, '$._javascript'), wide_number_mode => 'round'),
+    SAFE.PARSE_JSON(JSON_VALUE(payload, '$._markup'), wide_number_mode => 'round'),
+    SAFE.PARSE_JSON(JSON_VALUE(payload, '$._media'), wide_number_mode => 'round'),
+    payload['_origin-trials'],
     payload._performance,
-    SAFE.PARSE_JSON(JSON_VALUE(payload, "$._privacy"), wide_number_mode => 'round'),
-    SAFE.PARSE_JSON(JSON_VALUE(payload, "$._responsive_images"), wide_number_mode => 'round'),
-    SAFE.PARSE_JSON(JSON_VALUE(payload, "$._robots_txt"), wide_number_mode => 'round'),
-    SAFE.PARSE_JSON(JSON_VALUE(payload, "$._security"), wide_number_mode => 'round'),
-    SAFE.PARSE_JSON(JSON_VALUE(payload, "$._structured-data"), wide_number_mode => 'round'),
-    SAFE.PARSE_JSON(JSON_VALUE(payload, "$._third-parties"), wide_number_mode => 'round'),
-    SAFE.PARSE_JSON(JSON_VALUE(payload, "$._well-known"), wide_number_mode => 'round'),
-    SAFE.PARSE_JSON(JSON_VALUE(payload, "$._wpt_bodies"), wide_number_mode => 'round'),
+    SAFE.PARSE_JSON(JSON_VALUE(payload, '$._privacy'), wide_number_mode => 'round'),
+    SAFE.PARSE_JSON(JSON_VALUE(payload, '$._responsive_images'), wide_number_mode => 'round'),
+    SAFE.PARSE_JSON(JSON_VALUE(payload, '$._robots_txt'), wide_number_mode => 'round'),
+    SAFE.PARSE_JSON(JSON_VALUE(payload, '$._security'), wide_number_mode => 'round'),
+    SAFE.PARSE_JSON(JSON_VALUE(payload, '$._structured-data'), wide_number_mode => 'round'),
+    SAFE.PARSE_JSON(JSON_VALUE(payload, '$._third-parties'), wide_number_mode => 'round'),
+    SAFE.PARSE_JSON(JSON_VALUE(payload, '$._well-known'), wide_number_mode => 'round'),
+    SAFE.PARSE_JSON(JSON_VALUE(payload, '$._wpt_bodies'), wide_number_mode => 'round'),
     getOtherCustomMetrics(
       payload,
-      ["_Colordepth", "_Dpi", "_Images", "_Resolution", "_almanac", "_avg_dom_depth", "_css", "_doctype", "_document_height", "_document_width", "_event-names", "_fugu-apis", "_has_shadow_root", "_img-loading-attr", "_initiators", "_inline_style_bytes", "_lib-detector-version", "_localstorage_size", "_meta_viewport", "_num_iframes", "_num_scripts", "_num_scripts_async", "_num_scripts_sync", "_pwa", "_quirks_mode", "_sass", "_sessionstorage_size", "_usertiming"]
+      ['_Colordepth', '_Dpi', '_Images', '_Resolution', '_almanac', '_avg_dom_depth', '_css', '_doctype', '_document_height', '_document_width', '_event-names', '_fugu-apis', '_has_shadow_root', '_img-loading-attr', '_initiators', '_inline_style_bytes', '_lib-detector-version', '_localstorage_size', '_meta_viewport', '_num_iframes', '_num_scripts', '_num_scripts_async', '_num_scripts_sync', '_pwa', '_quirks_mode', '_sass', '_sessionstorage_size', '_usertiming']
     )
   ) AS custom_metrics,
   NULL AS lighthouse,
