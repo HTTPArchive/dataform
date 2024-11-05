@@ -5,8 +5,8 @@ operate('backfill')
 
 let midMonth
 for (
-  let date = '2021-02-01';
-  date >= '2021-02-01';
+  let date = '2020-02-01';
+  date >= '2020-02-01';
   date = constants.fnPastMonth(date)
 ) {
   clients.forEach((client) => {
@@ -35,6 +35,27 @@ for (
         })
       }
     })
+  }
+}
+
+function lighthouseReport (date, client) {
+  if (date >= '2017-06-01' && client === 'mobile') {
+    return {
+      join: `
+LEFT JOIN (
+  SELECT
+    url,
+    SAFE.PARSE_JSON(report, wide_number_mode => 'round') AS report
+  FROM lighthouse.${constants.fnDateUnderscored(date)}_mobile ${constants.devTABLESAMPLE}
+) AS lighthouse
+ON pages.url = lighthouse.url;`,
+      column: 'lighthouse.report'
+    }
+  }
+
+  return {
+    join: ';',
+    column: 'NULL'
   }
 }
 
@@ -337,7 +358,7 @@ SELECT
       ["_Colordepth", "_Dpi", "_Images", "_Resolution", "_almanac", "_avg_dom_depth", "_css", "_doctype", "_document_height", "_document_width", "_event-names", "_fugu-apis", "_has_shadow_root", "_img-loading-attr", "_initiators", "_inline_style_bytes", "_lib-detector-version", "_localstorage_size", "_meta_viewport", "_num_iframes", "_num_scripts", "_num_scripts_async", "_num_scripts_sync", "_pwa", "_quirks_mode", "_sass", "_sessionstorage_size", "_usertiming"]
     )
   ) AS custom_metrics,
-  NULL AS lighthouse,
+  ${lighthouseReport(iteration.date, iteration.client).column} AS lighthouse,
   getFeatures(payload._blinkFeatureFirstUsed) AS features,
   parseDetectedApps(payload._detected, payload._detected_apps) AS technologies,
   pages.payload._metadata AS metadata
@@ -358,6 +379,6 @@ LEFT JOIN (
   FROM ${ctx.resolve('chrome-ux-report', 'experimental', 'global')}
   WHERE yyyymm = ${constants.fnPastMonth(iteration.date).substring(0, 7).replace('-', '')}
 ) AS crux
-ON pages.url = crux.page;
-  `)
+ON pages.url = crux.page
+${lighthouseReport(iteration.date, iteration.client).join}`)
 })
