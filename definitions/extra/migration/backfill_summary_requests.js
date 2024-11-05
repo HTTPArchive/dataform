@@ -265,7 +265,13 @@ FROM (
     get_ext_from_url(url) AS ext_from_url
   FROM summary_requests.${constants.fnDateUnderscored(iteration.date)}_${iteration.client} ${constants.devTABLESAMPLE}
 ) AS requests
-LEFT JOIN summary_pages.${constants.fnDateUnderscored(iteration.date)}_${iteration.client} AS pages ${constants.devTABLESAMPLE}
+LEFT JOIN (
+  SELECT DISTINCT
+    url,
+    pageid,
+    rank
+  FROM summary_pages.${constants.fnDateUnderscored(iteration.date)}_${iteration.client} ${constants.devTABLESAMPLE}
+) AS pages
 ON requests.pageid = pages.pageid;
   `)
 })
