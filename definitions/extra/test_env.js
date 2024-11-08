@@ -1,54 +1,28 @@
 const date = constants.currentMonth
+operate('test')
 
-const resourcesList = [{
-  datasetId: 'all',
-  tableId: 'pages'
-},
-{
-  datasetId: 'all',
-  tableId: 'requests'
-}
-  // {datasetId: 'all', tableId: 'parsed_css'},
-  // {datasetId: 'core_web_vitals', tableId: 'technologies'},
+// List of resources to be copied to the test environment. Comment out the ones you don't need.
+const resourcesList = [
+  { datasetId: 'all', tableId: 'pages', filter: `date = '${date}'` },
+  { datasetId: 'all', tableId: 'requests', filter: `date = '${date}'` },
+  { datasetId: 'all', tableId: 'parsed_css', filter: `date = '${date}'` },
+  { datasetId: 'core_web_vitals', tableId: 'technologies', filter: `date = '${date}'` },
+  { datasetId: 'blink_features', tableId: 'usage', filter: `yyyymmdd = '${date}'` },
+  { datasetId: 'blink_features', tableId: 'features', filter: `yyyymmdd = '${date}'` }
 ]
 
+// Copying the resources to the test environment. Using views instead of tables to avoid processing and speed things up.
+// Prefixes and suffixes hardcoded in the query for the sake of safety.
 resourcesList.forEach(resource => {
   operate(
-    `test_table ${resource.datasetId}_${resource.tableId}`, {
-      hasOutput: true
-    }
-  ).queries(`
+    `test_table ${resource.datasetId}_dev_dev_${resource.tableId}`
+  ).dependencies(['test']).queries(`
 CREATE SCHEMA IF NOT EXISTS ${resource.datasetId}_dev;
-
 DROP TABLE IF EXISTS ${resource.datasetId}_dev.dev_${resource.tableId};
 
-CREATE TABLE IF NOT EXISTS ${resource.datasetId}_dev.dev_${resource.tableId} AS
+CREATE VIEW IF NOT EXISTS ${resource.datasetId}_dev.dev_${resource.tableId} AS
 SELECT *
 FROM \`${resource.datasetId}.${resource.tableId}\` ${constants.devTABLESAMPLE}
-WHERE date = '${date}'
+WHERE ${resource.filter}
   `)
 })
-
-operate('test_table blink_features_dev_dev_usage', {
-  hasOutput: true
-}).queries(`
-CREATE SCHEMA IF NOT EXISTS blink_features_dev;
-
-CREATE TABLE IF NOT EXISTS blink_features_dev.dev_usage AS
-SELECT *
-FROM blink_features.usage ${constants.devTABLESAMPLE}
-WHERE yyyymmdd = '${date}';
-`)
-
-operate('test_table blink_features_dev_dev_features', {
-  hasOutput: true
-}).queries(`
-CREATE SCHEMA IF NOT EXISTS blink_features_dev;
-
-DROP TABLE IF EXISTS blink_features_dev.dev_features;
-
-CREATE TABLE IF NOT EXISTS blink_features_dev.dev_features AS
-SELECT *
-FROM blink_features.features ${constants.devTABLESAMPLE}
-WHERE yyyymmdd = DATE '${date}';
-`)

@@ -38,7 +38,7 @@ async function runWorkflow (repoURI, compilationResult, tags) {
       invocationConfig: {
         includedTags: tags,
         fullyRefreshIncrementalTablesEnabled: false,
-        transitiveDependenciesIncluded: true,
+        transitiveDependenciesIncluded: false,
         transitiveDependentsIncluded: false
       }
     }

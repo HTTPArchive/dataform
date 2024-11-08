@@ -1,0 +1,7 @@
+const stagingTables = ['pages', 'requests', 'parsed_css']
+for (const table of stagingTables) {
+  declare({
+    schema: 'crawl_staging',
+    name: table
+  })
+}
