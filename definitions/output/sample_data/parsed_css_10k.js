@@ -5,12 +5,12 @@ publish('parsed_css_10k', {
     partitionBy: 'date',
     clusterBy: ['client', 'is_root_page', 'rank', 'page']
   },
-  tags: ['crawl_results_all']
+  tags: ['crawl_complete']
 }).preOps(ctx => `
 DROP TABLE IF EXISTS ${ctx.self()};
 `).query(ctx => `
 SELECT *
-FROM ${ctx.ref('all', 'parsed_css')}
+FROM ${ctx.ref('crawl', 'parsed_css')}
 WHERE date = '${constants.currentMonth}' AND
     rank <= 10000
 `)
