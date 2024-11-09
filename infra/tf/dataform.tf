@@ -2,13 +2,14 @@ locals {
   dataform_service_account_email = "service-226352634162@gcp-sa-dataform.iam.gserviceaccount.com"
 }
 
+
 /*import {
   provider = google-beta
   id       = "projects/${local.project}/locations/${local.region}/repositories/crawl-data"
   to       = google_dataform_repository.production
 }*/
 
-resource "google_dataform_repository" "production" {
+resource "google_dataform_repository" "crawl_data" {
   provider                                   = google-beta
   display_name                               = null
   kms_key_name                               = null
@@ -24,7 +25,7 @@ resource "google_dataform_repository" "production" {
     url                                 = "https://github.com/HTTPArchive/dataform.git"
   }
   workspace_compilation_overrides {
-    default_database = null
+    default_database = local.project
     schema_suffix    = "dev"
     table_prefix     = "dev"
   }
@@ -32,23 +33,40 @@ resource "google_dataform_repository" "production" {
 
 resource "google_dataform_repository_release_config" "production" {
   provider      = google-beta
-  cron_schedule = null
-  git_commitish = "main"
   name          = "production"
   project       = local.project
   region        = local.region
-  repository    = "crawl-data"
+  repository    = google_dataform_repository.crawl_data.name
+  git_commitish = "main"
   time_zone     = "Etc/UTC"
+  cron_schedule = null
 }
-
 
 # BigQuery IAM roles for Dataform
 locals {
   datasets = [
-    "all",
-    "core_web_vitals",
     "blink_features",
-    "sample_data"
+    "core_web_vitals",
+    "crawl",
+    "sample_data",
+    // Legacy
+    "all",
+    "lighthouse",
+    "pages",
+    "requests",
+    "response_bodies",
+    "summary_pages",
+    "summary_requests",
+    "technologies",
+    // Temporary
+    "scratchspace"
+  ]
+
+  dataform_service_account_roles = [
+    "roles/bigquery.dataViewer",
+    "roles/bigquery.user",
+    "roles/dataform.admin",
+    "roles/dataform.serviceAgent",
   ]
 }
 

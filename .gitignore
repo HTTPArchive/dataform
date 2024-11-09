@@ -2,5 +2,5 @@ node_modules/
 .DS_Store
 
 # Terraform
-tf/.terraform/
-tf/temp
+infra/tf/.terraform/
+**/*.zip

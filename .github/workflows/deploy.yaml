@@ -1,0 +1,29 @@
+name: Deploy to cloud
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    permissions:
+      id-token: write
+      contents: read
+
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: google_auth
+        uses: 'google-github-actions/auth@v1'
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - uses: google-github-actions/setup-gcloud@v1
+
+      - name: 'Deploy to cloud'
+        run: |
+          make deploy
+        env:
+          GCP_PROJECT: ${{ steps.google_auth.outputs.project_id }}
+

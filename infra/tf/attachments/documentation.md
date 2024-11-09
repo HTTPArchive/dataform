@@ -1,17 +1,14 @@
 <!-- markdownlint-disable first-line-heading -->
-## Use Cases
+## Dataset Details
 
-This dataset supports the following applications:
+Learn more about [the data collection methodology](https://httparchive.org/faq) and [tables structure](https://har.fyi/guides/getting-started/#understanding-how-the-tables-are-structured).
 
-- Analyzing web performance trends, such as page load times, content delivery patterns, and API usage across thousands of sites.
-- Studying how web technologies evolve, focusing on JavaScript frameworks, security protocols, and resource loading strategies.
-- Identifying and comparing the adoption of new web standards, APIs, and features over time.
-- Optimizing frontend development practices by leveraging performance data from top sites.
-- Monitoring trends in mobile and desktop web experience.
+Total Crawled Domains: 12M+
+Update Frequency: Monthly
 
-Example analysis
+## Dataset Access
 
-- The percentage of origins passing all three Core Web Vitals: [chart](https://httparchive.org/reports/chrome-ux-report#cruxPassesCWV)
+The dataset is free and can be publicly accessed via Google BigQuery for fast, scalable analysis or download for offline research. Ideal for developers, analysts, and researchers exploring web performance trends and optimization opportunities.
 
 ## Dataset Contents
 
@@ -24,7 +21,7 @@ The HTTP Archive dataset contains detailed performance data for millions of web 
 - Page Load Metrics
 - Record Distribution
 
-\\* sourced from Chrome Experience Report ([CrUX](https://developer.chrome.com/docs/crux))
+\* sourced from Chrome Experience Report ([CrUX](https://developer.chrome.com/docs/crux))
 
 Example of metrics included:
 
@@ -44,16 +41,19 @@ The dataset contains valuable insights into modern web development technologies 
 - SEO and Metadata Trends: Common patterns in meta tags, structured data, and content optimization.
 - Mobile Optimization: Detailed evaluation of mobile-specific web performance metrics.
 
-## Dataset Access
+## Use Cases
 
-Access the dataset via Google BigQuery for fast, scalable analysis or download for offline research. Ideal for developers, analysts, and researchers exploring web performance trends and optimization opportunities.
+This dataset supports the following applications:
 
-## Dataset Details
+- Analyzing web performance trends, such as page load times, content delivery patterns, and API usage across thousands of sites.
+- Studying how web technologies evolve, focusing on JavaScript frameworks, security protocols, and resource loading strategies.
+- Identifying and comparing the adoption of new web standards, APIs, and features over time.
+- Optimizing frontend development practices by leveraging performance data from top sites.
+- Monitoring trends in mobile and desktop web experience.
 
-Learn more about [the data collection methodology](https://httparchive.org/faq) and [tables structure](https://har.fyi/guides/getting-started/#understanding-how-the-tables-are-structured).
+Example analysis
 
-Total Crawled Domains: 10M+
-Update Frequency: Monthly
+- The percentage of origins passing all three Core Web Vitals: [chart](https://httparchive.org/reports/chrome-ux-report#cruxPassesCWV)
 
 ## Community support
 

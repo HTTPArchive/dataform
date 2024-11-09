@@ -1,13 +1,14 @@
 {
   "name": "crawl-data",
+  "workspaces": [
+    "infra/trigger_function"
+  ],
   "dependencies": {
     "@dataform/core": "3.0.8"
   },
   "scripts": {
     "format": "npx standard --fix; npx markdownlint --ignore-path .gitignore --config package.json --configPointer /markdownlint . --fix",
-    "lint": "npx standard; npx markdownlint --ignore-path .gitignore --config package.json --configPointer /markdownlint .; dataform compile",
-    "plan": "terraform -chdir=tf plan -generate-config-out=generate.tf",
-    "apply": "terraform -chdir=tf apply"
+    "lint": "npx standard; npx markdownlint --ignore-path .gitignore --config package.json --configPointer /markdownlint .; dataform compile"
   },
   "standard": {
     "globals": [
