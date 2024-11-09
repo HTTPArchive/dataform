@@ -15,7 +15,7 @@ tf_plan:
 tf_apply:
 	terraform -chdir=infra/tf init && terraform -chdir=infra/tf apply -auto-approve
 
-deploy:
+deploy_fn:
 	gcloud functions deploy $(FUNCTION_NAME) \
 		--runtime=nodejs20 \
 		--region=$(GCP_REGION) \
@@ -27,4 +27,3 @@ deploy:
 		--max-instances=1 \
 		--gen2 \
 		--quiet
-	make tf_apply

@@ -49,9 +49,9 @@ resource "google_monitoring_alert_policy" "dataform_workflow" {
   project               = local.project
   severity              = "CRITICAL"
   documentation {
-    content   = "Workflows source: https://github.com/HTTPArchive/dataform/tree/main/"
+    content = "Workflows source: https://github.com/HTTPArchive/dataform/tree/main/"
   }
-  user_labels           = {}
+  user_labels = {}
   alert_strategy {
     notification_prompts = ["OPENED"]
     notification_rate_limit {

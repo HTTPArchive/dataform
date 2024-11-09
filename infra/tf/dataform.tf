@@ -1,8 +1,3 @@
-locals {
-  dataform_service_account_email = "service-226352634162@gcp-sa-dataform.iam.gserviceaccount.com"
-}
-
-
 /*import {
   provider = google-beta
   id       = "projects/${local.project}/locations/${local.region}/repositories/crawl-data"
@@ -31,7 +26,7 @@ resource "google_dataform_repository" "crawl_data" {
   }
 }
 
-resource "google_dataform_repository_release_config" "production" {
+resource "google_dataform_repository_release_config" "crawl_data_production" {
   provider      = google-beta
   name          = "production"
   project       = local.project
@@ -44,7 +39,9 @@ resource "google_dataform_repository_release_config" "production" {
 
 # BigQuery IAM roles for Dataform
 locals {
-  datasets = [
+  dataform_service_account_email = "service-226352634162@gcp-sa-dataform.iam.gserviceaccount.com"
+
+  edit_datasets = [
     "blink_features",
     "core_web_vitals",
     "crawl",
@@ -63,23 +60,30 @@ locals {
   ]
 
   dataform_service_account_roles = [
-    "roles/bigquery.dataViewer",
-    "roles/bigquery.user",
-    "roles/dataform.admin",
+    "roles/bigquery.jobUser",
     "roles/dataform.serviceAgent",
   ]
 }
 
-resource "google_bigquery_dataset_iam_member" "data_editor_role" {
-  for_each = toset(local.datasets)
+resource "google_bigquery_dataset_iam_member" "dataform_dataset_editor_role" {
+  for_each = toset(local.edit_datasets)
 
   dataset_id = each.value
   role       = "roles/bigquery.dataEditor"
   member     = "serviceAccount:${local.dataform_service_account_email}"
 }
 
-resource "google_project_iam_member" "bigquery_user" {
+resource "google_project_iam_member" "dataform_default_roles" {
+  for_each = toset(local.dataform_service_account_roles)
+
   project = local.project
-  role    = "roles/bigquery.user"
+  role    = each.value
   member  = "serviceAccount:${local.dataform_service_account_email}"
+}
+
+resource "google_secret_manager_secret_iam_member" "dataform_secret_access" {
+  project   = local.project
+  secret_id = google_dataform_repository.crawl_data.git_remote_settings[0].authentication_token_secret_version
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${local.dataform_service_account_email}"
 }

@@ -3,6 +3,8 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'infra/**'
 
 jobs:
   deploy:
@@ -21,9 +23,16 @@ jobs:
 
       - uses: google-github-actions/setup-gcloud@v1
 
-      - name: 'Deploy to cloud'
+      - name: Determine files changed
+        id: diff_check
         run: |
-          make deploy
-        env:
-          GCP_PROJECT: ${{ steps.google_auth.outputs.project_id }}
+          files_changed=$(git diff --name-only HEAD^ HEAD)
+          echo "files_changed=$files_changed" >> $GITHUB_ENV
 
+      - name: 'Run Terraform apply if tf changes detected'
+        if: contains(env.files_changed, 'infra/tf/')
+        run: make tf_apply
+
+      - name: 'Run deploy function if trigger_function changes detected'
+        if: contains(env.files_changed, 'infra/trigger_function/')
+        run: make deploy_fn
