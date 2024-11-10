@@ -4,39 +4,6 @@
   to       = google_dataform_repository.production
 }*/
 
-resource "google_dataform_repository" "crawl_data" {
-  provider                                   = google-beta
-  display_name                               = null
-  kms_key_name                               = null
-  labels                                     = {}
-  name                                       = "crawl-data"
-  npmrc_environment_variables_secret_version = null
-  project                                    = local.project
-  region                                     = local.region
-  service_account                            = null
-  git_remote_settings {
-    authentication_token_secret_version = "projects/${local.project_number}/secrets/GitHub_max-ostapenko_dataform_PAT/versions/latest"
-    default_branch                      = "main"
-    url                                 = "https://github.com/HTTPArchive/dataform.git"
-  }
-  workspace_compilation_overrides {
-    default_database = local.project
-    schema_suffix    = "dev"
-    table_prefix     = "dev"
-  }
-}
-
-resource "google_dataform_repository_release_config" "crawl_data_production" {
-  provider      = google-beta
-  name          = "production"
-  project       = local.project
-  region        = local.region
-  repository    = google_dataform_repository.crawl_data.name
-  git_commitish = "main"
-  time_zone     = "Etc/UTC"
-  cron_schedule = null
-}
-
 # BigQuery IAM roles for Dataform
 locals {
   dataform_service_account_email = "service-226352634162@gcp-sa-dataform.iam.gserviceaccount.com"
@@ -82,8 +49,40 @@ resource "google_project_iam_member" "dataform_default_roles" {
 }
 
 resource "google_secret_manager_secret_iam_member" "dataform_secret_access" {
-  project   = local.project
-  secret_id = google_dataform_repository.crawl_data.git_remote_settings[0].authentication_token_secret_version
+  secret_id = "projects/${local.project_number}/secrets/GitHub_max-ostapenko_dataform_PAT"
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${local.dataform_service_account_email}"
+}
+
+resource "google_dataform_repository" "crawl_data" {
+  provider                                   = google-beta
+  display_name                               = null
+  kms_key_name                               = null
+  labels                                     = {}
+  name                                       = "crawl-data"
+  npmrc_environment_variables_secret_version = null
+  project                                    = local.project
+  region                                     = local.region
+  service_account                            = null
+  git_remote_settings {
+    authentication_token_secret_version = "${google_secret_manager_secret_iam_member.dataform_secret_access.secret_id}/versions/latest"
+    default_branch                      = "main"
+    url                                 = "https://github.com/HTTPArchive/dataform.git"
+  }
+  workspace_compilation_overrides {
+    default_database = local.project
+    schema_suffix    = "dev"
+    table_prefix     = "dev"
+  }
+}
+
+resource "google_dataform_repository_release_config" "crawl_data_production" {
+  provider      = google-beta
+  name          = "production"
+  project       = local.project
+  region        = local.region
+  repository    = google_dataform_repository.crawl_data.name
+  git_commitish = "main"
+  time_zone     = "Etc/UTC"
+  cron_schedule = null
 }

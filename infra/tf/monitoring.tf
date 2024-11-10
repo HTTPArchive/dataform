@@ -23,7 +23,7 @@ resource "google_monitoring_alert_policy" "dataform_trigger" {
     condition_matched_log {
       filter           = <<EOF
 resource.type="cloud_function"
-resource.labels.function_name="dataformTrigger"
+resource.labels.function_name="${var.FUNCTION_NAME}"
 severity=ERROR
 EOF
       label_extractors = {}
@@ -31,8 +31,6 @@ EOF
   }
   documentation {
     content   = "Function source: https://github.com/HTTPArchive/dataform/tree/main/src"
-    mime_type = "text/markdown"
-    subject   = null
   }
 }
 

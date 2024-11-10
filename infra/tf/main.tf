@@ -31,3 +31,11 @@ locals {
   region         = "us-central1"
   location       = "us"
 }
+
+variable "FUNCTION_NAME" {
+  type    = string
+}
+
+variable "FUNCTION_SRC" {
+  type    = string
+}

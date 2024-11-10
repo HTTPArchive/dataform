@@ -1,7 +1,7 @@
 {
   "name": "crawl-data",
   "workspaces": [
-    "infra/trigger_function"
+    "infra/dataform-trigger"
   ],
   "dependencies": {
     "@dataform/core": "3.0.8"

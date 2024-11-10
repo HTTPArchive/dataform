@@ -25,15 +25,6 @@ jobs:
 
       - uses: google-github-actions/setup-gcloud@v1
 
-      - name: Determine files changed
-        id: diff_check
-        run: |
-          echo "files_changed=$(git diff --name-only HEAD^ HEAD)" >> $GITHUB_ENV
-
       - name: Run Terraform apply if tf changes detected
         if: contains(env.files_changed, 'infra/tf/')
         run: make tf_apply
-
-      - name: Run deploy function if trigger_function changes detected
-        if: contains(env.files_changed, 'infra/trigger_function/')
-        run: make deploy_fn
