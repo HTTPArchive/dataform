@@ -30,7 +30,7 @@ EOF
     }
   }
   documentation {
-    content   = "Function source: https://github.com/HTTPArchive/dataform/tree/main/src"
+    content = "Function source: https://github.com/HTTPArchive/dataform/tree/main/src"
   }
 }
 

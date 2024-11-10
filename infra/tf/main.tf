@@ -9,7 +9,10 @@ terraform {
       source  = "hashicorp/google-beta"
       version = ">= 6.10.0"
     }
-
+    archive = {
+      source  = "hashicorp/archive"
+      version = "2.6.0"
+    }
   }
 
   backend "gcs" {
@@ -33,9 +36,5 @@ locals {
 }
 
 variable "FUNCTION_NAME" {
-  type    = string
-}
-
-variable "FUNCTION_SRC" {
-  type    = string
+  type = string
 }

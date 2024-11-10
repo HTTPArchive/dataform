@@ -4,19 +4,19 @@ locals {
 
 data "archive_file" "default" {
   type        = "zip"
-  source_dir  = "../dataform-trigger/" # var.FUNCTION_SRC
+  source_dir  = "../dataform-trigger/"
   output_path = "/tmp/function-source.zip"
 }
 
 resource "google_storage_bucket_object" "object" {
   bucket = "gcf-v2-sources-${local.project_number}-${local.region}"
   name   = "${var.FUNCTION_NAME}/function-source.zip"
-  source = data.archive_file.default.output_path # Add path to the zipped function source code
+  source = data.archive_file.default.output_path
 }
 
 resource "google_cloudfunctions2_function" "default" {
-  name        = var.FUNCTION_NAME
-  location    = local.region
+  name     = var.FUNCTION_NAME
+  location = local.region
   build_config {
     runtime     = "nodejs20"
     entry_point = var.FUNCTION_NAME
@@ -28,11 +28,11 @@ resource "google_cloudfunctions2_function" "default" {
     }
   }
   service_config {
-    max_instance_count = 1
-    available_memory   = "256M"
-    timeout_seconds    = 60
+    max_instance_count    = 1
+    available_memory      = "256M"
+    timeout_seconds       = 60
     service_account_email = local.function_identity
-    ingress_settings = "ALLOW_INTERNAL_ONLY"
+    ingress_settings      = "ALLOW_INTERNAL_ONLY"
   }
 
 }
