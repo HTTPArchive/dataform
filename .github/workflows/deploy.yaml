@@ -28,8 +28,7 @@ jobs:
       - name: Determine files changed
         id: diff_check
         run: |
-          files_changed="$(git diff --name-only HEAD^ HEAD)"
-          echo "files_changed=$files_changed" >> $GITHUB_ENV
+          echo "files_changed=$(echo "$(git diff --name-only HEAD^ HEAD)")" >> $GITHUB_ENV
 
       - name: Run Terraform apply if tf changes detected
         if: contains(env.files_changed, 'infra/tf/')
