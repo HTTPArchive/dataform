@@ -1,4 +1,6 @@
 const functions = require('@google-cloud/functions-framework')
+const { BigQuery } = require('@google-cloud/bigquery')
+const { getCompilationResults, runWorkflow } = require('./dataform')
 
 const TRIGGERS = {
   cwv_tech_report: {
@@ -109,7 +111,6 @@ async function messageHandler (req, res) {
  * @returns {boolean} Query result.
  */
 async function runQuery (query) {
-  const { BigQuery } = require('@google-cloud/bigquery')
   const bigquery = new BigQuery()
 
   const [job] = await bigquery.createQueryJob({ query })
@@ -138,7 +139,6 @@ async function executeAction (actionName, actionArgs) {
  * @param {object} args Action arguments.
  */
 async function runDataformRepo (args) {
-  const { getCompilationResults, runWorkflow } = require('./dataform')
   const project = 'httparchive'
   const location = 'us-central1'
   const { repoName, tags } = args
@@ -163,4 +163,4 @@ async function runDataformRepo (args) {
  *   }
  * }
  */
-functions.http('dataformTrigger', (req, res) => messageHandler(req, res))
+functions.http('dataform-trigger', (req, res) => messageHandler(req, res))

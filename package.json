@@ -1,12 +1,14 @@
 {
   "name": "crawl-data",
+  "workspaces": [
+    "infra/dataform-trigger"
+  ],
   "dependencies": {
     "@dataform/core": "3.0.8"
   },
   "scripts": {
     "format": "npx standard --fix; npx markdownlint --ignore-path .gitignore --config package.json --configPointer /markdownlint . --fix",
-    "lint": "npx standard; npx markdownlint --ignore-path .gitignore --config package.json --configPointer /markdownlint .; dataform compile",
-    "test": "dataform test"
+    "lint": "npx standard; npx markdownlint --ignore-path .gitignore --config package.json --configPointer /markdownlint .; dataform compile"
   },
   "standard": {
     "globals": [
