@@ -131,7 +131,7 @@ resource "google_cloud_scheduler_job" "bq-poller-cwv-tech-report" {
 }
 
 resource "google_project_iam_member" "project" {
-  for_each = toset([ "roles/bigquery.jobUser", "roles/dataform.serviceAgent", "roles/run.invoker"  ])
+  for_each = toset(["roles/bigquery.jobUser", "roles/dataform.serviceAgent", "roles/run.invoker"])
 
   project = local.project
   role    = each.value
