@@ -9,7 +9,7 @@ data "archive_file" "default" {
 }
 
 resource "google_storage_bucket_object" "object" {
-  bucket = "gcf-v2-sources-${local.project_number}-${local.region}"
+  bucket = "gcf-v2-uploads-${local.project_number}-${local.region}"
   name   = "${var.FUNCTION_NAME}/function-source.zip"
   source = data.archive_file.default.output_path
 }
@@ -22,8 +22,9 @@ resource "google_cloudfunctions2_function" "default" {
     entry_point = var.FUNCTION_NAME
     source {
       storage_source {
-        bucket = google_storage_bucket_object.object.bucket
-        object = google_storage_bucket_object.object.name
+        bucket     = google_storage_bucket_object.object.bucket
+        object     = google_storage_bucket_object.object.name
+        generation = google_storage_bucket_object.object.generation
       }
     }
   }
@@ -34,7 +35,6 @@ resource "google_cloudfunctions2_function" "default" {
     service_account_email = local.function_identity
     ingress_settings      = "ALLOW_INTERNAL_ONLY"
   }
-
 }
 
 locals {
@@ -128,4 +128,12 @@ resource "google_cloud_scheduler_job" "bq-poller-cwv-tech-report" {
     min_backoff_duration = "5s"
     retry_count          = 0
   }
+}
+
+resource "google_project_iam_member" "project" {
+  for_each = toset([ "roles/bigquery.jobUser", "roles/dataform.serviceAgent", "roles/run.invoker"  ])
+
+  project = local.project
+  role    = each.value
+  member  = "serviceAccount:${local.function_identity}"
 }
