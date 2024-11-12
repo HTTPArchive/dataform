@@ -17,10 +17,10 @@ WITH crux AS (
   WHERE table_name IN ('device_summary', 'country_summary')
     AND partition_id IN (previousMonth, previousMonth_YYYYMM)
 ), report AS (
-  SELECT TOTAL_ROWS > 0 AS report_exists
+  SELECT MAX(partition_id) = previousMonth AS report_exists
   FROM httparchive.core_web_vitals.INFORMATION_SCHEMA.PARTITIONS
   WHERE table_name = 'technologies'
-    AND partition_id = previousMonth
+    AND partition_id != '__NULL__'
 )
 
 SELECT
