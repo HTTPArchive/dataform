@@ -148,11 +148,11 @@ summary_stats AS (
     SAFE.INT64(summary.bytesTotal) AS bytesTotal,
     SAFE.INT64(summary.bytesJS) AS bytesJS,
     SAFE.INT64(summary.bytesImg) AS bytesImg,
-    SAFE.FLOAT64(lighthouse_category.accessibility.score) AS accessibility,
-    SAFE.FLOAT64(lighthouse_category['best-practices'].score) AS best_practices,
-    SAFE.FLOAT64(lighthouse_category.performance.score) AS performance,
-    SAFE.FLOAT64(lighthouse_category.pwa.score) AS pwa,
-    SAFE.FLOAT64(lighthouse_category.seo.score) AS seo
+    SAFE.FLOAT64(lighthouse.categories.accessibility.score) AS accessibility,
+    SAFE.FLOAT64(lighthouse.categories['best-practices'].score) AS best_practices,
+    SAFE.FLOAT64(lighthouse.categories.performance.score) AS performance,
+    SAFE.FLOAT64(lighthouse.categories.pwa.score) AS pwa,
+    SAFE.FLOAT64(lighthouse.categories.seo.score) AS seo
   FROM
     ${ctx.ref('crawl', 'pages')}
   WHERE
