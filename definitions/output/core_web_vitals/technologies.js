@@ -228,9 +228,9 @@ SELECT
   SAFE_CAST(APPROX_QUANTILES(seo, 1000)[OFFSET(500)] AS NUMERIC) AS median_lighthouse_score_seo,
 
   # Page weight stats
-  APPROX_QUANTILES(bytesTotal, 1000)[OFFSET(500)] AS median_bytes_total,
-  APPROX_QUANTILES(bytesJS, 1000)[OFFSET(500)] AS median_bytes_js,
-  APPROX_QUANTILES(bytesImg, 1000)[OFFSET(500)] AS median_bytes_image
+  SAFE_CAST(APPROX_QUANTILES(bytesTotal, 1000)[OFFSET(500)] AS INT64) AS median_bytes_total,
+  SAFE_CAST(APPROX_QUANTILES(bytesJS, 1000)[OFFSET(500)] AS INT64) AS median_bytes_js,
+  SAFE_CAST(APPROX_QUANTILES(bytesImg, 1000)[OFFSET(500)] AS INT64) AS median_bytes_image
 
 FROM
   lab_data
