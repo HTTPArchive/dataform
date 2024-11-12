@@ -221,11 +221,11 @@ SELECT
   SAFE_DIVIDE(COUNTIF(good_cwv_2023), COUNTIF(any_lcp AND any_cls)) AS pct_eligible_origins_with_good_cwv_2023,
 
   # Lighthouse data
-  APPROX_QUANTILES(accessibility, 1000)[OFFSET(500)] AS median_lighthouse_score_accessibility,
-  APPROX_QUANTILES(best_practices, 1000)[OFFSET(500)] AS median_lighthouse_score_best_practices,
-  APPROX_QUANTILES(performance, 1000)[OFFSET(500)] AS median_lighthouse_score_performance,
-  APPROX_QUANTILES(pwa, 1000)[OFFSET(500)] AS median_lighthouse_score_pwa,
-  APPROX_QUANTILES(seo, 1000)[OFFSET(500)] AS median_lighthouse_score_seo,
+  SAFE_CAST(APPROX_QUANTILES(accessibility, 1000)[OFFSET(500)] AS NUMERIC) AS median_lighthouse_score_accessibility,
+  SAFE_CAST(APPROX_QUANTILES(best_practices, 1000)[OFFSET(500)] AS NUMERIC) AS median_lighthouse_score_best_practices,
+  SAFE_CAST(APPROX_QUANTILES(performance, 1000)[OFFSET(500)] AS NUMERIC) AS median_lighthouse_score_performance,
+  SAFE_CAST(APPROX_QUANTILES(pwa, 1000)[OFFSET(500)] AS NUMERIC) AS median_lighthouse_score_pwa,
+  SAFE_CAST(APPROX_QUANTILES(seo, 1000)[OFFSET(500)] AS NUMERIC) AS median_lighthouse_score_seo,
 
   # Page weight stats
   APPROX_QUANTILES(bytesTotal, 1000)[OFFSET(500)] AS median_bytes_total,
