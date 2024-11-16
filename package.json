@@ -1,7 +1,8 @@
 {
   "name": "crawl-data",
   "dependencies": {
-    "@dataform/core": "3.0.8"
+    "@dataform/core": "3.0.8",
+    "httparchive_reports": "file:reports"
   },
   "scripts": {
     "dependencies": "cd infra/dataform-trigger && npm install --package-lock-only",
