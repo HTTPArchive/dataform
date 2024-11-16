@@ -1,4 +1,4 @@
-const { config } = require('./reports')
+const { config } = require('./reports_config')
 
 class HTTPArchiveReports {
   constructor () {
