@@ -2,8 +2,8 @@ const today = (dataform.projectConfig.vars.today ? dataform.projectConfig.vars.t
 const currentMonth = today.substring(0, 8) + '01'
 function fnDateUnderscored (dateStr) {
   return dateStr.replaceAll('-', '_')
-} 
-function fnPastMonth(monthISOstring){
+}
+function fnPastMonth (monthISOstring) {
   const monthDate = new Date(monthISOstring)
   monthDate.setMonth(monthDate.getMonth() - 1)
   return monthDate.toISOString().substring(0, 10)
@@ -19,11 +19,11 @@ const [
       'AND rank <= 10000'
     ]
   : ['', '']
-function fillTemplate(template, params) {
-    return template.replace(/{{(.*?)}}/g, (match, key) => {
-        const trimmedKey = key.trim();
-        return trimmedKey in params ? params[trimmedKey] : match;
-    });
+function fillTemplate (template, params) {
+  return template.replace(/{{(.*?)}}/g, (match, key) => {
+    const trimmedKey = key.trim()
+    return trimmedKey in params ? params[trimmedKey] : match
+  })
 }
 
 module.exports = {

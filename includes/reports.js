@@ -31,7 +31,7 @@ class HTTPArchiveReports {
       const metrics = Object.keys(this.config._metrics).map(metricId => {
         const metric = this.getMetric(metricId)
         return metric
-      }).filter(metric => metric.histogramSQL)
+      }).filter(metric => metric.SQL)
 
       return metrics
     } else {
@@ -41,7 +41,7 @@ class HTTPArchiveReports {
       const metrics = metricIds.map(metricId => {
         const metric = this.getMetric(metricId)
         return metric
-      }).filter(metric => metric.histogramSQL)
+      }).filter(metric => metric.SQL)
 
       return metrics
     }

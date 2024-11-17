@@ -1,13 +1,16 @@
 const configs = new reports.HTTPArchiveReports()
 const params = {
-  date: constants.currentMonth
+  date: constants.currentMonth,
+  rankFilter: constants.devRankFilter
 }
 
 const metrics = configs.listMetrics()
 metrics.forEach(metric => {
-  publish(metric.id, {
-    type: 'table',
-    schema: 'reports',
-    tags: ['crawl_reports']
-  }).query(ctx => constants.fillTemplate(metric.histogramSQL, params))
+  metric.SQL.forEach(sql => {
+    publish(sql.type, {
+      type: 'table',
+      schema: 'reports',
+      tags: ['crawl_reports']
+    }).query(ctx => constants.fillTemplate(sql.query, params))
+  })
 })

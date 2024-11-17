@@ -1,4 +1,3 @@
-
 const config = {
   _reports: [
     'state-of-the-web',
@@ -117,8 +116,11 @@ const config = {
         path: 'median$firstView$bytesIn',
         scale: 0.0009765625
       },
-      histogramSQL: `
+      SQL: [{
+        type: 'histogram',
+        query: `
 SELECT
+  'bytesTotal' AS metric,
   *,
   SUM(pdf) OVER (PARTITION BY client ORDER BY bin) AS cdf
 FROM (
@@ -129,10 +131,11 @@ FROM (
     SELECT
       client,
       COUNT(0) AS volume,
-      CAST(FLOOR(INT64(summary.bytesTotal) / 102400) * 100 AS INT64) AS bin
+      CAST(FLOOR(INT64(summary.bytesTotal) / 1024 / 100) * 100 AS INT64) AS bin
     FROM httparchive.crawl.pages
-    WHERE date = '{{date}}'
-      AND rank <= 1000
+    WHERE
+      date = '{{date}}'
+      {{rankFilter}}
     GROUP BY
       bin,
       client
@@ -143,6 +146,39 @@ ORDER BY
   bin,
   client
 `
+      },
+      {
+        type: 'timeseries',
+        query: `
+SELECT
+  'bytesTotal' AS metric,
+  date,
+  UNIX_DATE(date) * 1000 * 60 * 60 * 24 AS timestamp,
+  client,
+  ROUND(APPROX_QUANTILES(bytesTotal, 1001)[OFFSET(101)] / 1024, 2) AS p10,
+  ROUND(APPROX_QUANTILES(bytesTotal, 1001)[OFFSET(251)] / 1024, 2) AS p25,
+  ROUND(APPROX_QUANTILES(bytesTotal, 1001)[OFFSET(501)] / 1024, 2) AS p50,
+  ROUND(APPROX_QUANTILES(bytesTotal, 1001)[OFFSET(751)] / 1024, 2) AS p75,
+  ROUND(APPROX_QUANTILES(bytesTotal, 1001)[OFFSET(901)] / 1024, 2) AS p90
+FROM (
+  SELECT
+    date,
+    client,
+    INT64(summary.bytesTotal) AS bytesTotal
+  FROM httparchive.crawl.pages
+  WHERE
+    date = '2024-10-01' AND
+    INT64(summary.bytesTotal) > 0
+    {{rankFilter}}
+)
+GROUP BY
+  date,
+  timestamp,
+  client
+ORDER BY
+  date DESC,
+  client`
+      }]
     },
     bytesVideo: {
       name: 'Video Bytes',
@@ -1344,4 +1380,6 @@ ORDER BY
   }
 }
 
-module.exports = { config }
+module.exports = {
+  config
+}
