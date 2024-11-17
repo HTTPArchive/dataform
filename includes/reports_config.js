@@ -120,7 +120,6 @@ const config = {
         type: 'histogram',
         query: `
 SELECT
-  'bytesTotal' AS metric,
   *,
   SUM(pdf) OVER (PARTITION BY client ORDER BY bin) AS cdf
 FROM (
@@ -151,7 +150,6 @@ ORDER BY
         type: 'timeseries',
         query: `
 SELECT
-  'bytesTotal' AS metric,
   date,
   UNIX_DATE(date) * 1000 * 60 * 60 * 24 AS timestamp,
   client,
