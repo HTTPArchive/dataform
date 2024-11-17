@@ -1,3 +1,4 @@
+
 const config = {
   _reports: [
     'state-of-the-web',
@@ -130,7 +131,7 @@ FROM (
       COUNT(0) AS volume,
       CAST(FLOOR(INT64(summary.bytesTotal) / 102400) * 100 AS INT64) AS bin
     FROM httparchive.crawl.pages
-    WHERE date = {'2024-10-01'}
+    WHERE date = '{{date}}'
       AND rank <= 1000
     GROUP BY
       bin,

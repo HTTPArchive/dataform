@@ -41,6 +41,7 @@ FROM crux, report;
       repoName: 'crawl-data',
       tags: [
         'crawl_complete',
+        'crawl_reports',
         'blink_features_report',
         'crawl_results_legacy'
       ]
