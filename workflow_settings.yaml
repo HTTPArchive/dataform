@@ -1,6 +1,6 @@
 defaultProject: httparchive
 defaultLocation: US
-defaultDataset: all
+defaultDataset: crawl
 defaultAssertionDataset: dataform_assertions
 
 vars:
