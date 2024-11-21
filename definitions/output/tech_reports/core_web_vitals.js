@@ -69,7 +69,7 @@ return Object.values(vitals);
 ''';
 
 SELECT
-  STRING(DATE(date)) as date,
+  date,
   app AS technology,
   rank,
   geo,
@@ -92,7 +92,6 @@ SELECT
   ))) AS vitals
 FROM ${ctx.ref('core_web_vitals', 'technologies')}
 WHERE date = '${pastMonth}'
-  ${constants.devRankFilter}
 GROUP BY
   date,
   app,
