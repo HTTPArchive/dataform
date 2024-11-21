@@ -1,7 +1,7 @@
 const pastMonth = constants.fnPastMonth(constants.currentMonth)
 
 publish('core_web_vitals', {
-  schema: 'tech_reports',
+  schema: 'cwv_tech_reports',
   type: 'incremental',
   protected: true,
   bigquery: {
@@ -9,7 +9,7 @@ publish('core_web_vitals', {
     clusterBy: ['rank', 'geo']
   },
   tags: ['cwv_tech_report']
-}).query(ctx => `
+}).preOps(`
 CREATE TEMPORARY FUNCTION GET_VITALS(
   records ARRAY<STRUCT<
     client STRING,
@@ -67,7 +67,7 @@ records.forEach(record => {{
 
 return Object.values(vitals);
 ''';
-
+`).query(ctx => `
 SELECT
   date,
   app AS technology,

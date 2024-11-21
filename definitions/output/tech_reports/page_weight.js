@@ -1,7 +1,7 @@
 const pastMonth = constants.fnPastMonth(constants.currentMonth)
 
 publish('page_weight', {
-  schema: 'tech_reports',
+  schema: 'cwv_tech_reports',
   type: 'incremental',
   protected: true,
   bigquery: {
@@ -9,7 +9,7 @@ publish('page_weight', {
     clusterBy: ['rank', 'geo']
   },
   tags: ['cwv_tech_report']
-}).query(ctx => `
+}).preOps(`
 CREATE TEMPORARY FUNCTION GET_PAGE_WEIGHT(
   records ARRAY<STRUCT<
     client STRING,
@@ -44,7 +44,7 @@ records.forEach(record => {{
 
 return Object.values(pageWeight)
 ''';
-
+`).query(ctx => `
 SELECT
   date,
   app AS technology,

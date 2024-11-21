@@ -1,7 +1,7 @@
 const pastMonth = constants.fnPastMonth(constants.currentMonth)
 
 publish('adoption', {
-  schema: 'tech_reports',
+  schema: 'cwv_tech_reports',
   type: 'incremental',
   protected: true,
   bigquery: {
@@ -9,7 +9,7 @@ publish('adoption', {
     clusterBy: ['rank', 'geo']
   },
   tags: ['cwv_tech_report']
-}).query(ctx => `
+}).preOps(`
 CREATE TEMPORARY FUNCTION GET_ADOPTION(
   records ARRAY<STRUCT<
     client STRING,
@@ -26,7 +26,7 @@ return Object.fromEntries(
   }})
 );
 ''';
-
+`).query(ctx => `
 SELECT
   date,
   app AS technology,
