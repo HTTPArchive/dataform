@@ -16,22 +16,24 @@ CREATE TEMPORARY FUNCTION GET_PAGE_WEIGHT(
     total INT64,
     js INT64,
     images INT64
-  >>
-) RETURNS ARRAY<STRUCT<
+>>)
+RETURNS ARRAY<STRUCT<
   name STRING,
   mobile STRUCT<
     median_bytes INT64
   >,
   desktop STRUCT<
     median_bytes INT64
-  >
->> LANGUAGE js AS '''
+>>>
+LANGUAGE js AS '''
 const METRICS = ['total', 'js', 'images'];
 
 // Initialize the page weight map.
-const pageWeight = Object.fromEntries(METRICS.map(metricName => {{
-return [metricName, {{name: metricName}}];
-}}));
+const pageWeight = Object.fromEntries(
+  METRICS.map(metricName => {{
+    return [metricName, {{name: metricName}}];
+  }})
+);
 
 // Populate each client record.
 records.forEach(record => {{
@@ -40,7 +42,7 @@ records.forEach(record => {{
   }});
 }});
 
-return Object.values(pageWeight);
+return Object.values(pageWeight)
 ''';
 
 SELECT
@@ -56,5 +58,10 @@ SELECT
   ))) AS pageWeight
 FROM ${ctx.ref('core_web_vitals', 'technologies')}
 WHERE date = '${pastMonth}'
-GROUP BY date, app, rank, geo
+  ${constants.devRankFilter}
+GROUP BY
+  date,
+  app,
+  rank,
+  geo
 `)

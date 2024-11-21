@@ -18,16 +18,16 @@ CREATE TEMPORARY FUNCTION GET_LIGHTHOUSE(
     median_lighthouse_score_performance NUMERIC,
     median_lighthouse_score_pwa NUMERIC,
     median_lighthouse_score_seo NUMERIC
->>
-) RETURNS ARRAY<STRUCT<
-name STRING,
-desktop STRUCT<
-  median_score NUMERIC
->,
-mobile STRUCT<
-  median_score NUMERIC
->
->> LANGUAGE js AS '''
+>>)
+RETURNS ARRAY<STRUCT<
+  name STRING,
+  desktop STRUCT<
+    median_score NUMERIC
+  >,
+  mobile STRUCT<
+    median_score NUMERIC
+>>>
+LANGUAGE js AS '''
 const METRIC_MAP = {{
   accessibility: 'median_lighthouse_score_accessibility',
   best_practices: 'median_lighthouse_score_best_practices',
@@ -37,9 +37,11 @@ const METRIC_MAP = {{
 }};
 
 // Initialize the Lighthouse map.
-const lighthouse = Object.fromEntries(Object.keys(METRIC_MAP).map(metricName => {{
-  return [metricName, {{name: metricName}}];
-}}));
+const lighthouse = Object.fromEntries(
+  Object.keys(METRIC_MAP).map(metricName => {{
+    return [metricName, {{name: metricName}}];
+  }})
+);
 
 // Populate each client record.
 records.forEach(record => {{
@@ -63,9 +65,13 @@ SELECT
     median_lighthouse_score_performance,
     median_lighthouse_score_pwa,
     median_lighthouse_score_seo
-
   ))) AS lighthouse
 FROM ${ctx.ref('core_web_vitals', 'technologies')}
 WHERE date = '${pastMonth}'
-GROUP BY date, app, rank, geo
+  ${constants.devRankFilter}
+GROUP BY
+  date,
+  app,
+  rank,
+  geo
 `)

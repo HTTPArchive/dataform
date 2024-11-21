@@ -14,14 +14,17 @@ CREATE TEMPORARY FUNCTION GET_ADOPTION(
   records ARRAY<STRUCT<
     client STRING,
     origins INT64
-  >>
-) RETURNS STRUCT<
+>>)
+RETURNS STRUCT<
   desktop INT64,
   mobile INT64
-> LANGUAGE js AS '''
-return Object.fromEntries(records.map(({{client, origins}}) => {{
-  return [client, origins];
-}}));
+>
+LANGUAGE js AS '''
+return Object.fromEntries(
+  records.map(({{client, origins}}) => {{
+    return [client, origins];
+  }})
+);
 ''';
 
 SELECT
@@ -36,5 +39,9 @@ SELECT
 FROM ${ctx.ref('core_web_vitals', 'technologies')}
 WHERE date = '${pastMonth}'
   ${constants.devRankFilter}
-GROUP BY date, app, rank, geo
+GROUP BY
+  date,
+  app,
+  rank,
+  geo
 `)

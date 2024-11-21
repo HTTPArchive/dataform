@@ -14,11 +14,10 @@ WITH categories AS (
   WHERE
     date = '${pastMonth}' AND
     client = 'mobile'
-  GROUP BY
-    category
-  ),
-
-  technologies AS (
+    ${constants.devRankFilter}
+  GROUP BY category
+),
+technologies AS (
   SELECT
     category,
     technology,
@@ -29,24 +28,21 @@ WITH categories AS (
   WHERE
     date = '${pastMonth}' AND
     client = 'mobile'
+    ${constants.devRankFilter}
   GROUP BY
     category,
     technology
-  )
+)
 
 SELECT
   category,
   categories.origins,
   ARRAY_AGG(technology ORDER BY technologies.origins DESC) AS technologies
-FROM
-  categories
-JOIN
-  technologies
-USING
-  (category)
+FROM categories
+JOIN technologies
+USING (category)
 GROUP BY
   category,
   categories.origins
-ORDER BY
-  categories.origins DESC
+ORDER BY categories.origins DESC
 `)

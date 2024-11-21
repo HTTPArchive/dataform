@@ -14,8 +14,9 @@ SELECT
   origins
 FROM ${ctx.ref('core_web_vitals', 'technologies')}
 JOIN ${ctx.ref('wappalyzer', 'apps')}
-ON
-  app = name
-WHERE date = '${pastMonth}' AND geo = 'ALL' AND rank = 'ALL'
+ON app = name
+WHERE date = '${pastMonth}' AND
+  geo = 'ALL' AND
+  rank = 'ALL'
 ORDER BY origins DESC
 `)
