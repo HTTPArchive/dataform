@@ -1,4 +1,4 @@
-# HTTP Archive BigQuery pipeline with Dataform
+# HTTP Archive datasets pipeline
 
 This repository handles the HTTP Archive data pipeline, which takes the results of the monthly HTTP Archive run and saves this to the `httparchive` dataset in BigQuery.
 
@@ -8,11 +8,11 @@ The pipelines are run in Dataform service in Google Cloud Platform (GCP) and are
 
 ### Crawl results
 
-Tag: `crawl_results_all`
+Tag: `crawl_complete`
 
-- httparchive.all.pages
-- httparchive.all.parsed_css
-- httparchive.all.requests
+- httparchive.crawl.pages
+- httparchive.crawl.parsed_css
+- httparchive.crawl.requests
 
 ### Core Web Vitals Technology Report
 
@@ -39,6 +39,9 @@ Consumers:
 
 Tag: `crawl_results_legacy`
 
+- httparchive.all.pages
+- httparchive.all.parsed_css
+- httparchive.all.requests
 - httparchive.lighthouse.YYYY_MM_DD_client
 - httparchive.pages.YYYY_MM_DD_client
 - httparchive.requests.YYYY_MM_DD_client
@@ -51,7 +54,7 @@ Tag: `crawl_results_legacy`
 
 1. [crawl-complete](https://console.cloud.google.com/cloudpubsub/subscription/detail/dataformTrigger?authuser=7&project=httparchive) PubSub subscription
 
-    Tags: ["crawl_results_all", "blink_features_report", "crawl_results_legacy"]
+    Tags: ["crawl_complete", "blink_features_report", "crawl_results_legacy"]
 
 2. [bq-poller-cwv-tech-report](https://console.cloud.google.com/cloudscheduler/jobs/edit/us-east4/bq-poller-cwv-tech-report?authuser=7&project=httparchive) Scheduler
 
@@ -59,7 +62,7 @@ Tag: `crawl_results_legacy`
 
 ### Triggering workflows
 
-[see here](./src/README.md)
+In order to unify the workflow triggering mechanism, we use [a Cloud Run function](./src/README.md) that can be invoked in a number of ways (e.g. listen to PubSub messages), do intermediate checks and trigger the particular Dataform workflow execution configuration.
 
 ## Contributing
 
@@ -82,7 +85,7 @@ Tag: `crawl_results_legacy`
 
 The issues within the pipeline are being tracked using the following alerts:
 
-1. the event trigger processing fails - [Dataform Trigger Function Error](https://console.cloud.google.com/monitoring/alerting/policies/3950167380893746326?authuser=7&project=httparchive)
-2. a job in the workflow fails - "[Dataform Workflow Invocation Failed](https://console.cloud.google.com/monitoring/alerting/policies/7137542315653007241?authuser=7&project=httparchive)
+1. the event trigger processing fails - [Dataform Trigger Function Error](https://console.cloud.google.com/monitoring/alerting/policies/570799173843203905?authuser=7&project=httparchive)
+2. a job in the workflow fails - "[Dataform Workflow Invocation Failed](https://console.cloud.google.com/monitoring/alerting/policies/16526940745374967367?authuser=7&project=httparchive)
 
 Error notifications are sent to [#10x-infra](https://httparchive.slack.com/archives/C030V4WAVL3) Slack channel.

@@ -1,27 +1,32 @@
 const functions = require('@google-cloud/functions-framework')
+const { BigQuery } = require('@google-cloud/bigquery')
+const { getCompilationResults, runWorkflow } = require('./dataform')
 
-const currentDate = new Date().toISOString().substring(0, 10)
 const TRIGGERS = {
   cwv_tech_report: {
     type: 'poller',
     query: `
-SELECT LOGICAL_AND(condition)
-FROM (
-  SELECT TOTAL_ROWS > 0 AS condition
-  FROM \`chrome-ux-report.materialized.INFORMATION_SCHEMA.PARTITIONS\`
-  WHERE TABLE_NAME = 'device_summary'
-    AND PARTITION_ID = FORMAT_DATE('%Y%m%d', DATE_SUB(DATE_TRUNC(DATE '${currentDate}', MONTH), INTERVAL 1 MONTH))
-  UNION ALL
-  SELECT TOTAL_ROWS > 0 AS condition
-  FROM \`chrome-ux-report.materialized.INFORMATION_SCHEMA.PARTITIONS\`
-  WHERE TABLE_NAME = 'device_summary'
-    AND PARTITION_ID = FORMAT_DATE('%Y%m%d', DATE_SUB(DATE_TRUNC(DATE '${currentDate}', MONTH), INTERVAL 1 MONTH))
-  UNION ALL
-  SELECT NOT TOTAL_ROWS > 0 AS condition
-  FROM \`httparchive.core_web_vitals.INFORMATION_SCHEMA.PARTITIONS\`
-  WHERE TABLE_NAME = 'technologies'
-    AND PARTITION_ID = FORMAT_DATE('%Y%m%d', DATE_SUB(DATE_TRUNC(DATE '${currentDate}', MONTH), INTERVAL 1 MONTH))
-);
+DECLARE previousMonth STRING DEFAULT FORMAT_DATE('%Y%m%d', DATE_SUB(DATE_TRUNC(CURRENT_DATE(), MONTH), INTERVAL 1 MONTH));
+DECLARE previousMonth_YYYYMM STRING DEFAULT SUBSTR(previousMonth, 1, 6);
+
+WITH crux AS (
+  SELECT
+    LOGICAL_AND(total_rows > 0) AS rows_available,
+    LOGICAL_AND(TIMESTAMP_DIFF(CURRENT_TIMESTAMP(), last_modified_time, HOUR) < 7) AS recent_last_modified
+  FROM chrome-ux-report.materialized.INFORMATION_SCHEMA.PARTITIONS
+  WHERE table_name IN ('device_summary', 'country_summary')
+    AND partition_id IN (previousMonth, previousMonth_YYYYMM)
+), report AS (
+  SELECT MAX(partition_id) = previousMonth AS report_exists
+  FROM httparchive.core_web_vitals.INFORMATION_SCHEMA.PARTITIONS
+  WHERE table_name = 'technologies'
+    AND partition_id != '__NULL__'
+)
+
+SELECT
+  (rows_available AND NOT report_exists)
+    OR (rows_available AND recent_last_modified) AS condition
+FROM crux, report;
     `,
     action: 'runDataformRepo',
     actionArgs: {
@@ -35,7 +40,7 @@ FROM (
     actionArgs: {
       repoName: 'crawl-data',
       tags: [
-        'crawl_results_all',
+        'crawl_complete',
         'blink_features_report',
         'crawl_results_legacy'
       ]
@@ -106,7 +111,6 @@ async function messageHandler (req, res) {
  * @returns {boolean} Query result.
  */
 async function runQuery (query) {
-  const { BigQuery } = require('@google-cloud/bigquery')
   const bigquery = new BigQuery()
 
   const [job] = await bigquery.createQueryJob({ query })
@@ -135,7 +139,6 @@ async function executeAction (actionName, actionArgs) {
  * @param {object} args Action arguments.
  */
 async function runDataformRepo (args) {
-  const { getCompilationResults, runWorkflow } = require('./dataform')
   const project = 'httparchive'
   const location = 'us-central1'
   const { repoName, tags } = args
@@ -160,4 +163,4 @@ async function runDataformRepo (args) {
  *   }
  * }
  */
-functions.http('dataformTrigger', (req, res) => messageHandler(req, res))
+functions.http('dataform-trigger', (req, res) => messageHandler(req, res))
