@@ -2,19 +2,25 @@ const pastMonth = constants.fnPastMonth(constants.currentMonth)
 
 publish('categories', {
   schema: 'tech_reports',
+  type: 'table',
   tags: ['cwv_tech_report']
 }).query(ctx => `
-WITH categories AS (
+WITH pages AS (
   SELECT
-    category,
-    COUNT(DISTINCT root_page) AS origins
-  FROM ${ctx.ref('crawl', 'pages')},
-    UNNEST(technologies) AS t,
-    UNNEST(t.categories) AS category
+    root_page,
+    technologies
+  FROM ${ctx.ref('crawl', 'pages')}
   WHERE
     date = '${pastMonth}' AND
     client = 'mobile'
     ${constants.devRankFilter}
+),categories AS (
+  SELECT
+    category,
+    COUNT(DISTINCT root_page) AS origins
+  FROM pages,
+    UNNEST(technologies) AS t,
+    UNNEST(t.categories) AS category
   GROUP BY category
 ),
 technologies AS (
@@ -22,13 +28,9 @@ technologies AS (
     category,
     technology,
     COUNT(DISTINCT root_page) AS origins
-  FROM ${ctx.ref('crawl', 'pages')},
+  FROM pages,
     UNNEST(technologies) AS t,
     UNNEST(t.categories) AS category
-  WHERE
-    date = '${pastMonth}' AND
-    client = 'mobile'
-    ${constants.devRankFilter}
   GROUP BY
     category,
     technology

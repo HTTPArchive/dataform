@@ -28,7 +28,7 @@ return Object.fromEntries(
 ''';
 
 SELECT
-  STRING(DATE(date)) as date,
+  date,
   app AS technology,
   rank,
   geo,
