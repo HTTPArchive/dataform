@@ -7,40 +7,37 @@ publish('requests', {
     clusterBy: ['client', 'is_root_page', 'type', 'rank'],
     requirePartitionFilter: true
   },
+  columns: {
+    date: 'YYYY-MM-DD format of the HTTP Archive monthly crawl',
+    client: 'Test environment: desktop or mobile',
+    page: 'The URL of the page being tested',
+    is_root_page: 'Whether the page is the root of the origin.',
+    root_page: 'The URL of the root page being tested',
+    rank: 'Site popularity rank, from CrUX',
+    url: 'The URL of the request',
+    is_main_document: 'Whether this request corresponds with the main HTML document of the page, which is the first HTML request after redirects',
+    type: 'Simplified description of the type of resource (script, html, css, text, other, etc)',
+    index: 'The sequential 0-based index of the request',
+    payload: 'JSON-encoded WebPageTest result data for this request',
+    summary: 'JSON-encoded summarization of request data',
+    request_headers: {
+      description: 'Request headers',
+      columns: {
+        name: 'Request header name',
+        value: 'Request header value'
+      }
+    },
+    response_headers: {
+      description: 'Response headers',
+      columns: {
+        name: 'Response header name',
+        value: 'Response header value'
+      }
+    },
+    response_body: 'Text-based response body'
+  },
   tags: ['crawl_complete']
 }).preOps(ctx => `
-CREATE SCHEMA IF NOT EXISTS crawl;
-
-CREATE TABLE IF NOT EXISTS ${ctx.self()}
-(
-  date DATE NOT NULL OPTIONS(description='YYYY-MM-DD format of the HTTP Archive monthly crawl'),
-  client STRING NOT NULL OPTIONS(description='Test environment: desktop or mobile'),
-  page STRING NOT NULL OPTIONS(description='The URL of the page being tested'),
-  is_root_page BOOL OPTIONS(description='Whether the page is the root of the origin.'),
-  root_page STRING NOT NULL OPTIONS(description='The URL of the root page being tested'),
-  rank INT64 OPTIONS(description='Site popularity rank, from CrUX'),
-  url STRING NOT NULL OPTIONS(description='The URL of the request'),
-  is_main_document BOOL NOT NULL OPTIONS(description='Whether this request corresponds with the main HTML document of the page, which is the first HTML request after redirects'),
-  type STRING OPTIONS(description='Simplified description of the type of resource (script, html, css, text, other, etc)'),
-  index INT64 OPTIONS(description='The sequential 0-based index of the request'),
-  payload JSON OPTIONS(description='JSON-encoded WebPageTest result data for this request'),
-  summary JSON OPTIONS(description='JSON-encoded summarization of request data'),
-  request_headers ARRAY<STRUCT<
-    name STRING OPTIONS(description='Request header name'),
-    value STRING OPTIONS(description='Request header value')
-    >> OPTIONS(description='Request headers'),
-  response_headers ARRAY<STRUCT<
-    name STRING OPTIONS(description='Response header name'),
-    value STRING OPTIONS(description='Response header value')
-    >> OPTIONS(description='Response headers'),
-  response_body STRING OPTIONS(description='Text-based response body')
-)
-PARTITION BY date
-CLUSTER BY client, is_root_page, type, rank
-OPTIONS(
-  require_partition_filter=true
-);
-
 CREATE TEMP FUNCTION pruneHeaders(
   jsonObject JSON
 ) RETURNS JSON
@@ -105,8 +102,16 @@ FROM (
   FROM ${ctx.ref('crawl_staging', 'requests')}
   WHERE date = '${constants.currentMonth}'
     AND client = 'desktop'
-    ${constants.devTABLESAMPLE}
-)
+    ${constants.devRankFilter}
+) AS requests
+LEFT JOIN (
+  SELECT DISTINCT
+    CONCAT(origin, '/') AS page,
+    experimental.popularity.rank AS rank
+  FROM ${ctx.resolve('chrome-ux-report', 'experimental', 'global')}
+  WHERE yyyymm = ${constants.fnPastMonth(constants.currentMonth).substring(0, 7).replace('-', '')}
+) AS crux
+ON requests.root_page = crux.page
 `).postOps(ctx => `
 DELETE FROM ${ctx.self()}
 WHERE date = '${constants.currentMonth}' AND
@@ -157,6 +162,14 @@ FROM (
   FROM ${ctx.ref('crawl_staging', 'requests')}
   WHERE date = '${constants.currentMonth}'
     AND client = 'mobile'
-    ${constants.devTABLESAMPLE}
-)
+    ${constants.devRankFilter}
+) AS requests
+LEFT JOIN (
+  SELECT DISTINCT
+    CONCAT(origin, '/') AS page,
+    experimental.popularity.rank AS rank
+  FROM ${ctx.resolve('chrome-ux-report', 'experimental', 'global')}
+  WHERE yyyymm = ${constants.fnPastMonth(constants.currentMonth).substring(0, 7).replace('-', '')}
+) AS crux
+ON requests.root_page = crux.page;
 `)

@@ -8,9 +8,9 @@ publish('parsed_css', {
     requirePartitionFilter: true
   },
   tags: ['crawl_results_legacy']
-}).preOps(ctx => `
+}).query(ctx => `
 DROP SNAPSHOT TABLE IF EXISTS ${ctx.self()};
 
 CREATE SNAPSHOT TABLE ${ctx.self()}
-CLONE ${ctx.ref('crawl', 'parsed_css')};
+CLONE ${ctx.ref('crawl', 'parsed_css')}
 `)
