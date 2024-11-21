@@ -38,7 +38,6 @@ SELECT
   ))) AS adoption
 FROM ${ctx.ref('core_web_vitals', 'technologies')}
 WHERE date = '${pastMonth}'
-  ${constants.devRankFilter}
 GROUP BY
   date,
   app,
