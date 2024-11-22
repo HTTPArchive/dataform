@@ -6,9 +6,7 @@ publish('pages_10k', {
     clusterBy: ['client', 'is_root_page', 'rank']
   },
   tags: ['crawl_complete']
-}).preOps(ctx => `
-DROP TABLE IF EXISTS ${ctx.self()};
-`).query(ctx => `
+}).query(ctx => `
 SELECT *
 FROM ${ctx.ref('crawl', 'pages')}
 WHERE date = '${constants.currentMonth}' AND
