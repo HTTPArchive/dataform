@@ -9,7 +9,7 @@ publish('page_weight', {
     clusterBy: ['rank', 'geo']
   },
   tags: ['cwv_tech_report']
-}).query(ctx => `
+}).preOps(`
 CREATE TEMPORARY FUNCTION GET_PAGE_WEIGHT(
   records ARRAY<STRUCT<
     client STRING,
@@ -29,20 +29,20 @@ LANGUAGE js AS '''
 const METRICS = ['total', 'js', 'images']
 
 // Initialize the page weight map.
-const pageWeight = Object.fromEntries(METRICS.map(metricName => {{
-return [metricName, {{name: metricName}}]
-}}))
+const pageWeight = Object.fromEntries(METRICS.map(metricName => {
+return [metricName, {name: metricName}]
+}))
 
 // Populate each client record.
-records.forEach(record => {{
-  METRICS.forEach(metricName => {{
-    pageWeight[metricName][record.client] = {{median_bytes: record[metricName]}}
-  }})
-}})
+records.forEach(record => {
+  METRICS.forEach(metricName => {
+    pageWeight[metricName][record.client] = {median_bytes: record[metricName]}
+  })
+})
 
 return Object.values(pageWeight)
 ''';
-
+`).query(ctx => `
 SELECT
   date,
   app AS technology,

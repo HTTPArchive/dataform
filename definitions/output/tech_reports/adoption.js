@@ -9,7 +9,7 @@ publish('adoption', {
     clusterBy: ['rank', 'geo']
   },
   tags: ['cwv_tech_report']
-}).query(ctx => `
+}).preOps(`
 CREATE TEMPORARY FUNCTION GET_ADOPTION(
   records ARRAY<STRUCT<
     client STRING,
@@ -25,7 +25,7 @@ return Object.fromEntries(
     return [client, origins]
 }))
 ''';
-
+`).query(ctx => `
 SELECT
   date,
   app AS technology,
