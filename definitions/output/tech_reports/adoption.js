@@ -1,7 +1,7 @@
 const pastMonth = constants.fnPastMonth(constants.currentMonth)
 
 publish('adoption', {
-  schema: 'tech_reports',
+  schema: 'cwv_tech_reports',
   type: 'incremental',
   protected: true,
   bigquery: {
@@ -21,10 +21,9 @@ RETURNS STRUCT<
 >
 LANGUAGE js AS '''
 return Object.fromEntries(
-  records.map(({{client, origins}}) => {{
-    return [client, origins];
-  }})
-);
+  records.map(({client, origins}) => {
+    return [client, origins]
+}))
 ''';
 
 SELECT

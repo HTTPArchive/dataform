@@ -1,7 +1,7 @@
 const pastMonth = constants.fnPastMonth(constants.currentMonth)
 
 publish('core_web_vitals', {
-  schema: 'tech_reports',
+  schema: 'cwv_tech_reports',
   type: 'incremental',
   protected: true,
   bigquery: {
@@ -52,20 +52,17 @@ const METRIC_MAP = {{
 // Initialize the vitals map.
 const vitals = Object.fromEntries(
   Object.keys(METRIC_MAP).map(metricName => {{
-    return [metricName, {{name: metricName}}];
-  }})
-);
+    return [metricName, {{name: metricName}}]
+}}));
 
 // Populate each client record.
 records.forEach(record => {{
   Object.entries(METRIC_MAP).forEach(
     ([metricName, [good_number, tested]]) => {{
-      vitals[metricName][record.client] = {{good_number: record[good_number], tested: record[tested]}};
-    }}
-  );
-}});
+    vitals[metricName][record.client] = {{good_number: record[good_number], tested: record[tested]}}
+}})}})
 
-return Object.values(vitals);
+return Object.values(vitals)
 ''';
 
 SELECT

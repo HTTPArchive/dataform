@@ -1,7 +1,7 @@
 const pastMonth = constants.fnPastMonth(constants.currentMonth)
 
 publish('page_weight', {
-  schema: 'tech_reports',
+  schema: 'cwv_tech_reports',
   type: 'incremental',
   protected: true,
   bigquery: {
@@ -26,21 +26,19 @@ RETURNS ARRAY<STRUCT<
     median_bytes INT64
 >>>
 LANGUAGE js AS '''
-const METRICS = ['total', 'js', 'images'];
+const METRICS = ['total', 'js', 'images']
 
 // Initialize the page weight map.
-const pageWeight = Object.fromEntries(
-  METRICS.map(metricName => {{
-    return [metricName, {{name: metricName}}];
-  }})
-);
+const pageWeight = Object.fromEntries(METRICS.map(metricName => {{
+return [metricName, {{name: metricName}}]
+}}))
 
 // Populate each client record.
 records.forEach(record => {{
   METRICS.forEach(metricName => {{
-    pageWeight[metricName][record.client] = {{median_bytes: record[metricName]}};
-  }});
-}});
+    pageWeight[metricName][record.client] = {{median_bytes: record[metricName]}}
+  }})
+}})
 
 return Object.values(pageWeight)
 ''';
