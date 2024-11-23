@@ -21,10 +21,9 @@ RETURNS STRUCT<
 >
 LANGUAGE js AS '''
 return Object.fromEntries(
-  records.map(({{client, origins}}) => {{
-    return [client, origins];
-  }})
-);
+  records.map(({client, origins}) => {
+    return [client, origins]
+}))
 ''';
 `).query(ctx => `
 SELECT

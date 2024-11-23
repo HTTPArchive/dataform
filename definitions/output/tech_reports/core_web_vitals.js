@@ -39,7 +39,7 @@ RETURNS ARRAY<STRUCT<
     tested INT64
 >>>
 LANGUAGE js AS '''
-const METRIC_MAP = {{
+const METRIC_MAP = {
   overall: ['origins_with_good_cwv', 'origins_eligible_for_cwv'],
   LCP: ['origins_with_good_lcp', 'origins_with_any_lcp'],
   CLS: ['origins_with_good_cls', 'origins_with_any_cls'],
@@ -47,25 +47,22 @@ const METRIC_MAP = {{
   FCP: ['origins_with_good_fcp', 'origins_with_any_fcp'],
   TTFB: ['origins_with_good_ttfb', 'origins_with_any_ttfb'],
   INP: ['origins_with_good_inp', 'origins_with_any_inp']
-}};
+};
 
 // Initialize the vitals map.
 const vitals = Object.fromEntries(
-  Object.keys(METRIC_MAP).map(metricName => {{
-    return [metricName, {{name: metricName}}];
-  }})
-);
+  Object.keys(METRIC_MAP).map(metricName => {
+    return [metricName, {name: metricName}]
+}));
 
 // Populate each client record.
-records.forEach(record => {{
+records.forEach(record => {
   Object.entries(METRIC_MAP).forEach(
-    ([metricName, [good_number, tested]]) => {{
-      vitals[metricName][record.client] = {{good_number: record[good_number], tested: record[tested]}};
-    }}
-  );
-}});
+    ([metricName, [good_number, tested]]) => {
+    vitals[metricName][record.client] = {good_number: record[good_number], tested: record[tested]}
+})})
 
-return Object.values(vitals);
+return Object.values(vitals)
 ''';
 `).query(ctx => `
 SELECT

@@ -28,29 +28,27 @@ RETURNS ARRAY<STRUCT<
     median_score NUMERIC
 >>>
 LANGUAGE js AS '''
-const METRIC_MAP = {{
+const METRIC_MAP = {
   accessibility: 'median_lighthouse_score_accessibility',
   best_practices: 'median_lighthouse_score_best_practices',
   performance: 'median_lighthouse_score_performance',
   pwa: 'median_lighthouse_score_pwa',
   seo: 'median_lighthouse_score_seo',
-}};
+}
 
 // Initialize the Lighthouse map.
-const lighthouse = Object.fromEntries(
-  Object.keys(METRIC_MAP).map(metricName => {{
-    return [metricName, {{name: metricName}}];
-  }})
-);
+const lighthouse = Object.fromEntries(Object.keys(METRIC_MAP).map(metricName => {
+  return [metricName, {name: metricName}]
+}));
 
 // Populate each client record.
-records.forEach(record => {{
-  Object.entries(METRIC_MAP).forEach(([metricName, median_score]) => {{
-      lighthouse[metricName][record.client] = {{median_score: record[median_score]}};
-  }});
-}});
+records.forEach(record => {
+  Object.entries(METRIC_MAP).forEach(([metricName, median_score]) => {
+    lighthouse[metricName][record.client] = {median_score: record[median_score]}
+  });
+});
 
-return Object.values(lighthouse);
+return Object.values(lighthouse)
 ''';
 `).query(ctx => `
 SELECT
