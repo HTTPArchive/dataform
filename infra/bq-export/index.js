@@ -1,17 +1,4 @@
-const { BigQueryExport } = require('./bigquery')
+const { ReportsExporter } = require('./reports')
 
-class BigQueryReports {
-  constructor () {
-    this.bigquery = new BigQueryExport('httparchive')
-  }
-
-  async getReport (reportId) {
-    const query = `SELECT * FROM ${reportId}`
-    const rows = await this.bigquery.query(query)
-    return rows
-  }
-}
-
-module.exports = {
-  BigQueryReports
-}
+const reports = new ReportsExporter()
+reports.export()

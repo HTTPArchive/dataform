@@ -6,14 +6,9 @@ const bigquery = new BigQuery()
 const storage = new Storage()
 
 class BigQueryExport {
-  constructor (datasetId) {
-    this.datasetId = datasetId
-  }
-
   async query (query) {
     const options = {
-      query,
-      location: 'US'
+      query
     }
 
     const [job] = await bigquery.createQueryJob(options)
