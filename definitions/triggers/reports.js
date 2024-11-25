@@ -7,15 +7,15 @@ operate('reports_complete')
 SELECT TRUE;
 `)
 
-operate('cwv_tech_reports_complete')
+operate('reports_cwv_tech_complete')
   .tags(['cwv_tech_report'])
   .dependencies([
-    { schema: 'cwv_tech_reports', name: 'adoption' },
-    { schema: 'cwv_tech_reports', name: 'categories' },
-    { schema: 'cwv_tech_reports', name: 'core_web_vitals' },
-    { schema: 'cwv_tech_reports', name: 'lighthouse' },
-    { schema: 'cwv_tech_reports', name: 'page_weight' },
-    { schema: 'cwv_tech_reports', name: 'technologies' }
+    { schema: 'reports_cwv_tech', name: 'adoption' },
+    { schema: 'reports_cwv_tech', name: 'categories' },
+    { schema: 'reports_cwv_tech', name: 'core_web_vitals' },
+    { schema: 'reports_cwv_tech', name: 'lighthouse' },
+    { schema: 'reports_cwv_tech', name: 'page_weight' },
+    { schema: 'reports_cwv_tech', name: 'technologies' }
   ]).queries(`
 SELECT TRUE;
 `)

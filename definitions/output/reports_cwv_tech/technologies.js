@@ -1,7 +1,7 @@
 const pastMonth = constants.fnPastMonth(constants.currentMonth)
 
 publish('technologies', {
-  schema: 'cwv_tech_reports',
+  schema: 'reports_cwv_tech',
   type: 'table',
   tags: ['cwv_tech_report']
 }).query(ctx => `
