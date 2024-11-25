@@ -1,5 +1,6 @@
 {
   "name": "crawl-data",
+  "author": "@max-ostapenko",
   "dependencies": {
     "@dataform/core": "3.0.8"
   },
