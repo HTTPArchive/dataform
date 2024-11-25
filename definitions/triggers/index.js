@@ -1,7 +1,8 @@
 operate('reports_complete')
   .tags(['crawl_complete'])
   .dependencies([
-    { schema: 'reports', name: 'adoption' }
+    { schema: 'reports_histogram', name: 'bytesTotal' },
+    { schema: 'reports_timeseries', name: 'bytesTotal' }
   ]).queries(`
 SELECT TRUE;
 `)
