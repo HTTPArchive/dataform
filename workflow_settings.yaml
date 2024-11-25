@@ -1,9 +1,8 @@
 defaultProject: httparchive
 defaultLocation: US
-defaultDataset: all
 defaultAssertionDataset: dataform_assertions
 
 vars:
   placeholder: value # keeping it to avoid 'empty vars' error
-  # env_name: dev  # MUST be commented in main branch, enables processing sampled data
+  env_name: dev  # MUST be commented in main branch, enables processing sampled data
   # today: 2024-09-20  # MUST be commented in main branch, allows processing historical data
