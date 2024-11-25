@@ -10,6 +10,10 @@ metrics.forEach(metric => {
     publish(metric.id, {
       type: sql.type === 'histogram' ? 'incremental' : 'table',
       protected: sql.type === 'histogram',
+      bigquery: {
+        partitionBy: 'date',
+        clusterBy: ['client']
+      },
       schema: 'reports_' + sql.type,
       tags: ['crawl_reports']
     }).query(ctx => constants.fillTemplate(sql.query, params))

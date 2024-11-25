@@ -168,7 +168,7 @@ FROM (
     INT64(summary.bytesTotal) AS bytesTotal
   FROM httparchive.crawl.pages
   WHERE
-    date = {{date}} AND
+    date = '{{date}}' AND
     INT64(summary.bytesTotal) > 0
     {{rankFilter}}
 )

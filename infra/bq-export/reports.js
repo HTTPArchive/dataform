@@ -3,14 +3,14 @@ const { StorageExport } = require('./storage')
 const { FirestoreBatch } = require('./firestore')
 
 const reportsConfigs = {
-  storagePath: 'httparchive/reports/',
+  storagePath: 'reports/dev/', // TODO change to prod
   reports: ['bytesTotal']
 }
 const cwvTechReportsConfigs = {
   reports: ['adoption', 'core_web_vitals', 'lighthouse', 'page_weight'],
   dicts: ['categories', 'technologies']
 }
-const currentMonth = new Date().toISOString().slice(0, 10)
+const currentMonth = new Date().toISOString().slice(0, 8) + '01'
 
 class ReportsExporter {
   constructor () {
@@ -20,24 +20,25 @@ class ReportsExporter {
 
   // export timeseries reports
   async exportTimeseries (reportId) {
-    const query = `SELECT * FROM reports_timeseries.${reportId}`
+    const query = `
+SELECT
+  FORMAT_DATE('%Y_%m_%d', date) AS date,
+  * EXCEPT(date)
+FROM reports_timeseries.${reportId}
+`
     const rows = await this.bigquery.query(query)
-
-    console.log(rows[0])
-    console.log(`${reportsConfigs.storagePath}${reportId}.json`)
-    // await this.storage.exportToJson(rows, `${reports.storagePath}${reportId}.json`)
+    await this.storage.exportToJson(rows, `${reportsConfigs.storagePath}${reportId}.json`)
   }
 
   // export monthly histogram report
   async exportHistogram (reportId) {
-    const query = `SELECT * FROM reports_histogram.${reportId} WHERE date = '${currentMonth}'`
-
-    console.log(query)
+    const query = `
+SELECT * EXCEPT(date)
+FROM reports_histogram.${reportId}
+WHERE date = '${currentMonth}'
+`
     const rows = await this.bigquery.query(query)
-
-    console.log(rows[0])
-    console.log(`${reportsConfigs.storagePath}${currentMonth.replaceAll('-', '')}${reportId}.json`)
-    // await this.storage.exportToJson(rows, `${reports.storagePath}${currentMonth.replaceAll('-', '')}${reportId}.json`)
+    await this.storage.exportToJson(rows, `${reportsConfigs.storagePath}${currentMonth.replaceAll('-', '_')}/${reportId}.json`)
   }
 
   async export () {
