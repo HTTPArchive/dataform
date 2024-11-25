@@ -128,22 +128,25 @@ FROM (
     volume / SUM(volume) OVER (PARTITION BY client) AS pdf
   FROM (
     SELECT
+      date,
       client,
-      COUNT(0) AS volume,
-      CAST(FLOOR(INT64(summary.bytesTotal) / 1024 / 100) * 100 AS INT64) AS bin
+      CAST(FLOOR(INT64(summary.bytesTotal) / 1024 / 100) * 100 AS INT64) AS bin,
+      COUNT(0) AS volume
     FROM httparchive.crawl.pages
     WHERE
       date = '{{date}}'
       {{rankFilter}}
     GROUP BY
-      bin,
-      client
+      date,
+      client,
+      bin
     HAVING bin IS NOT NULL
   )
 )
 ORDER BY
-  bin,
-  client
+  date,
+  client,
+  bin
 `
       },
       {
@@ -151,8 +154,8 @@ ORDER BY
         query: `
 SELECT
   date,
-  UNIX_DATE(date) * 1000 * 60 * 60 * 24 AS timestamp,
   client,
+  UNIX_SECONDS(TIMESTAMP(date)) AS timestamp,
   ROUND(APPROX_QUANTILES(bytesTotal, 1001)[OFFSET(101)] / 1024, 2) AS p10,
   ROUND(APPROX_QUANTILES(bytesTotal, 1001)[OFFSET(251)] / 1024, 2) AS p25,
   ROUND(APPROX_QUANTILES(bytesTotal, 1001)[OFFSET(501)] / 1024, 2) AS p50,
@@ -165,17 +168,18 @@ FROM (
     INT64(summary.bytesTotal) AS bytesTotal
   FROM httparchive.crawl.pages
   WHERE
-    date = '2024-10-01' AND
+    date = {{date}} AND
     INT64(summary.bytesTotal) > 0
     {{rankFilter}}
 )
 GROUP BY
   date,
-  timestamp,
-  client
+  client,
+  timestamp
 ORDER BY
   date DESC,
-  client`
+  client
+`
       }]
     },
     bytesVideo: {

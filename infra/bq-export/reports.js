@@ -10,7 +10,7 @@ const cwvTechReportsConfigs = {
   reports: ['adoption', 'core_web_vitals', 'lighthouse', 'page_weight'],
   dicts: ['categories', 'technologies']
 }
-const currentMonth = new Date().toISOString().slice(0, 7)
+const currentMonth = new Date().toISOString().slice(0, 10)
 
 class ReportsExporter {
   constructor () {
@@ -24,22 +24,24 @@ class ReportsExporter {
     const rows = await this.bigquery.query(query)
 
     console.log(rows[0])
-    console.log(`${reports.storagePath}${reportId}.json`)
+    console.log(`${reportsConfigs.storagePath}${reportId}.json`)
     // await this.storage.exportToJson(rows, `${reports.storagePath}${reportId}.json`)
   }
 
   // export monthly histogram report
   async exportHistogram (reportId) {
     const query = `SELECT * FROM reports_histogram.${reportId} WHERE date = '${currentMonth}'`
+
+    console.log(query)
     const rows = await this.bigquery.query(query)
 
     console.log(rows[0])
-    console.log(`${reports.storagePath}${currentMonth.replaceAll('-', '')}${reportId}.json`)
+    console.log(`${reportsConfigs.storagePath}${currentMonth.replaceAll('-', '')}${reportId}.json`)
     // await this.storage.exportToJson(rows, `${reports.storagePath}${currentMonth.replaceAll('-', '')}${reportId}.json`)
   }
 
   async export () {
-    for (const reportId of Object.keys(reportsConfigs)) {
+    for (const reportId of reportsConfigs.reports) {
       await this.exportTimeseries(reportId)
       await this.exportHistogram(reportId)
     }
@@ -53,7 +55,7 @@ class TechReportsExporter {
   }
 
   async exportDicts () {
-    for (const dictId of Object.keys(cwvTechReportsConfigs.dicts)) {
+    for (const dictId of cwvTechReportsConfigs.dicts) {
       const query = `SELECT * FROM reports_cwv_tech.${dictId}`
       const rows = await this.bigquery.query(query)
       await this.firestore.export(dictId, rows)
