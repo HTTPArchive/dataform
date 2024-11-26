@@ -57,23 +57,27 @@ FROM crux, report;
  */
 async function messageHandler (req, res) {
   try {
-    if (!req.body) {
+    const message = req.body.message
+    if (!message) {
       const msg = 'no message received'
       console.error(`error: ${msg}`)
+      console.info(req.body)
       res.status(400).send(`Bad Request: ${msg}`)
       return
     }
-    let message = req?.body?.message
-    if (!message) {
+
+    const messageData = message.data
+      ? JSON.parse(Buffer.from(message.data, 'base64').toString('utf-8'))
+      : message
+    if (!messageData) {
+      console.info(message)
       res.status(400).send('Bad Request: invalid message format')
       return
     }
 
-    message = message.data
-      ? JSON.parse(Buffer.from(message.data, 'base64').toString('utf-8'))
-      : message
-    const eventName = message.name
+    const eventName = messageData.name
     if (!eventName) {
+      console.info(messageData)
       res.status(400).send('Bad Request: no trigger name found')
       return
     }
@@ -81,22 +85,22 @@ async function messageHandler (req, res) {
     if (TRIGGERS[eventName]) {
       const trigger = TRIGGERS[eventName]
       if (trigger.type === 'poller') {
-        console.log(`Poller action ${eventName}`)
+        console.info(`Poller action ${eventName}`)
         const result = await runQuery(trigger.query)
-        console.log(`Query result: ${result}`)
+        console.info(`Query result: ${result}`)
         if (result) {
           await executeAction(trigger.action, trigger.actionArgs)
         }
       } else if (trigger.type === 'event') {
-        console.log(`Event action ${eventName}`)
+        console.info(`Event action ${eventName}`)
         await executeAction(trigger.action, trigger.actionArgs)
       } else {
-        console.log(`No action found for event: ${eventName}`)
+        console.info(`No action found for event: ${eventName}`)
         res.status(404).send(`No action found for event: ${eventName}`)
       }
       res.status(200).send('Event processed sucessfully')
     } else {
-      console.log(`No action found for event: ${eventName}`)
+      console.info(`No action found for event: ${eventName}`)
       res.status(404).send(`No action found for event: ${eventName}`)
     }
   } catch (error) {
@@ -115,7 +119,7 @@ async function runQuery (query) {
   const bigquery = new BigQuery()
 
   const [job] = await bigquery.createQueryJob({ query })
-  console.log(`Query job ${job.id} started.`)
+  console.info(`Query job ${job.id} started.`)
 
   const [rows] = await job.getQueryResults()
   return rows.length > 0 && rows[0][Object.keys(rows[0])[0]] === true
@@ -129,7 +133,7 @@ async function runQuery (query) {
  */
 async function executeAction (actionName, actionArgs) {
   if (actionName === 'runDataformRepo') {
-    console.log(`Executing action: ${actionName}`)
+    console.info(`Executing action: ${actionName}`)
     await runDataformRepo(actionArgs)
   }
 }
@@ -144,7 +148,7 @@ async function runDataformRepo (args) {
   const location = 'us-central1'
   const { repoName, tags } = args
 
-  console.log(`Triggering Dataform repo ${repoName} with tags: [${tags}].`)
+  console.info(`Triggering Dataform repo ${repoName} with tags: [${tags}].`)
   const repoURI = `projects/${project}/locations/${location}/repositories/${repoName}`
 
   const compilationResult = await getCompilationResults(repoURI)

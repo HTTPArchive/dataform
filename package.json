@@ -6,7 +6,7 @@
   },
   "scripts": {
     "dependencies": "cd infra/dataform-trigger && npm install --package-lock-only",
-    "format": "npx standard --fix; npx markdownlint --ignore-path .gitignore --config package.json --configPointer /markdownlint . --fix",
+    "format": "npx standard --fix; npx markdownlint --ignore-path .gitignore --config package.json --configPointer /markdownlint . --fix; terraform -chdir=infra/tf fmt",
     "lint": "npx standard; npx markdownlint --ignore-path .gitignore --config package.json --configPointer /markdownlint .; dataform compile"
   },
   "standard": {

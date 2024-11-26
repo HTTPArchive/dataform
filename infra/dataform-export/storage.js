@@ -4,12 +4,12 @@ const { Readable } = require('stream')
 const storage = new Storage()
 
 class StorageExport {
-  constructor (bucketName) {
-    this.bucketName = bucketName
+  constructor (bucket) {
+    this.bucket = bucket
   }
 
   async exportToJson (data, fileName) {
-    const bucket = storage.bucket(this.bucketName)
+    const bucket = storage.bucket(this.bucket)
     const file = bucket.file(fileName)
 
     const stream = new Readable({

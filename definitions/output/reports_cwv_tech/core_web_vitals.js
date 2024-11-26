@@ -9,7 +9,7 @@ publish('core_web_vitals', {
     clusterBy: ['rank', 'geo']
   },
   tags: ['cwv_tech_report']
-}).preOps( ctx => `
+}).preOps(ctx => `
 CREATE TEMPORARY FUNCTION GET_VITALS(
   records ARRAY<STRUCT<
     client STRING,

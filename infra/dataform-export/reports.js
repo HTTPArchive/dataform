@@ -2,49 +2,52 @@ const { BigQueryExport } = require('./bigquery')
 const { StorageExport } = require('./storage')
 const { FirestoreBatch } = require('./firestore')
 
-const reportsConfigs = {
-  storagePath: 'reports/dev/', // TODO change to prod
-  reports: ['bytesTotal']
-}
-const cwvTechReportsConfigs = {
-  reports: ['adoption', 'core_web_vitals', 'lighthouse', 'page_weight'],
-  dicts: ['categories', 'technologies']
-}
-const currentMonth = new Date().toISOString().slice(0, 8) + '01'
-
 class ReportsExporter {
   constructor () {
     this.bigquery = new BigQueryExport()
     this.storage = new StorageExport('httparchive')
+    this.storagePath = 'reports/dev/' // TODO change to prod
   }
 
   // export timeseries reports
-  async exportTimeseries (reportId) {
+  async exportTimeseries (exportData) {
+    const metric = exportData.name
     const query = `
 SELECT
   FORMAT_DATE('%Y_%m_%d', date) AS date,
   * EXCEPT(date)
-FROM reports_timeseries.${reportId}
+FROM reports_timeseries.${metric}
 `
     const rows = await this.bigquery.query(query)
-    await this.storage.exportToJson(rows, `${reportsConfigs.storagePath}${reportId}.json`)
+    await this.storage.exportToJson(rows, `${this.storagePath}${metric}.json`)
   }
 
   // export monthly histogram report
-  async exportHistogram (reportId) {
+  async exportHistogram (exportData) {
+    const metric = exportData.name
+    const date = exportData.date
+
     const query = `
 SELECT * EXCEPT(date)
-FROM reports_histogram.${reportId}
-WHERE date = '${currentMonth}'
+FROM reports_histogram.${metric}
+WHERE date = '${date}'
 `
     const rows = await this.bigquery.query(query)
-    await this.storage.exportToJson(rows, `${reportsConfigs.storagePath}${currentMonth.replaceAll('-', '_')}/${reportId}.json`)
+    await this.storage.exportToJson(rows, `${this.storagePath}${date.replaceAll('-', '_')}/${metric}.json`)
   }
 
-  async export () {
-    for (const reportId of reportsConfigs.reports) {
-      await this.exportTimeseries(reportId)
-      await this.exportHistogram(reportId)
+  async export (exportData) {
+    if (exportData.dataform_trigger !== 'report_complete') {
+      console.error('Invalid dataform trigger')
+      return
+    }
+
+    if (exportData.type === 'histogram') {
+      await this.exportHistogram(exportData)
+    } else if (exportData.type === 'timeseries') {
+      await this.exportTimeseries(exportData)
+    } else {
+      console.error('Invalid report type')
     }
   }
 }
@@ -55,25 +58,36 @@ class TechReportsExporter {
     this.firestore = new FirestoreBatch('tech-report-apis-dev') // TODO change to prod
   }
 
-  async exportDicts () {
-    for (const dictId of cwvTechReportsConfigs.dicts) {
-      const query = `SELECT * FROM reports_cwv_tech.${dictId}`
-      const rows = await this.bigquery.query(query)
-      await this.firestore.export(dictId, rows)
-    }
+  async exportDicts (exportData) {
+    const dictName = exportData.name
+    const query = `SELECT * FROM reports_cwv_tech.${dictName}`
+
+    const rows = await this.bigquery.query(query)
+    await this.firestore.export(dictName, rows)
   }
 
-  async exportReports () {
-    for (const reportId of cwvTechReportsConfigs.reports) {
-      const query = `SELECT * FROM httparchive.reports_cwv_tech.${reportId} WHERE date = '${currentMonth}'`
-      const rows = await this.bigquery.query(query)
-      await this.firestore.batch(reportId, rows)
-    }
+  async exportReports (exportData) {
+    const metric = exportData.name
+    const date = exportData.date
+    const query = `SELECT * FROM httparchive.reports_cwv_tech.${metric} WHERE date = '${date}'`
+
+    const rows = await this.bigquery.query(query)
+    await this.firestore.batch(metric, rows)
   }
 
-  async export () {
-    await this.exportDicts()
-    await this.exportReports()
+  async export (exportData) {
+    if (exportData.dataform_trigger !== 'report_cwv_tech_complete') {
+      console.error('Invalid dataform trigger')
+      return
+    }
+
+    if (exportData.type === 'report') {
+      await this.exportReports(exportData)
+    } else if (exportData.type === 'dict') {
+      await this.exportDicts(exportData)
+    } else {
+      console.error('Invalid export type')
+    }
   }
 }
 

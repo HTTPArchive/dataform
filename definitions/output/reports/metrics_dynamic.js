@@ -10,13 +10,14 @@ metrics.forEach(metric => {
     publish(metric.id, {
       type: 'incremental',
       protected: true,
-      bigquery: sql.type === 'histogram' ? {partitionBy: 'date', clusterBy: ['client'] } : {},
+      bigquery: sql.type === 'histogram' ? { partitionBy: 'date', clusterBy: ['client'] } : {},
       schema: 'reports_' + sql.type,
       tags: ['crawl_reports']
-    }).query(ctx =>`
-/* {"dataform_trigger": "reports_complete", "date": "${params.date}", "metric": "${metric.id}", "type": "${sql.type}"} */
+    }).preOps(ctx => `
 DELETE FROM ${ctx.self()}
 WHERE date = '${params.date}';
+`).query(ctx => `
+/* {"dataform_trigger": "report_complete", "date": "${params.date}", "name": "${metric.id}", "type": "${sql.type}"} */
 ` + constants.fillTemplate(sql.query, params))
   })
 })

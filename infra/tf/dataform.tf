@@ -9,10 +9,18 @@ locals {
   dataform_service_account_email = "service-226352634162@gcp-sa-dataform.iam.gserviceaccount.com"
 
   edit_datasets = [
-    "blink_features",
-    "core_web_vitals",
     "crawl",
     "sample_data",
+
+    // Blink features
+    "blink_features",
+
+    // Reports
+    "core_web_vitals",
+    "reports_cwv_tech",
+    "reports_histogram",
+    "reports_timeseries",
+
     // Legacy
     "all",
     "lighthouse",
@@ -22,6 +30,7 @@ locals {
     "summary_pages",
     "summary_requests",
     "technologies",
+
     // Temporary
     "scratchspace"
   ]

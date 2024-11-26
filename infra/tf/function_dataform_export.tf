@@ -39,6 +39,26 @@ resource "google_pubsub_topic" "bigquery_data_updated" {
   project = local.project
 }
 
+# Logs sink for Dataform triggers
+# TODO change dataform_repository_id to PROD
+resource "google_logging_project_sink" "dataform_export_triggers" {
+  name        = "dataform-export-triggers"
+  destination = "pubsub.googleapis.com/projects/${local.project}/topics/bigquery-data-updated"
+  filter      = <<EOT
+-- PROD dataform
+protoPayload.authenticationInfo.principalEmail="service-226352634162@gcp-sa-dataform.iam.gserviceaccount.com"
+protoPayload.serviceData.jobCompletedEvent.job.jobConfiguration.labels.dataform_repository_id="crawl-data-test"
+
+--successful query
+protoPayload.serviceData.jobCompletedEvent.job.jobStatus.state="DONE"
+-protoPayload.serviceData.jobCompletedEvent.job.jobStatus.error.message:*
+
+--check for trigger config
+protoPayload.serviceData.jobCompletedEvent.job.jobConfiguration.query.query=~"/* {\"dataform_trigger\": "
+EOT
+  project     = local.project
+}
+
 # Topic Subscription for dataform_export function
 resource "google_pubsub_subscription" "dataform_export" {
   ack_deadline_seconds         = 60
