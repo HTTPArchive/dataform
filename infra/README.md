@@ -44,7 +44,21 @@ curl -X POST http://localhost:8080/ \
   }'
 ```
 
-### Deployment
+## Cloud Function for report data exports
+
+[exportReport](https://console.cloud.google.com/functions/details/us-central1/bqExport?env=gen2&authuser=7&project=httparchive) Cloud Run Function
+
+This function exports reports data to GCS or Firestore.
+
+### Report configuration
+
+TODO
+
+### Trigger configuration
+
+TODO
+
+## Deployment
 
 When you're under `infra/` run:
 

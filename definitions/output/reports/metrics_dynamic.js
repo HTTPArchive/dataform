@@ -3,8 +3,8 @@ const params = {
   date: constants.currentMonth,
   rankFilter: constants.devRankFilter
 }
-
 const metrics = configs.listMetrics()
+
 metrics.forEach(metric => {
   metric.SQL.forEach(sql => {
     publish(metric.id, {
@@ -16,6 +16,8 @@ metrics.forEach(metric => {
       },
       schema: 'reports_' + sql.type,
       tags: ['crawl_reports']
-    }).query(ctx => constants.fillTemplate(sql.query, params))
+    }).query(ctx =>
+      `/* {"dataform_trigger": "reports_complete", "date": "${params.date}", "metric": "${metric.id}", "type": "${sql.type}"} */` +
+      constants.fillTemplate(sql.query, params))
   })
 })

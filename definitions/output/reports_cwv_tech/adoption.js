@@ -26,6 +26,7 @@ return Object.fromEntries(
 }))
 ''';
 `).query(ctx => `
+/* {"dataform_trigger": "reports_cwv_tech_complete", "date": "${pastMonth}", "metric": "adoption", "type": "report"} */
 SELECT
   date,
   app AS technology,
