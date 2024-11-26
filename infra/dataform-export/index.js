@@ -9,7 +9,7 @@ const { ReportsExporter, TechReportsExporter } = require('./reports')
  */
 async function messageHandler (req, res) {
   console.log('messageHandler')
-  console.log(JSON.parse(req.body))
+  console.log(JSON.stringify(req.body))
   try {
     if (!req.body) {
       const msg = 'no message received'
