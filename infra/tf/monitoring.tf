@@ -29,12 +29,12 @@ EOF
   }
 }
 
-/*
+
 resource "google_monitoring_alert_policy" "dataform_export" {
   combiner              = "OR"
   display_name          = "Dataform Export Function Error"
   enabled               = true
-  notification_channels = ["projects/${local.project}/notificationChannels/5647028675917298338"]
+  //notification_channels = ["projects/${local.project}/notificationChannels/5647028675917298338"]
   project               = local.project
   severity              = "CRITICAL"
   user_labels           = {}
@@ -60,7 +60,7 @@ EOF
     content = "Function source: https://github.com/HTTPArchive/dataform/tree/main/infra/dataform-export"
   }
 }
-*/
+
 
 resource "google_monitoring_alert_policy" "dataform_workflow" {
   combiner              = "OR"
