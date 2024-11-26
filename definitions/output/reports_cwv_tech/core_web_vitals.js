@@ -9,7 +9,7 @@ publish('core_web_vitals', {
     clusterBy: ['rank', 'geo']
   },
   tags: ['cwv_tech_report']
-}).preOps(`
+}).preOps( ctx => `
 CREATE TEMPORARY FUNCTION GET_VITALS(
   records ARRAY<STRUCT<
     client STRING,
@@ -64,6 +64,9 @@ records.forEach(record => {
 
 return Object.values(vitals)
 ''';
+
+DELETE FROM ${ctx.self()}
+WHERE date = '${pastMonth}';
 `).query(ctx => `
 SELECT
   date,

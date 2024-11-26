@@ -9,7 +9,7 @@ publish('adoption', {
     clusterBy: ['rank', 'geo']
   },
   tags: ['cwv_tech_report']
-}).preOps(`
+}).preOps( ctx => `
 CREATE TEMPORARY FUNCTION GET_ADOPTION(
   records ARRAY<STRUCT<
     client STRING,
@@ -25,6 +25,9 @@ return Object.fromEntries(
     return [client, origins]
 }))
 ''';
+
+DELETE FROM ${ctx.self()}
+WHERE date = '${pastMonth}';
 `).query(ctx => `
 /* {"dataform_trigger": "reports_cwv_tech_complete", "date": "${pastMonth}", "metric": "adoption", "type": "report"} */
 SELECT

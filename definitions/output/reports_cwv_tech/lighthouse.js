@@ -9,7 +9,7 @@ publish('lighthouse', {
     clusterBy: ['rank', 'geo']
   },
   tags: ['cwv_tech_report']
-}).preOps(`
+}).preOps(ctx => `
 CREATE TEMPORARY FUNCTION GET_LIGHTHOUSE(
   records ARRAY<STRUCT<
     client STRING,
@@ -50,6 +50,9 @@ records.forEach(record => {
 
 return Object.values(lighthouse)
 ''';
+
+DELETE FROM ${ctx.self()}
+WHERE date = '${pastMonth}';
 `).query(ctx => `
 SELECT
   date,

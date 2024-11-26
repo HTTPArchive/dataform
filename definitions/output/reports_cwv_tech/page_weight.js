@@ -9,7 +9,7 @@ publish('page_weight', {
     clusterBy: ['rank', 'geo']
   },
   tags: ['cwv_tech_report']
-}).preOps(`
+}).preOps(ctx => `
 CREATE TEMPORARY FUNCTION GET_PAGE_WEIGHT(
   records ARRAY<STRUCT<
     client STRING,
@@ -42,6 +42,9 @@ records.forEach(record => {
 
 return Object.values(pageWeight)
 ''';
+
+DELETE FROM ${ctx.self()}
+WHERE date = '${pastMonth}';
 `).query(ctx => `
 SELECT
   date,
