@@ -50,6 +50,7 @@ protoPayload.authenticationInfo.principalEmail="service-226352634162@gcp-sa-data
 protoPayload.serviceData.jobCompletedEvent.job.jobConfiguration.labels.dataform_repository_id="crawl-data-test"
 
 --successful query
+protoPayload.resourceName=~"projects/httparchive/jobs/dataform-gcp-"
 protoPayload.serviceData.jobCompletedEvent.job.jobStatus.state="DONE"
 -protoPayload.serviceData.jobCompletedEvent.job.jobStatus.error.message:*
 
