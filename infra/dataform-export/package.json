@@ -1,5 +1,5 @@
 {
-  "name": "bq-export",
+  "name": "dataform-export",
   "version": "1.0.0",
   "author": "@max-ostapenko",
   "main": "index.js",
@@ -8,5 +8,8 @@
     "@google-cloud/firestore": "^7.10.0",
     "@google-cloud/functions-framework": "^3.4.2",
     "@google-cloud/storage": "^7.14.0"
+  },
+  "scripts": {
+    "start": "npx functions-framework --target=dataform-export --signature-type=http --port=8080 --debug"
   }
 }

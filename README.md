@@ -80,12 +80,3 @@ In order to unify the workflow triggering mechanism, we use [a Cloud Run functio
     - change `today` variable to a month in the past. May be helpful for testing pipelines based on `chrome-ux-report` data.
 
 2. `definitions/extra/test_env.sqlx` script helps to setup the tables required to run pipelines when in dev workspace. It's disabled by default.
-
-### Error Monitoring
-
-The issues within the pipeline are being tracked using the following alerts:
-
-1. the event trigger processing fails - [Dataform Trigger Function Error](https://console.cloud.google.com/monitoring/alerting/policies/570799173843203905?authuser=7&project=httparchive)
-2. a job in the workflow fails - "[Dataform Workflow Invocation Failed](https://console.cloud.google.com/monitoring/alerting/policies/16526940745374967367?authuser=7&project=httparchive)
-
-Error notifications are sent to [#10x-infra](https://httparchive.slack.com/archives/C030V4WAVL3) Slack channel.

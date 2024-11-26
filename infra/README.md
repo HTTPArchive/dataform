@@ -58,6 +58,16 @@ TODO
 
 TODO
 
+## Monitoring
+
+The issues within the pipeline are being tracked using the following alerts:
+
+1. the event trigger processing fails - [Dataform Trigger Function Error](https://console.cloud.google.com/monitoring/alerting/policies/570799173843203905?authuser=7&project=httparchive)
+2. a job in the workflow fails - "[Dataform Workflow Invocation Failed](https://console.cloud.google.com/monitoring/alerting/policies/16526940745374967367?authuser=7&project=httparchive)
+3. the export function fails - [Dataform Export Function Error](https://console.cloud.google.com/monitoring/alerting/policies/570799173843203905?authuser=7&project=httparchive)
+
+Error notifications are sent to [#10x-infra](https://httparchive.slack.com/archives/C030V4WAVL3) Slack channel.
+
 ## Deployment
 
 When you're under `infra/` run:

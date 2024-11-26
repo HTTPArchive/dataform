@@ -61,4 +61,4 @@ async function messageHandler (req, res) {
  *   }
  * }
  */
-functions.http('dataform-trigger', (req, res) => messageHandler(req, res))
+functions.http('dataform-export', (req, res) => messageHandler(req, res))
