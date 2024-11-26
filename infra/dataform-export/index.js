@@ -8,20 +8,20 @@ const { ReportsExporter, TechReportsExporter } = require('./reports')
  * @param {object} res Cloud Function response context.
  */
 async function messageHandler (req, res) {
-  console.log('messageHandler')
-  console.log(JSON.stringify(req.body))
   try {
-    if (!req.body) {
+    if (!req.body.jsonPayload.message.data) {
       const msg = 'no message received'
       console.error(`error: ${msg}`)
       res.status(400).send(`Bad Request: ${msg}`)
       return
     }
-    const query = req?.body?.protoPayload?.serviceData?.jobCompletedEvent.job.jobConfiguration.query.query
+    const message = Buffer.from(req.body.jsonPayload.message.data, 'base64').toString('utf-8')
+    query = JSON.parse(message)?.protoPayload?.serviceData?.jobCompletedEvent?.job?.jobConfiguration?.query?.query
     if (!query) {
       res.status(400).send('Bad Request: invalid message format')
       return
     }
+    console.log(query.substring(0,30))
 
     const regex = /\/\* (\{\\"dataform_trigger\\":.*) \*\//gm
     const reportConfig = regex.exec(query)
@@ -29,19 +29,19 @@ async function messageHandler (req, res) {
       res.status(400).send('Bad Request: no trigger config found')
       return
     }
-    const message = JSON.parse(reportConfig[1])
-    const eventName = message.dataform_trigger
+    const eventData = JSON.parse(reportConfig[1])
+    const eventName = eventData.dataform_trigger
     if (!eventName) {
       res.status(400).send('Bad Request: no trigger name found')
       return
     }
 
     if (eventName === 'reports_complete') {
-      const reports = new ReportsExporter(message)
-      reports.export(message)
+      const reports = new ReportsExporter(eventData)
+      reports.export(eventData)
     } else if (eventName === 'reports_cwv_tech_complete') {
       const techReports = new TechReportsExporter()
-      techReports.export(message)
+      techReports.export(eventData)
     } else {
       res.status(400).send('Bad Request: unknown trigger name')
     }
