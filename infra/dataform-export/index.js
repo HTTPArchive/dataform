@@ -17,27 +17,31 @@ async function messageHandler (req, res) {
       res.status(400).send(`Bad Request: ${msg}`)
       return
     }
-    let message = req?.body?.message
-    if (!message) {
+    const query = req?.body?.protoPayload?.serviceData?.jobCompletedEvent.job.jobConfiguration.query.query
+    if (!query) {
       res.status(400).send('Bad Request: invalid message format')
       return
     }
 
-    message = message.data
-      ? JSON.parse(Buffer.from(message.data, 'base64').toString('utf-8'))
-      : message
-    const eventName = message.name
+    const regex = /\/\* (\{\\"dataform_trigger\\":.*) \*\//gm
+    const reportConfig = regex.exec(query)
+    if (!reportConfig) {
+      res.status(400).send('Bad Request: no trigger config found')
+      return
+    }
+    const message = JSON.parse(reportConfig[1])
+    const eventName = message.dataform_trigger
     if (!eventName) {
       res.status(400).send('Bad Request: no trigger name found')
       return
     }
 
-    if (eventName === 'exportReports') {
-      const reports = new ReportsExporter()
-      reports.export()
-    } else if (eventName === 'exportTechReports') {
+    if (eventName === 'reports_complete') {
+      const reports = new ReportsExporter(message)
+      reports.export(message)
+    } else if (eventName === 'reports_cwv_tech_complete') {
       const techReports = new TechReportsExporter()
-      techReports.export()
+      techReports.export(message)
     } else {
       res.status(400).send('Bad Request: unknown trigger name')
     }
