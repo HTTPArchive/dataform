@@ -143,10 +143,6 @@ FROM (
     HAVING bin IS NOT NULL
   )
 )
-ORDER BY
-  date,
-  client,
-  bin
 `
       },
       {
@@ -176,9 +172,6 @@ GROUP BY
   date,
   client,
   timestamp
-ORDER BY
-  date DESC,
-  client
 `
       }]
     },
