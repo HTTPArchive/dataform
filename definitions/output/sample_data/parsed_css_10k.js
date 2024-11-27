@@ -6,9 +6,7 @@ publish('parsed_css_10k', {
     clusterBy: ['client', 'is_root_page', 'rank', 'page']
   },
   tags: ['crawl_complete']
-}).preOps(ctx => `
-DROP TABLE IF EXISTS ${ctx.self()};
-`).query(ctx => `
+}).query(ctx => `
 SELECT *
 FROM ${ctx.ref('crawl', 'parsed_css')}
 WHERE date = '${constants.currentMonth}' AND
