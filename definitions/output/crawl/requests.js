@@ -108,7 +108,7 @@ LEFT JOIN (
   SELECT DISTINCT
     CONCAT(origin, '/') AS page,
     experimental.popularity.rank AS rank
-  FROM ${ctx.resolve('chrome-ux-report', 'experimental', 'global')}
+  FROM ${ctx.ref('chrome-ux-report', 'experimental', 'global')}
   WHERE yyyymm = ${constants.fnPastMonth(constants.currentMonth).substring(0, 7).replace('-', '')}
 ) AS crux
 ON requests.root_page = crux.page
@@ -168,7 +168,7 @@ LEFT JOIN (
   SELECT DISTINCT
     CONCAT(origin, '/') AS page,
     experimental.popularity.rank AS rank
-  FROM ${ctx.resolve('chrome-ux-report', 'experimental', 'global')}
+  FROM ${ctx.ref('chrome-ux-report', 'experimental', 'global')}
   WHERE yyyymm = ${constants.fnPastMonth(constants.currentMonth).substring(0, 7).replace('-', '')}
 ) AS crux
 ON requests.root_page = crux.page;
