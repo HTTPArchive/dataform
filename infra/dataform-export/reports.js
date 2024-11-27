@@ -55,7 +55,7 @@ WHERE date = '${date}'
 class TechReportsExporter {
   constructor () {
     this.bigquery = new BigQueryExport()
-    this.firestore = new FirestoreBatch('tech-report-apis-dev') // TODO change to prod
+    this.firestore = new FirestoreBatch()
   }
 
   async exportDicts (exportData) {
@@ -63,7 +63,7 @@ class TechReportsExporter {
     const query = `SELECT * FROM reports_cwv_tech.${dictName}`
 
     const rows = await this.bigquery.query(query)
-    await this.firestore.export(dictName, rows)
+    await this.firestore.export('testing', exportData, rows) // TODO change to prod
   }
 
   async exportReports (exportData) {
@@ -72,7 +72,7 @@ class TechReportsExporter {
     const query = `SELECT * FROM httparchive.reports_cwv_tech.${metric} WHERE date = '${date}'`
 
     const rows = await this.bigquery.query(query)
-    await this.firestore.batch(metric, rows)
+    await this.firestore.export('testing', exportData, rows)
   }
 
   async export (exportData) {
