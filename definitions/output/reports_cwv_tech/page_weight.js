@@ -1,7 +1,7 @@
 const pastMonth = constants.fnPastMonth(constants.currentMonth)
 
-publish('page_weight', {
-  schema: 'reports_cwv_tech',
+publish('cwv_tech_page_weight', {
+  schema: 'reports',
   type: 'incremental',
   protected: true,
   bigquery: {

@@ -17,9 +17,7 @@ locals {
 
     // Reports
     "core_web_vitals",
-    "reports_cwv_tech",
-    "reports_histogram",
-    "reports_timeseries",
+    "reports",
 
     // Legacy
     "all",

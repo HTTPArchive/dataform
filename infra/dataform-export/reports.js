@@ -16,7 +16,7 @@ class ReportsExporter {
 SELECT
   FORMAT_DATE('%Y_%m_%d', date) AS date,
   * EXCEPT(date)
-FROM reports_timeseries.${metric}
+FROM reports.${metric}_timeseries
 `
     const rows = await this.bigquery.query(query)
     await this.storage.exportToJson(rows, `${this.storagePath}${metric}.json`)
@@ -29,7 +29,7 @@ FROM reports_timeseries.${metric}
 
     const query = `
 SELECT * EXCEPT(date)
-FROM reports_histogram.${metric}
+FROM reports.${metric}_histogram
 WHERE date = '${date}'
 `
     const rows = await this.bigquery.query(query)
@@ -60,7 +60,7 @@ class TechReportsExporter {
 
   async exportDicts (exportData) {
     const dictName = exportData.name
-    const query = `SELECT * FROM reports_cwv_tech.${dictName}`
+    const query = `SELECT * FROM reports.cwv_tech_${dictName}`
 
     const rows = await this.bigquery.query(query)
     await this.firestore.export('testing', exportData, rows) // TODO change to prod
@@ -69,7 +69,7 @@ class TechReportsExporter {
   async exportReports (exportData) {
     const metric = exportData.name
     const date = exportData.date
-    const query = `SELECT * FROM httparchive.reports_cwv_tech.${metric} WHERE date = '${date}'`
+    const query = `SELECT * FROM httparchive.reports.cwv_tech_${metric} WHERE date = '${date}'`
 
     const rows = await this.bigquery.query(query)
     await this.firestore.export('testing', exportData, rows)

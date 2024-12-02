@@ -7,12 +7,12 @@ const metrics = configs.listMetrics()
 
 metrics.forEach(metric => {
   metric.SQL.forEach(sql => {
-    publish(metric.id, {
+    publish(metric.id + '_' + sql.type, {
       type: 'incremental',
       protected: true,
       bigquery: sql.type === 'histogram' ? { partitionBy: 'date', clusterBy: ['client'] } : {},
-      schema: 'reports_' + sql.type,
-      tags: ['crawl_reports']
+      schema: 'reports',
+      tags: ['crawl_complete', 'crawl_reports']
     }).preOps(ctx => `
 DELETE FROM ${ctx.self()}
 WHERE date = '${params.date}';
