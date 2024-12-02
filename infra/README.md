@@ -6,7 +6,7 @@
 
 This function may be triggered by a PubSub message or Cloud Scheduler and triggers a Dataform workflow based on the trigger configuration provided.
 
-### Configuration
+### Trigger configuration
 
 Trigger types:
 
@@ -24,39 +24,31 @@ Request body example with trigger name:
 }
 ```
 
-### Local testing
-
-Run the following command to test the function locally:
-
-```bash
-make start
-```
-
-Then, in a separate terminal, run the following command to trigger the function:
-
-```bash
-curl -X POST http://localhost:8080/ \
-  -H "Content-Type: application/json" \
-  -d '{
-    "message": {
-      "name": "cwv_tech_report"
-    }
-  }'
-```
-
 ## Cloud Function for report data exports
 
 [exportReport](https://console.cloud.google.com/functions/details/us-central1/bqExport?env=gen2&authuser=7&project=httparchive) Cloud Run Function
 
 This function exports reports data to GCS or Firestore.
 
-### Report configuration
+### Export configuration
 
-TODO
-
-### Trigger configuration
-
-TODO
+```json
+{
+  "protoPayload": {
+    "serviceData": {
+      "jobCompletedEvent": {
+        "job": {
+          "jobConfiguration": {
+            "query": {
+              "query": "/* {\"dataform_trigger\": \"report_complete\", \"date\": \"2024-11-01\", \"name\": \"bytesTotal\", \"type\": \"histogram\"} *\/"
+            }
+          }
+        }
+      }
+    }
+  }
+}
+```
 
 ## Monitoring
 
@@ -68,10 +60,30 @@ The issues within the pipeline are being tracked using the following alerts:
 
 Error notifications are sent to [#10x-infra](https://httparchive.slack.com/archives/C030V4WAVL3) Slack channel.
 
-## Deployment
+## Local development
 
-When you're under `infra/` run:
+To test the function locally run from the function directory:
 
 ```bash
-make deploy
+npm run start
+```
+
+Then, in a separate terminal, run the command with the test payload:
+
+```bash
+curl -X POST http://localhost:8080/ \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": {
+      "name": "cwv_tech_report"
+    }
+  }'
+```
+
+## Deployment
+
+From project root directory run:
+
+```bash
+make tf_apply
 ```
