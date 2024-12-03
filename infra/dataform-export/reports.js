@@ -70,7 +70,7 @@ FROM reports.cwv_tech_${dictName}
 
     const rows = await this.bigquery.query(query)
     console.log('Exporting ' + rows.length + ' rows for ' + dictName)
-    await this.firestore.export('testing', exportData, rows) // TODO change to prod
+    await this.firestore.export(exportData, rows)
   }
 
   async exportReports (exportData) {
@@ -82,11 +82,10 @@ SELECT
   * EXCEPT(date)
 FROM httparchive.reports.cwv_tech_${metric}
 WHERE date = '${date}'
-LIMIT 10000 -- TODO: remove limit
 `
     const rows = await this.bigquery.query(query)
     console.log('Exporting ' + rows.length + ' rows for ' + metric + ' on ' + date)
-    await this.firestore.export('testing', exportData, rows)
+    await this.firestore.export(exportData, rows)
   }
 
   async export (exportData) {

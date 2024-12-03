@@ -58,7 +58,7 @@ class FirestoreBatch {
     )
   }
 
-  async export (dbName, config, data) {
+  async export (config, data) {
     this.date = config.date
     this.collectionName = config.name
     this.collectionType = config.type
