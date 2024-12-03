@@ -55,7 +55,9 @@ WHERE date = '${date}'
 class TechReportsExporter {
   constructor () {
     this.bigquery = new BigQueryExport()
-    this.firestore = new FirestoreBatch()
+    this.firestore = new FirestoreBatch(
+      'tech-report-apis-dev' // TODO: change to prod
+    )
   }
 
   async exportDicts (exportData) {
@@ -63,6 +65,7 @@ class TechReportsExporter {
     const query = `SELECT * FROM reports.cwv_tech_${dictName}`
 
     const rows = await this.bigquery.query(query)
+    console.log(exportData)
     await this.firestore.export('testing', exportData, rows) // TODO change to prod
   }
 
@@ -72,10 +75,14 @@ class TechReportsExporter {
     const query = `SELECT * FROM httparchive.reports.cwv_tech_${metric} WHERE date = '${date}'`
 
     const rows = await this.bigquery.query(query)
+    console.log(exportData)
     await this.firestore.export('testing', exportData, rows)
   }
 
   async export (exportData) {
+    console.log('Exporting tech reports')
+    console.log(exportData)
+
     if (exportData.dataform_trigger !== 'report_cwv_tech_complete') {
       console.error('Invalid dataform trigger')
       return
@@ -91,7 +98,4 @@ class TechReportsExporter {
   }
 }
 
-module.exports = {
-  TechReportsExporter,
-  ReportsExporter
-}
+module.exports = { TechReportsExporter, ReportsExporter }

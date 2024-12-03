@@ -5,6 +5,7 @@ publish('cwv_tech_technologies', {
   type: 'table',
   tags: ['cwv_tech_report']
 }).query(ctx => `
+/* {"dataform_trigger": "report_cwv_tech_complete", "date": "${pastMonth}", "name": "technologies", "type": "dict"} */
 SELECT
   client,
   app AS technology,

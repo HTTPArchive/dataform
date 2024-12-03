@@ -18,7 +18,7 @@ async function messageHandler (req, res) {
       return
     }
 
-    const messageData = JSON.parse(Buffer.from(message.data, 'base64').toString('utf-8')) || message
+    const messageData = (message.data && JSON.parse(Buffer.from(message.data, 'base64').toString('utf-8'))) || message
     if (!messageData) {
       console.info(message)
       res.status(400).send('Bad Request: invalid message format')
@@ -55,7 +55,7 @@ async function messageHandler (req, res) {
       console.info(eventData)
       const reports = new ReportsExporter()
       reports.export(eventData)
-    } else if (eventName === 'reports_cwv_tech_complete') {
+    } else if (eventName === 'report_cwv_tech_complete') {
       console.info('Tech Report export')
       console.info(eventData)
       const techReports = new TechReportsExporter()
@@ -63,6 +63,7 @@ async function messageHandler (req, res) {
     } else {
       console.info(eventData)
       res.status(400).send('Bad Request: unknown trigger name')
+      return
     }
     res.status(200).send('OK')
   } catch (error) {

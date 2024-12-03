@@ -3,7 +3,7 @@ const metrics = configs.listMetrics()
 
 const iterations = []
 for (
-  let month = '2024-11-01'; month >= '2024-11-01'; month = constants.fnPastMonth(month)) { // TODO: change to constants.currentMonth
+  let month = constants.currentMonth; month >= constants.currentMonth; month = constants.fnPastMonth(month)) {
   iterations.push({
     date: month,
     rankFilter: constants.devRankFilter
