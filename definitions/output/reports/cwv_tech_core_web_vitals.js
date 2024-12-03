@@ -68,6 +68,7 @@ return Object.values(vitals)
 DELETE FROM ${ctx.self()}
 WHERE date = '${pastMonth}';
 `).query(ctx => `
+/* {"dataform_trigger": "report_cwv_tech_complete", "date": "${pastMonth}", "name": "core_web_vitals", "type": "report"} */
 SELECT
   date,
   app AS technology,

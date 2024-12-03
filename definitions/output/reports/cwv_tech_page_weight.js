@@ -46,6 +46,7 @@ return Object.values(pageWeight)
 DELETE FROM ${ctx.self()}
 WHERE date = '${pastMonth}';
 `).query(ctx => `
+/* {"dataform_trigger": "report_cwv_tech_complete", "date": "${pastMonth}", "name": "page_weight", "type": "report"} */
 SELECT
   date,
   app AS technology,

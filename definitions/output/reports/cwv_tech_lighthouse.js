@@ -54,6 +54,7 @@ return Object.values(lighthouse)
 DELETE FROM ${ctx.self()}
 WHERE date = '${pastMonth}';
 `).query(ctx => `
+/* {"dataform_trigger": "report_cwv_tech_complete", "date": "${pastMonth}", "name": "lighthouse", "type": "report"} */
 SELECT
   date,
   app AS technology,
