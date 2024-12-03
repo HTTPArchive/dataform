@@ -8,24 +8,32 @@ class FirestoreBatch {
   }
 
   async delete () {
-    console.log('Deleting documents from ' + this.collectionName)
     const collectionRef = this.db.collection(this.collectionName)
 
     if (this.collectionType === 'report') {
-      // Query to fetch monthly documents
-      const query = collectionRef.where('date', '=', this.date)
-
+      console.log('Deleting documents from ' + this.collectionName + ' for date ' + this.date)
       while (true) {
-        const snapshot = await query.limit(this.batchSize).get()
+        // Query to fetch monthly documents and run delete operations in parallel batches
+        const snapshot = await collectionRef.where('date', '==', this.date).limit(100000).get()
         if (snapshot.empty) {
           break
         }
 
-        const batch = this.db.batch()
-        snapshot.docs.forEach(doc => batch.delete(doc.ref))
-        await batch.commit()
+        const chunks = []
+        for (let i = 0; i < snapshot.docs.length; i += this.batchSize) {
+          chunks.push(snapshot.docs.slice(i, i + this.batchSize))
+        }
+
+        await Promise.all(
+          chunks.map(async (chunk) => {
+            const batch = this.db.batch()
+            chunk.forEach(doc => batch.delete(doc.ref))
+            await batch.commit()
+          })
+        )
       }
     } else if (this.collectionType === 'dict') {
+      console.log('Deleting documents from ' + this.collectionName)
       await this.db.recursiveDelete(collectionRef)
     } else {
       throw new Error('Invalid collection type')
@@ -33,7 +41,7 @@ class FirestoreBatch {
   }
 
   async write (data) {
-    console.log('Writing documents')
+    console.log('Writing documents ' + data.length + ' rows to ' + this.collectionName)
     const collectionRef = this.db.collection(this.collectionName)
 
     const chunks = []
@@ -44,17 +52,13 @@ class FirestoreBatch {
     await Promise.all(
       chunks.map(async (chunk) => {
         const batch = this.db.batch()
-        chunk.forEach(doc => {
-          console.log(doc.technology)
-          batch.set(collectionRef.doc(), doc)
-        })
+        chunk.forEach(doc => batch.set(collectionRef.doc(), doc))
         await batch.commit()
       })
     )
   }
 
   async export (dbName, config, data) {
-    console.log('Exporting data to Firestore')
     this.date = config.date
     this.collectionName = config.name
     this.collectionType = config.type
@@ -64,6 +68,8 @@ class FirestoreBatch {
 
     // Write new documents
     await this.write(data)
+
+    console.log('Exported ' + data.length + ' documents to ' + this.collectionName)
   }
 }
 
