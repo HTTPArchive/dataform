@@ -25,9 +25,10 @@ resource "google_cloudfunctions2_function" "dataform_export" {
     }
   }
   service_config {
-    max_instance_count    = 1
-    available_memory      = "256M"
-    timeout_seconds       = 60
+    max_instance_count    = 2
+    available_cpu         = 2
+    available_memory      = "512M"
+    timeout_seconds       = 1800
     service_account_email = local.function_identity
     ingress_settings      = "ALLOW_INTERNAL_ONLY"
   }

@@ -10,6 +10,6 @@
     "@google-cloud/storage": "^7.14.0"
   },
   "scripts": {
-    "start": "npx functions-framework --target=dataform-export --signature-type=http --port=8080 --debug"
+    "start": "npx functions-framework --target=dataform-export --signature-type=http --port=8080  --timeout 3600 --debug"
   }
 }

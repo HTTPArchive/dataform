@@ -69,7 +69,7 @@ FROM reports.cwv_tech_${dictName}
 `
 
     const rows = await this.bigquery.query(query)
-    console.log('Exporting ' + rows.length + ' rows for ' + dictName)
+    console.log('Exporting ' + rows.length + ' rows to ' + dictName)
     await this.firestore.export(exportData, rows)
   }
 
@@ -84,7 +84,7 @@ FROM httparchive.reports.cwv_tech_${metric}
 WHERE date = '${date}'
 `
     const rows = await this.bigquery.query(query)
-    console.log('Exporting ' + rows.length + ' rows for ' + metric + ' on ' + date)
+    console.log('Exporting ' + rows.length + ' rows to ' + metric + ' for ' + date)
     await this.firestore.export(exportData, rows)
   }
 
