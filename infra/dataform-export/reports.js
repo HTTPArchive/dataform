@@ -61,28 +61,34 @@ class TechReportsExporter {
   }
 
   async exportDicts (exportData) {
+    console.log('Exporting dicts')
     const dictName = exportData.name
-    const query = `SELECT * FROM reports.cwv_tech_${dictName}`
+    const query = `
+SELECT *
+FROM reports.cwv_tech_${dictName}
+`
 
     const rows = await this.bigquery.query(query)
-    console.log(exportData)
-    await this.firestore.export('testing', exportData, rows) // TODO change to prod
+    console.log('Exporting ' + rows.length + ' rows for ' + dictName)
+    await this.firestore.export(exportData, rows)
   }
 
   async exportReports (exportData) {
     const metric = exportData.name
     const date = exportData.date
-    const query = `SELECT * FROM httparchive.reports.cwv_tech_${metric} WHERE date = '${date}'`
-
+    const query = `
+SELECT
+  STRING(date) AS date,
+  * EXCEPT(date)
+FROM httparchive.reports.cwv_tech_${metric}
+WHERE date = '${date}'
+`
     const rows = await this.bigquery.query(query)
-    console.log(exportData)
-    await this.firestore.export('testing', exportData, rows)
+    console.log('Exporting ' + rows.length + ' rows for ' + metric + ' on ' + date)
+    await this.firestore.export(exportData, rows)
   }
 
   async export (exportData) {
-    console.log('Exporting tech reports')
-    console.log(exportData)
-
     if (exportData.dataform_trigger !== 'report_cwv_tech_complete') {
       console.error('Invalid dataform trigger')
       return

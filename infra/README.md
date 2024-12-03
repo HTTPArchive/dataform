@@ -97,7 +97,7 @@ curl -X POST http://localhost:8080/ \
           "job": {
             "jobConfiguration": {
               "query": {
-                "query": "/* {\"dataform_trigger\": \"report_cwv_tech_complete\", \"date\": \"2024-11-01\", \"name\": \"technologies\", \"type\": \"dict\"} *\/"
+                "query": "/* {\"dataform_trigger\": \"report_cwv_tech_complete\", \"date\": \"2024-10-01\", \"name\": \"adoption\", \"type\": \"report\"} *\/"
               }
             }
           }
