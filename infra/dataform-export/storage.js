@@ -1,29 +1,41 @@
 const { Storage } = require('@google-cloud/storage')
 const { Readable } = require('stream')
+const zlib = require('zlib')
 
 const storage = new Storage()
 
 class StorageExport {
   constructor (bucket) {
     this.bucket = bucket
+    this.stream = new Readable({
+      objectMode: true,
+      read () {}
+    })
   }
 
   async exportToJson (data, fileName) {
     const bucket = storage.bucket(this.bucket)
     const file = bucket.file(fileName)
 
-    const stream = new Readable({
-      objectMode: true,
-      read () {
-        this.push(JSON.stringify(data))
-        this.push(null)
-      }
-    })
+    const jsonData = JSON.stringify(data)
+    this.stream.push(jsonData)
+    this.stream.push(null)
+
+    const gzip = zlib.createGzip()
 
     await new Promise((resolve, reject) => {
-      stream.pipe(file.createWriteStream())
+      this.stream
+        .pipe(gzip)
+        .pipe(file.createWriteStream({
+          metadata: {
+            contentEncoding: 'gzip'
+          }
+        }))
         .on('error', reject)
-        .on('finish', resolve)
+        .on('finish', () => {
+          console.log(`File ${fileName} successfully written to ${this.bucket}`)
+          resolve()
+        })
     })
   }
 }
