@@ -1,8 +1,8 @@
-const { BigQueryExport } = require('./bigquery')
-const { StorageExport } = require('./storage')
-const { FirestoreBatch } = require('./firestore')
+import { BigQueryExport } from './bigquery.js'
+import { StorageExport } from './storage.js'
+import { FirestoreBatch } from './firestore.js'
 
-class ReportsExporter {
+export class ReportsExporter {
   constructor () {
     this.bigquery = new BigQueryExport()
     this.storage = new StorageExport('httparchive')
@@ -52,7 +52,7 @@ WHERE date = '${date}'
   }
 }
 
-class TechReportsExporter {
+export class TechReportsExporter {
   constructor () {
     this.bigquery = new BigQueryExport()
     this.firestore = new FirestoreBatch(
@@ -69,7 +69,7 @@ FROM reports.cwv_tech_${dictName}
 `
 
     const rows = await this.bigquery.query(query)
-    console.log('Exporting ' + rows.length + ' rows for ' + dictName)
+    console.log('Exporting ' + rows.length + ' rows to ' + dictName)
     await this.firestore.export(exportData, rows)
   }
 
@@ -84,7 +84,7 @@ FROM httparchive.reports.cwv_tech_${metric}
 WHERE date = '${date}'
 `
     const rows = await this.bigquery.query(query)
-    console.log('Exporting ' + rows.length + ' rows for ' + metric + ' on ' + date)
+    console.log('Exporting ' + rows.length + ' rows to ' + metric + ' for ' + date)
     await this.firestore.export(exportData, rows)
   }
 
@@ -103,5 +103,3 @@ WHERE date = '${date}'
     }
   }
 }
-
-module.exports = { TechReportsExporter, ReportsExporter }

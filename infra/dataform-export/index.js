@@ -1,5 +1,5 @@
-const functions = require('@google-cloud/functions-framework')
-const { ReportsExporter, TechReportsExporter } = require('./reports')
+import functions from '@google-cloud/functions-framework'
+import { ReportsExporter, TechReportsExporter } from './reports.js'
 
 /**
  * Handle incoming message and trigger the appropriate action.

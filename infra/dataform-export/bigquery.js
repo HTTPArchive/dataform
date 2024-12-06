@@ -1,43 +1,18 @@
-const { BigQuery } = require('@google-cloud/bigquery')
-const { Storage } = require('@google-cloud/storage')
-const { Readable } = require('stream')
+import { BigQuery } from '@google-cloud/bigquery'
 
 const bigquery = new BigQuery()
-const storage = new Storage()
 
-class BigQueryExport {
+export class BigQueryExport {
   async query (query) {
     const options = {
       query
     }
 
     const [job] = await bigquery.createQueryJob(options)
+    console.log(`Job ${job.id} started`)
     const [rows] = await job.getQueryResults()
+    console.log(`Job ${job.id} completed`)
 
     return rows
   }
-
-  async exportToJson (query, bucketName, fileName) {
-    const rows = await this.query(query)
-    const bucket = storage.bucket(bucketName)
-    const file = bucket.file(fileName)
-
-    const stream = new Readable({
-      objectMode: true,
-      read () {
-        this.push(JSON.stringify(rows))
-        this.push(null)
-      }
-    })
-
-    await new Promise((resolve, reject) => {
-      stream.pipe(file.createWriteStream())
-        .on('error', reject)
-        .on('finish', resolve)
-    })
-  }
-}
-
-module.exports = {
-  BigQueryExport
 }
