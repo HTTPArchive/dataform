@@ -1,4 +1,4 @@
-const crypto = require('crypto')
+import crypto from 'crypto'
 
 /**
  * Returns a hashed ID for a set of technology query keys. Keys are sorted alphabetically and joined with a dash.
@@ -10,7 +10,7 @@ const crypto = require('crypto')
  * @returns {string} - The hashed ID.
  * @throws {Error} - If the queryType is invalid or if required keys are missing in the element.
  */
-function technologyHashId (element, queryType, keyMap) {
+export function technologyHashId (element, queryType, keyMap) {
   if (!keyMap[queryType]) {
     throw new Error(`Invalid query type: ${queryType}`)
   }
@@ -27,5 +27,3 @@ function technologyHashId (element, queryType, keyMap) {
 
   return hash
 }
-
-module.exports = { technologyHashId }

@@ -1,10 +1,10 @@
-const { Storage } = require('@google-cloud/storage')
-const { Readable } = require('stream')
-const zlib = require('zlib')
+import { Storage } from '@google-cloud/storage'
+import { Readable } from 'stream'
+import zlib from 'zlib'
 
 const storage = new Storage()
 
-class StorageExport {
+export class StorageExport {
   constructor (bucket) {
     this.bucket = bucket
     this.stream = new Readable({
@@ -38,8 +38,4 @@ class StorageExport {
         })
     })
   }
-}
-
-module.exports = {
-  StorageExport
 }
