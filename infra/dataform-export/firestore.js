@@ -1,5 +1,8 @@
-const { Firestore } = require('@google-cloud/firestore')
-const { technologyHashId } = require('./utils')
+import pLimit from 'p-limit'
+import { Firestore } from '@google-cloud/firestore'
+import { technologyHashId } from './utils.js'
+
+const limit = pLimit(100)
 
 const TECHNOLOGY_QUERY_ID_KEYS = {
   adoption: ['date', 'technology', 'geo', 'rank'],
@@ -10,7 +13,7 @@ const TECHNOLOGY_QUERY_ID_KEYS = {
   categories: ['category']
 }
 
-class FirestoreBatch {
+export class FirestoreBatch {
   constructor (databaseId) {
     this.db = new Firestore()
     this.db.settings({ databaseId })
@@ -51,25 +54,45 @@ class FirestoreBatch {
   }
 
   async write (data) {
-    const collectionRef = this.db.collection(this.collectionName + '_v2') // TODO: _v2 used for testing
+    const collectionRef = this.db.collection(this.collectionName + '_v2') // TODO: remove _v2 used for testing
 
+    const chunks = this.splitDataIntoChunks(data)
+    console.log('Exporting ' + chunks.length + ' chunks')
+
+    await this.mapChunks(chunks, collectionRef)
+  }
+
+  splitDataIntoChunks (data) {
     const chunks = []
     for (let i = 0; i < data.length; i += this.batchSize) {
       chunks.push(data.slice(i, i + this.batchSize))
     }
-    console.log('Exporting ' + chunks.length + ' chunks')
+    return chunks
+  }
 
-    await Promise.all(
-      chunks.map(async (chunk, i) => {
-        const batch = this.db.batch()
-        chunk.forEach(doc => {
-          const docId = technologyHashId(doc, this.collectionName, TECHNOLOGY_QUERY_ID_KEYS)
-          batch.set(collectionRef.doc(docId), doc)
+  async mapChunks (chunks, collectionRef) {
+    const results = await Promise.allSettled(
+      chunks.map((chunk, i) =>
+        limit(async () => {
+          await this.commitBatch(chunk, collectionRef, i)
         })
-        await batch.commit()
-        console.log('Committed ' + i + ' chunk')
-      })
+      )
     )
+    return results
+  }
+
+  async commitBatch (chunk, collectionRef, index) {
+    try {
+      const batch = this.db.batch()
+      chunk.forEach(doc => {
+        const docId = technologyHashId(doc, this.collectionName, TECHNOLOGY_QUERY_ID_KEYS)
+        batch.set(collectionRef.doc(docId), doc)
+      })
+      await batch.commit()
+      console.log(`Committed chunk ${index}`)
+    } catch (error) {
+      console.error(`Error committing chunk ${index}`, error)
+    }
   }
 
   async export (config, data) {
@@ -85,8 +108,4 @@ class FirestoreBatch {
 
     console.log('Exported ' + data.length + ' documents to ' + this.collectionName)
   }
-}
-
-module.exports = {
-  FirestoreBatch
 }
