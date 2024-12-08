@@ -13,11 +13,21 @@ const TECHNOLOGY_QUERY_ID_KEYS = {
 
 export class FirestoreBatch {
   constructor () {
-    this.firestore = new Firestore()
+    this.firestore = new Firestore({
+      clientConfig: {
+        interfaces: {
+          'google.firestore.v1.Firestore': {
+            methods: {
+              Commit: { timeout_millis: 600000 }
+            }
+          }
+        }
+      }
+    })
     this.bigquery = new BigQueryExport()
     this.firestore.settings({ databaseId: 'tech-report-apis-dev' })
     this.batchSize = 500
-    this.maxConcurrentBatches = 100
+    this.maxConcurrentBatches = 50
   }
 
   async queueBatch (operation) {
