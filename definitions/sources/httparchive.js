@@ -5,3 +5,8 @@ for (const table of stagingTables) {
     name: table
   })
 }
+
+declare({
+  schema: 'wappalyzer',
+  name: 'apps'
+})

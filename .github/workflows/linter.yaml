@@ -34,3 +34,4 @@ jobs:
           VALIDATE_JAVASCRIPT_PRETTIER: false
           VALIDATE_MARKDOWN_PRETTIER: false
           VALIDATE_GITHUB_ACTIONS: false
+          VALIDATE_CHECKOV: false

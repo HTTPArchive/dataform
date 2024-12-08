@@ -1,30 +1,28 @@
-locals {
-  function_identity = "cloud-function@httparchive.iam.gserviceaccount.com"
-}
 
-data "archive_file" "default" {
+
+data "archive_file" "dataform-trigger" {
   type        = "zip"
   source_dir  = "../dataform-trigger/"
-  output_path = "/tmp/function-source.zip"
+  output_path = "./tmp/dataform-trigger.zip"
 }
 
-resource "google_storage_bucket_object" "object" {
+resource "google_storage_bucket_object" "dataform_trigger_build" {
   bucket = "gcf-v2-uploads-${local.project_number}-${local.region}"
-  name   = "${var.FUNCTION_NAME}/function-source.zip"
-  source = data.archive_file.default.output_path
+  name   = "dataform-trigger/function-source.zip"
+  source = data.archive_file.dataform-trigger.output_path
 }
 
 resource "google_cloudfunctions2_function" "default" {
-  name     = var.FUNCTION_NAME
+  name     = "dataform-trigger"
   location = local.region
   build_config {
     runtime     = "nodejs20"
-    entry_point = var.FUNCTION_NAME
+    entry_point = "dataform-trigger"
     source {
       storage_source {
-        bucket     = google_storage_bucket_object.object.bucket
-        object     = google_storage_bucket_object.object.name
-        generation = google_storage_bucket_object.object.generation
+        bucket     = google_storage_bucket_object.dataform_trigger_build.bucket
+        object     = google_storage_bucket_object.dataform_trigger_build.name
+        generation = google_storage_bucket_object.dataform_trigger_build.generation
       }
     }
   }
@@ -61,7 +59,7 @@ resource "google_pubsub_subscription" "dataform_crawl_complete" {
   filter                       = null
   labels                       = {}
   message_retention_duration   = "604800s"
-  name                         = "${var.FUNCTION_NAME}-crawl-complete"
+  name                         = "dataform-trigger-crawl-complete"
   project                      = local.project
   retain_acked_messages        = false
   topic                        = "projects/${local.project}/topics/crawl-complete"
@@ -128,12 +126,4 @@ resource "google_cloud_scheduler_job" "bq-poller-cwv-tech-report" {
     min_backoff_duration = "5s"
     retry_count          = 0
   }
-}
-
-resource "google_project_iam_member" "project" {
-  for_each = toset(["roles/bigquery.jobUser", "roles/dataform.serviceAgent", "roles/run.invoker"])
-
-  project = local.project
-  role    = each.value
-  member  = "serviceAccount:${local.function_identity}"
 }
