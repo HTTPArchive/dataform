@@ -51,9 +51,18 @@ export class FirestoreBatch {
   async commitBatches () {
     console.log(`Committing ${this.batchPromises.length} batches`)
     await Promise.all(
-      this.batchPromises.map((batchPromise) => batchPromise.commit()
-        .catch((error) => {
+      this.batchPromises.map(async (batchPromise) => await batchPromise.commit()
+        .catch(async (error) => {
           console.error('Batch commit error:', error)
+          // Retry logic
+          for (let i = 0; i < 3; i++) {
+            try {
+              await batchPromise.commit()
+              return
+            } catch (retryError) {
+              console.error(`Retry ${i + 1} failed:`, retryError)
+            }
+          }
           throw error
         })
       )
