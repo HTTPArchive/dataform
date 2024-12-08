@@ -54,9 +54,7 @@ WHERE date = '${date}'
 
 export class TechReportsExporter {
   constructor () {
-    this.firestore = new FirestoreBatch(
-      'tech-report-apis-dev' // TODO: change to prod
-    )
+    this.firestore = new FirestoreBatch()
   }
 
   async export (exportData) {

@@ -12,10 +12,10 @@ const TECHNOLOGY_QUERY_ID_KEYS = {
 }
 
 export class FirestoreBatch {
-  constructor (databaseId) {
+  constructor () {
     this.firestore = new Firestore()
     this.bigquery = new BigQueryExport()
-    this.firestore.settings({ databaseId })
+    this.firestore.settings({ databaseId: 'tech-report-apis-dev' })
     this.batchSize = 500
     this.maxConcurrentBatches = 100
   }
@@ -62,30 +62,30 @@ export class FirestoreBatch {
     }
   }
 
-  async delete () {
+  async batchDelete () {
     console.log('Starting batch deletion...')
     const startTime = Date.now()
     this.currentBatch = []
     this.batchPromises = []
 
     let totalDocsDeleted = 0
-    const collectionRef = this.firestore.collection(this.collectionName)
+    const collectionRef = this.firestore.collection(this.collectionName + '_v2') // TODO: remove _v2 used for testing
 
     let collectionQuery
     if (this.collectionType === 'report') {
       console.log('Deleting documents from ' + this.collectionName + ' for date ' + this.date)
       // Query to fetch monthly documents and run delete operations in parallel batches
-      collectionQuery = collectionRef.where('date', '==', this.date).limit(100000)
+      collectionQuery = collectionRef.where('date', '==', this.date)
     } else if (this.collectionType === 'dict') {
       console.log('Deleting documents from ' + this.collectionName)
-      collectionQuery = collectionRef.limit(100000)
+      collectionQuery = collectionRef
     } else {
       throw new Error('Invalid collection type')
     }
 
     try {
       while (true) {
-        const snapshot = await collectionQuery.get()
+        const snapshot = await collectionQuery.limit(100000).get()
         if (snapshot.empty) {
           break
         }
@@ -101,7 +101,6 @@ export class FirestoreBatch {
           }
           totalDocsDeleted++
         })
-
         await this.finalFlush('delete')
 
         const duration = (Date.now() - startTime) / 1000
@@ -141,8 +140,6 @@ export class FirestoreBatch {
         }
         totalRowsProcessed++
       }
-      console.log('Stream ended')
-
       await this.finalFlush('set')
 
       const duration = (Date.now() - startTime) / 1000
