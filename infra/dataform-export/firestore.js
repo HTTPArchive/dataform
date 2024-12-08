@@ -23,14 +23,13 @@ export class FirestoreBatch {
   async queueBatch (operation) {
     const batch = this.firestore.batch()
 
-    this.currentBatch.forEach((row) => {
+    this.currentBatch.forEach((doc) => {
       if (operation === 'delete') {
-        const docRef = this.firestore.collection(this.collectionName).doc(row.id)
-        batch.delete(docRef)
+        batch.delete(doc.ref)
       } else if (operation === 'set') {
-        const docId = technologyHashId(row, this.collectionName, TECHNOLOGY_QUERY_ID_KEYS)
+        const docId = technologyHashId(doc, this.collectionName, TECHNOLOGY_QUERY_ID_KEYS)
         const docRef = this.firestore.collection(this.collectionName + '_v2').doc(docId) // TODO: remove _v2 used for testing
-        batch.set(docRef, row)
+        batch.set(docRef, doc)
       } else {
         throw new Error('Invalid operation')
       }
@@ -91,7 +90,9 @@ export class FirestoreBatch {
         }
 
         snapshot.forEach(async (doc) => {
-          this.currentBatch.push({ id: doc.id })
+          this.currentBatch.push(doc)
+          totalDocsDeleted++
+
           if (this.currentBatch.length >= this.batchSize) {
             this.queueBatch('delete')
           }
@@ -99,7 +100,6 @@ export class FirestoreBatch {
           if (this.batchPromises.length >= this.maxConcurrentBatches) {
             await this.commitBatches()
           }
-          totalDocsDeleted++
         })
         await this.finalFlush('delete')
 
