@@ -18,7 +18,7 @@ SELECT
   * EXCEPT(date)
 FROM reports.${metric}_timeseries
 `
-    const rows = await this.bigquery.query(query)
+    const rows = await this.bigquery.queryResults(query)
     await this.storage.exportToJson(rows, `${this.storagePath}${metric}.json`)
   }
 
@@ -32,7 +32,7 @@ SELECT * EXCEPT(date)
 FROM reports.${metric}_histogram
 WHERE date = '${date}'
 `
-    const rows = await this.bigquery.query(query)
+    const rows = await this.bigquery.queryResults(query)
     await this.storage.exportToJson(rows, `${this.storagePath}${date.replaceAll('-', '_')}/${metric}.json`)
   }
 
@@ -54,38 +54,9 @@ WHERE date = '${date}'
 
 export class TechReportsExporter {
   constructor () {
-    this.bigquery = new BigQueryExport()
     this.firestore = new FirestoreBatch(
       'tech-report-apis-dev' // TODO: change to prod
     )
-  }
-
-  async exportDicts (exportData) {
-    console.log('Exporting dicts')
-    const dictName = exportData.name
-    const query = `
-SELECT *
-FROM reports.cwv_tech_${dictName}
-`
-
-    const rows = await this.bigquery.query(query)
-    console.log('Exporting ' + rows.length + ' rows to ' + dictName)
-    await this.firestore.export(exportData, rows)
-  }
-
-  async exportReports (exportData) {
-    const metric = exportData.name
-    const date = exportData.date
-    const query = `
-SELECT
-  STRING(date) AS date,
-  * EXCEPT(date)
-FROM httparchive.reports.cwv_tech_${metric}
-WHERE date = '${date}'
-`
-    const rows = await this.bigquery.query(query)
-    console.log('Exporting ' + rows.length + ' rows to ' + metric + ' for ' + date)
-    await this.firestore.export(exportData, rows)
   }
 
   async export (exportData) {
@@ -94,12 +65,24 @@ WHERE date = '${date}'
       return
     }
 
+    let query = ''
     if (exportData.type === 'report') {
-      await this.exportReports(exportData)
+      query = `
+SELECT
+  STRING(date) AS date,
+  * EXCEPT(date)
+FROM httparchive.reports.cwv_tech_${exportData.name}
+WHERE date = '${exportData.date}'
+`
     } else if (exportData.type === 'dict') {
-      await this.exportDicts(exportData)
+      query = `
+SELECT *
+FROM reports.cwv_tech_${exportData.name}
+`
     } else {
       console.error('Invalid export type')
     }
+
+    await this.firestore.export(exportData, query)
   }
 }

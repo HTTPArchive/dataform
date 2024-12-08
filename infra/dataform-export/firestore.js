@@ -1,8 +1,6 @@
-import pLimit from 'p-limit'
 import { Firestore } from '@google-cloud/firestore'
+import { BigQueryExport } from './bigquery.js'
 import { technologyHashId } from './utils.js'
-
-const limit = pLimit(100)
 
 const TECHNOLOGY_QUERY_ID_KEYS = {
   adoption: ['date', 'technology', 'geo', 'rank'],
@@ -15,97 +13,157 @@ const TECHNOLOGY_QUERY_ID_KEYS = {
 
 export class FirestoreBatch {
   constructor (databaseId) {
-    this.db = new Firestore()
-    this.db.settings({ databaseId })
+    this.firestore = new Firestore()
+    this.bigquery = new BigQueryExport()
+    this.firestore.settings({ databaseId })
     this.batchSize = 500
+    this.maxConcurrentBatches = 100
+  }
+
+  async queueBatch (operation) {
+    const batch = this.firestore.batch()
+
+    this.currentBatch.forEach((row) => {
+      if (operation === 'delete') {
+        const docRef = this.firestore.collection(this.collectionName).doc(row.id)
+        batch.delete(docRef)
+      } else if (operation === 'set') {
+        const docId = technologyHashId(row, this.collectionName, TECHNOLOGY_QUERY_ID_KEYS)
+        const docRef = this.firestore.collection(this.collectionName + '_v2').doc(docId) // TODO: remove _v2 used for testing
+        batch.set(docRef, row)
+      } else {
+        throw new Error('Invalid operation')
+      }
+    })
+    this.batchPromises.push(batch)
+    this.currentBatch = []
+  }
+
+  async commitBatches () {
+    console.log(`Committing ${this.batchPromises.length} batches`)
+    await Promise.all(
+      this.batchPromises.map((batchPromise) => batchPromise.commit()
+        .catch((error) => {
+          console.error('Batch commit error:', error)
+          throw error
+        })
+      )
+    )
+    this.batchPromises = []
+  }
+
+  async finalFlush (operation) {
+    if (this.currentBatch.length > 0) {
+      this.queueBatch(operation)
+    }
+
+    if (this.batchPromises.length > 0) {
+      await this.commitBatches()
+    }
   }
 
   async delete () {
-    const collectionRef = this.db.collection(this.collectionName)
+    console.log('Starting batch deletion...')
+    const startTime = Date.now()
+    this.currentBatch = []
+    this.batchPromises = []
 
+    let totalDocsDeleted = 0
+    const collectionRef = this.firestore.collection(this.collectionName)
+
+    let collectionQuery
     if (this.collectionType === 'report') {
       console.log('Deleting documents from ' + this.collectionName + ' for date ' + this.date)
+      // Query to fetch monthly documents and run delete operations in parallel batches
+      collectionQuery = collectionRef.where('date', '==', this.date).limit(100000)
+    } else if (this.collectionType === 'dict') {
+      console.log('Deleting documents from ' + this.collectionName)
+      collectionQuery = collectionRef.limit(100000)
+    } else {
+      throw new Error('Invalid collection type')
+    }
+
+    try {
       while (true) {
-        // Query to fetch monthly documents and run delete operations in parallel batches
-        const snapshot = await collectionRef.where('date', '==', this.date).limit(100000).get()
+        const snapshot = await collectionQuery.get()
         if (snapshot.empty) {
           break
         }
 
-        const chunks = []
-        for (let i = 0; i < snapshot.docs.length; i += this.batchSize) {
-          chunks.push(snapshot.docs.slice(i, i + this.batchSize))
+        snapshot.forEach(async (doc) => {
+          this.currentBatch.push({ id: doc.id })
+          if (this.currentBatch.length >= this.batchSize) {
+            this.queueBatch('delete')
+          }
+
+          if (this.batchPromises.length >= this.maxConcurrentBatches) {
+            await this.commitBatches()
+          }
+          totalDocsDeleted++
+        })
+
+        await this.finalFlush('delete')
+
+        const duration = (Date.now() - startTime) / 1000
+        console.log(`Deletion complete. Total docs deleted: ${totalDocsDeleted}. Time: ${duration} seconds`)
+      }
+    } catch (error) {
+      console.error('Deletion error:', error)
+    }
+  }
+
+  /**
+   * Streams BigQuery query results into a Firestore collection using batch commits.
+   * @param {string} query - The BigQuery SQL query.
+   */
+  async streamFromBigQuery (query) {
+    console.log('Starting BigQuery to Firestore transfer...')
+    const startTime = Date.now()
+    let totalRowsProcessed = 0
+
+    const rowStream = await this.bigquery.queryResultsStream(query)
+
+    this.currentBatch = []
+    this.batchPromises = []
+
+    try {
+      for await (const row of rowStream) {
+        // console.log('Received chunk:', row)
+        this.currentBatch.push(row)
+
+        // Write batch when it reaches specified size
+        if (this.currentBatch.length >= this.batchSize) {
+          this.queueBatch('set')
         }
 
-        await Promise.all(
-          chunks.map(async (chunk) => {
-            const batch = this.db.batch()
-            chunk.forEach(doc => batch.delete(doc.ref))
-            await batch.commit()
-          })
-        )
+        if (this.batchPromises.length >= this.maxConcurrentBatches) {
+          await this.commitBatches()
+        }
+        totalRowsProcessed++
       }
-    } else if (this.collectionType === 'dict') {
-      console.log('Deleting documents from ' + this.collectionName)
-      await this.db.recursiveDelete(collectionRef)
-    } else {
-      throw new Error('Invalid collection type')
+      console.log('Stream ended')
+
+      await this.finalFlush('set')
+
+      const duration = (Date.now() - startTime) / 1000
+      console.log(`Transfer complete. Total rows processed: ${totalRowsProcessed}. Time: ${duration} seconds`)
+    } catch (err) {
+      console.error('Error:', err)
     }
   }
 
-  async write (data) {
-    const collectionRef = this.db.collection(this.collectionName + '_v2') // TODO: remove _v2 used for testing
-
-    const chunks = this.splitDataIntoChunks(data)
-    console.log('Exporting ' + chunks.length + ' chunks')
-
-    await this.mapChunks(chunks, collectionRef)
-  }
-
-  splitDataIntoChunks (data) {
-    const chunks = []
-    for (let i = 0; i < data.length; i += this.batchSize) {
-      chunks.push(data.slice(i, i + this.batchSize))
-    }
-    return chunks
-  }
-
-  async mapChunks (chunks, collectionRef) {
-    const results = await Promise.allSettled(
-      chunks.map((chunk, i) =>
-        limit(async () => {
-          await this.commitBatch(chunk, collectionRef, i)
-        })
-      )
-    )
-    return results
-  }
-
-  async commitBatch (chunk, collectionRef, index) {
-    try {
-      const batch = this.db.batch()
-      chunk.forEach(doc => {
-        const docId = technologyHashId(doc, this.collectionName, TECHNOLOGY_QUERY_ID_KEYS)
-        batch.set(collectionRef.doc(docId), doc)
-      })
-      await batch.commit()
-      console.log(`Committed chunk ${index}`)
-    } catch (error) {
-      console.error(`Error committing chunk ${index}`, error)
-    }
-  }
-
-  async export (config, data) {
+  async export (config, query) {
     this.date = config.date
     this.collectionName = config.name
     this.collectionType = config.type
 
-    // Delete documents for the same date
-    // await this.delete()
+    try {
+      // Delete documents for the same date
+      // await this.batchDelete()
 
-    // Write new documents
-    await this.write(data)
-
-    console.log('Exported ' + data.length + ' documents to ' + this.collectionName)
+      await this.streamFromBigQuery(query)
+    } catch (error) {
+      console.error('Transfer failed:', error)
+    }
   }
 }
