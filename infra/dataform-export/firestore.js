@@ -30,7 +30,7 @@ export class FirestoreBatch {
     this.maxConcurrentBatches = 50
   }
 
-  async queueBatch (operation) {
+  queueBatch (operation) {
     const batch = this.firestore.batch()
 
     this.currentBatch.forEach((doc) => {
@@ -50,19 +50,10 @@ export class FirestoreBatch {
 
   async commitBatches () {
     console.log(`Committing ${this.batchPromises.length} batches`)
-    await Promise.all(
+    await Promise.allSettled(
       this.batchPromises.map(async (batchPromise) => await batchPromise.commit()
-        .catch(async (error) => {
-          console.error('Batch commit error:', error)
-          // Retry logic
-          for (let i = 0; i < 3; i++) {
-            try {
-              await batchPromise.commit()
-              return
-            } catch (retryError) {
-              console.error(`Retry ${i + 1} failed:`, retryError)
-            }
-          }
+        .catch((error) => {
+          console.error('Error committing batch:', error)
           throw error
         })
       )
@@ -145,7 +136,7 @@ export class FirestoreBatch {
     this.batchPromises = []
 
     try {
-      for await (const row of rowStream) {
+      for (const row of rowStream) {
         // console.log('Received chunk:', row)
         this.currentBatch.push(row)
 

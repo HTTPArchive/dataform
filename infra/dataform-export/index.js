@@ -54,12 +54,12 @@ async function messageHandler (req, res) {
       console.info('Report export')
       console.info(eventData)
       const reports = new ReportsExporter()
-      reports.export(eventData)
+      await reports.export(eventData)
     } else if (eventName === 'report_cwv_tech_complete') {
       console.info('Tech Report export')
       console.info(eventData)
       const techReports = new TechReportsExporter()
-      techReports.export(eventData)
+      await techReports.export(eventData)
     } else {
       console.info(eventData)
       res.status(400).send('Bad Request: unknown trigger name')
