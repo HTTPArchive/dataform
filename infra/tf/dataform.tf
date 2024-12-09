@@ -11,6 +11,7 @@ locals {
   edit_datasets = [
     "crawl",
     "sample_data",
+    "wappalyzer",
 
     // Blink features
     "blink_features",
@@ -28,9 +29,6 @@ locals {
     "summary_pages",
     "summary_requests",
     "technologies",
-
-    // Temporary
-    "scratchspace"
   ]
 
   dataform_service_account_roles = [
