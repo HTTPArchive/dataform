@@ -26,9 +26,9 @@ resource "google_cloudfunctions2_function" "dataform_export" {
   }
   service_config {
     max_instance_count    = 20
-    available_cpu         = 8
-    available_memory      = "16G"
-    timeout_seconds       = 3600
+    available_cpu         = 2
+    available_memory      = "2G"
+    timeout_seconds       = 600
     service_account_email = local.function_identity
     ingress_settings      = "ALLOW_INTERNAL_ONLY"
   }
@@ -63,7 +63,7 @@ EOT
 
 # Topic Subscription for dataform_export function
 resource "google_pubsub_subscription" "dataform_export" {
-  ack_deadline_seconds         = 60
+  ack_deadline_seconds         = 600
   enable_exactly_once_delivery = false
   enable_message_ordering      = false
   filter                       = null

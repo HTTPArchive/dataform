@@ -13,21 +13,11 @@ const TECHNOLOGY_QUERY_ID_KEYS = {
 
 export class FirestoreBatch {
   constructor () {
-    this.firestore = new Firestore({
-      clientConfig: {
-        interfaces: {
-          'google.firestore.v1.Firestore': {
-            methods: {
-              Commit: { timeout_millis: 600000 }
-            }
-          }
-        }
-      }
-    })
+    this.firestore = new Firestore()
     this.bigquery = new BigQueryExport()
     this.firestore.settings({ databaseId: 'tech-report-apis-dev' })
     this.batchSize = 500
-    this.maxConcurrentBatches = 50
+    this.maxConcurrentBatches = 200
   }
 
   queueBatch (operation) {
@@ -50,7 +40,7 @@ export class FirestoreBatch {
 
   async commitBatches () {
     console.log(`Committing ${this.batchPromises.length} batches`)
-    await Promise.allSettled(
+    await Promise.all(
       this.batchPromises.map(async (batchPromise) => await batchPromise.commit()
         .catch((error) => {
           console.error('Error committing batch:', error)
@@ -92,32 +82,28 @@ export class FirestoreBatch {
       throw new Error('Invalid collection type')
     }
 
-    try {
-      while (true) {
-        const snapshot = await collectionQuery.limit(100000).get()
-        if (snapshot.empty) {
-          break
+    while (true) {
+      const snapshot = await collectionQuery.limit(100000).get()
+      if (snapshot.empty) {
+        break
+      }
+
+      snapshot.forEach(async (doc) => {
+        this.currentBatch.push(doc)
+        totalDocsDeleted++
+
+        if (this.currentBatch.length >= this.batchSize) {
+          this.queueBatch('delete')
         }
 
-        snapshot.forEach(async (doc) => {
-          this.currentBatch.push(doc)
-          totalDocsDeleted++
+        if (this.batchPromises.length >= this.maxConcurrentBatches) {
+          await this.commitBatches()
+        }
+      })
+      await this.finalFlush('delete')
 
-          if (this.currentBatch.length >= this.batchSize) {
-            this.queueBatch('delete')
-          }
-
-          if (this.batchPromises.length >= this.maxConcurrentBatches) {
-            await this.commitBatches()
-          }
-        })
-        await this.finalFlush('delete')
-
-        const duration = (Date.now() - startTime) / 1000
-        console.log(`Deletion complete. Total docs deleted: ${totalDocsDeleted}. Time: ${duration} seconds`)
-      }
-    } catch (error) {
-      console.error('Deletion error:', error)
+      const duration = (Date.now() - startTime) / 1000
+      console.log(`Deletion complete. Total docs deleted: ${totalDocsDeleted}. Time: ${duration} seconds`)
     }
   }
 
@@ -125,38 +111,32 @@ export class FirestoreBatch {
    * Streams BigQuery query results into a Firestore collection using batch commits.
    * @param {string} query - The BigQuery SQL query.
    */
-  async streamFromBigQuery (query) {
+  async streamFromBigQuery (rowStream) {
     console.log('Starting BigQuery to Firestore transfer...')
     const startTime = Date.now()
     let totalRowsProcessed = 0
 
-    const rowStream = await this.bigquery.queryResultsStream(query)
-
     this.currentBatch = []
     this.batchPromises = []
 
-    try {
-      for (const row of rowStream) {
-        // console.log('Received chunk:', row)
-        this.currentBatch.push(row)
+    for await (const row of rowStream) {
+      // console.log('Received chunk:', row)
+      this.currentBatch.push(row)
 
-        // Write batch when it reaches specified size
-        if (this.currentBatch.length >= this.batchSize) {
-          this.queueBatch('set')
-        }
-
-        if (this.batchPromises.length >= this.maxConcurrentBatches) {
-          await this.commitBatches()
-        }
-        totalRowsProcessed++
+      // Write batch when it reaches specified size
+      if (this.currentBatch.length >= this.batchSize) {
+        this.queueBatch('set')
       }
-      await this.finalFlush('set')
 
-      const duration = (Date.now() - startTime) / 1000
-      console.log(`Transfer complete. Total rows processed: ${totalRowsProcessed}. Time: ${duration} seconds`)
-    } catch (err) {
-      console.error('Error:', err)
+      if (this.batchPromises.length >= this.maxConcurrentBatches) {
+        await this.commitBatches()
+      }
+      totalRowsProcessed++
     }
+    await this.finalFlush('set')
+
+    const duration = (Date.now() - startTime) / 1000
+    console.log(`Transfer complete. Total rows processed: ${totalRowsProcessed}. Time: ${duration} seconds`)
   }
 
   async export (config, query) {
@@ -164,13 +144,10 @@ export class FirestoreBatch {
     this.collectionName = config.name
     this.collectionType = config.type
 
-    try {
-      // Delete documents for the same date
-      // await this.batchDelete()
+    // Delete documents for the same date
+    // await this.batchDelete()
 
-      await this.streamFromBigQuery(query)
-    } catch (error) {
-      console.error('Transfer failed:', error)
-    }
+    const rowStream = await this.bigquery.queryResultsStream(query)
+    await this.streamFromBigQuery(rowStream)
   }
 }
