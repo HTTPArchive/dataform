@@ -33,7 +33,7 @@ export class StorageExport {
         }))
         .on('error', reject)
         .on('finish', () => {
-          console.log(`File ${fileName} successfully written to ${this.bucket}`)
+          console.info(`File ${fileName} successfully written to ${this.bucket}`)
           resolve()
         })
     })

@@ -9,7 +9,7 @@ export class ReportsExporter {
     this.storagePath = 'reports/dev/' // TODO change to prod
   }
 
-  // export timeseries reports
+  // Export timeseries reports
   async exportTimeseries (exportData) {
     const metric = exportData.name
     const query = `
@@ -22,7 +22,7 @@ FROM reports.${metric}_timeseries
     await this.storage.exportToJson(rows, `${this.storagePath}${metric}.json`)
   }
 
-  // export monthly histogram report
+  // Export monthly histogram report
   async exportHistogram (exportData) {
     const metric = exportData.name
     const date = exportData.date

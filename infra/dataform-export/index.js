@@ -33,9 +33,7 @@ async function messageHandler (req, res) {
     }
 
     const regex = /\/\* ({"dataform_trigger":.+) \*\//
-    // console.log(query)
     const reportConfig = regex.exec(query)
-    // console.log(reportConfig)
     if (!reportConfig) {
       console.info(query.substring(0, 30))
       res.status(400).send('Bad Request: no trigger config found')

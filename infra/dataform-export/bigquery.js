@@ -15,7 +15,7 @@ export class BigQueryExport {
     }
 
     const [job] = await this.bigquery.createQueryJob(options)
-    console.log(`Running BigQuery query: ${job.id}`)
+    console.info(`Running BigQuery query: ${job.id}`)
     const [rows] = await job.getQueryResults()
     console.log('Fetching query results completed')
     return rows
@@ -29,7 +29,7 @@ export class BigQueryExport {
     }
 
     const [job] = await this.bigquery.createQueryJob(options)
-    console.log(`Running BigQuery query: ${job.id}`)
+    console.info(`Running BigQuery query: ${job.id}`)
     const rows = job.getQueryResultsStream()
     return rows
   }

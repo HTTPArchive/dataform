@@ -70,7 +70,7 @@ async function messageHandler (req, res) {
     if (!message) {
       const msg = 'no message received'
       console.error(`error: ${msg}`)
-      console.info(req.body)
+      console.log(req.body)
       res.status(400).send(`Bad Request: ${msg}`)
       return
     }
@@ -79,14 +79,14 @@ async function messageHandler (req, res) {
       ? JSON.parse(Buffer.from(message.data, 'base64').toString('utf-8'))
       : message
     if (!messageData) {
-      console.info(message)
+      console.error(message)
       res.status(400).send('Bad Request: invalid message format')
       return
     }
 
     const eventName = messageData.name
     if (!eventName) {
-      console.info(messageData)
+      console.error(messageData)
       res.status(400).send('Bad Request: no trigger name found')
       return
     }
@@ -104,12 +104,12 @@ async function messageHandler (req, res) {
         console.info(`Event action ${eventName}`)
         await executeAction(trigger.action, trigger.actionArgs)
       } else {
-        console.info(`No action found for event: ${eventName}`)
+        console.error(`No action found for event: ${eventName}`)
         res.status(404).send(`No action found for event: ${eventName}`)
       }
       res.status(200).send('Event processed sucessfully')
     } else {
-      console.info(`No action found for event: ${eventName}`)
+      console.error(`No action found for event: ${eventName}`)
       res.status(404).send(`No action found for event: ${eventName}`)
     }
   } catch (error) {

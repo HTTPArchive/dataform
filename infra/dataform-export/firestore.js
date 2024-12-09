@@ -62,7 +62,7 @@ export class FirestoreBatch {
   }
 
   async batchDelete () {
-    console.log('Starting batch deletion...')
+    console.info('Starting batch deletion...')
     const startTime = Date.now()
     this.currentBatch = []
     this.batchPromises = []
@@ -72,11 +72,11 @@ export class FirestoreBatch {
 
     let collectionQuery
     if (this.collectionType === 'report') {
-      console.log('Deleting documents from ' + this.collectionName + ' for date ' + this.date)
-      // Query to fetch monthly documents and run delete operations in parallel batches
+      console.info('Deleting documents from ' + this.collectionName + ' for date ' + this.date)
+      // Query to fetch monthly documents
       collectionQuery = collectionRef.where('date', '==', this.date)
     } else if (this.collectionType === 'dict') {
-      console.log('Deleting documents from ' + this.collectionName)
+      console.info('Deleting documents from ' + this.collectionName)
       collectionQuery = collectionRef
     } else {
       throw new Error('Invalid collection type')
@@ -103,7 +103,7 @@ export class FirestoreBatch {
       await this.finalFlush('delete')
 
       const duration = (Date.now() - startTime) / 1000
-      console.log(`Deletion complete. Total docs deleted: ${totalDocsDeleted}. Time: ${duration} seconds`)
+      console.info(`Deletion complete. Total docs deleted: ${totalDocsDeleted}. Time: ${duration} seconds`)
     }
   }
 
@@ -112,7 +112,7 @@ export class FirestoreBatch {
    * @param {string} query - The BigQuery SQL query.
    */
   async streamFromBigQuery (rowStream) {
-    console.log('Starting BigQuery to Firestore transfer...')
+    console.info('Starting BigQuery to Firestore transfer...')
     const startTime = Date.now()
     let totalRowsProcessed = 0
 
@@ -120,7 +120,6 @@ export class FirestoreBatch {
     this.batchPromises = []
 
     for await (const row of rowStream) {
-      // console.log('Received chunk:', row)
       this.currentBatch.push(row)
 
       // Write batch when it reaches specified size
@@ -136,7 +135,7 @@ export class FirestoreBatch {
     await this.finalFlush('set')
 
     const duration = (Date.now() - startTime) / 1000
-    console.log(`Transfer complete. Total rows processed: ${totalRowsProcessed}. Time: ${duration} seconds`)
+    console.info(`Transfer complete. Total rows processed: ${totalRowsProcessed}. Time: ${duration} seconds`)
   }
 
   async export (config, query) {
@@ -144,7 +143,7 @@ export class FirestoreBatch {
     this.collectionName = config.name
     this.collectionType = config.type
 
-    // Delete documents for the same date
+    // Delete documents before writing new ones
     // await this.batchDelete()
 
     const rowStream = await this.bigquery.queryResultsStream(query)
