@@ -13,6 +13,7 @@ locals {
     "core_web_vitals",
     "crawl",
     "sample_data",
+    "wappalyzer",
     // Legacy
     "all",
     "lighthouse",
@@ -22,8 +23,6 @@ locals {
     "summary_pages",
     "summary_requests",
     "technologies",
-    // Temporary
-    "scratchspace"
   ]
 
   dataform_service_account_roles = [

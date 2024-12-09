@@ -94,7 +94,7 @@ tech_deprecated_gone_pages AS (
 
 -- Final aggregation and comparison of technology adoption/deprecation metrics
 SELECT
-  COALESCE(before_summary.technology, tech_introduced_existing_pages.technology, tech_introduced_new_pages.technology) AS technology,
+  COALESCE(before_summary.technology, tech_introduced_existing_pages.technology, tech_introduced_new_pages.technology, apps.name) AS technology,
 
   -- Pages summary
   0-COALESCE(total_pages_deprecated_existing, 0) AS total_pages_deprecated_existing,
@@ -121,5 +121,7 @@ LEFT JOIN tech_deprecated_existing_pages
   ON before_summary.technology = tech_deprecated_existing_pages.technology
 LEFT JOIN tech_deprecated_gone_pages
   ON before_summary.technology = tech_deprecated_gone_pages.technology
+FULL OUTER JOIN wappalyzer.apps
+  ON before_summary.technology = apps.name
 ORDER BY total_pages_persisted DESC
 `)
