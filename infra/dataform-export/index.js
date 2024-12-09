@@ -9,7 +9,7 @@ import { ReportsExporter, TechReportsExporter } from './reports.js'
  */
 async function messageHandler (req, res) {
   try {
-    const message = req.body.message
+    const message = req.body.message // TODO: switch to unwrapped payload https://cloud.google.com/pubsub/docs/payload-unwrapping
     if (!message) {
       const msg = 'no message received'
       console.error(`error: ${msg}`)
