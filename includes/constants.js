@@ -1,5 +1,5 @@
 const today = (dataform.projectConfig.vars.today ? dataform.projectConfig.vars.today : new Date().toISOString()).substring(0, 10)
-const currentMonth = '2024-11-01' // TODO: today.substring(0, 8) + '01'
+const currentMonth = today.substring(0, 8) + '01'
 function fnDateUnderscored (dateStr) {
   return dateStr.replaceAll('-', '_')
 }

@@ -41,14 +41,13 @@ resource "google_pubsub_topic" "bigquery_data_updated" {
 }
 
 # Logs sink for Dataform triggers
-# TODO change dataform_repository_id to PROD
 resource "google_logging_project_sink" "dataform_export_triggers" {
   name        = "dataform-export-triggers"
   destination = "pubsub.googleapis.com/projects/${local.project}/topics/bigquery-data-updated"
   filter      = <<EOT
 -- PROD dataform
 protoPayload.authenticationInfo.principalEmail="service-226352634162@gcp-sa-dataform.iam.gserviceaccount.com"
-protoPayload.serviceData.jobCompletedEvent.job.jobConfiguration.labels.dataform_repository_id="crawl-data-test"
+protoPayload.serviceData.jobCompletedEvent.job.jobConfiguration.labels.dataform_repository_id="crawl-data"
 
 --successful query
 protoPayload.resourceName=~"projects/httparchive/jobs/dataform-gcp-"
