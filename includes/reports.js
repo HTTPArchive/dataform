@@ -34,7 +34,7 @@ FROM (
         },
         {
           type: 'timeseries',
-          query:  DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create((ctx, params) => `
 SELECT
   date,
   client,

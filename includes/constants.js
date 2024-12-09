@@ -26,38 +26,38 @@ class DataformTemplateBuilder {
    * @param {function} templateFn - A function that returns the SQL template string
    * @returns {function} A function that can be called with a context to resolve the template
    */
-  static create(templateFn) {
+  static create (templateFn) {
     return (ctx, params) => {
       // Custom replacer function to handle nested variables
       const resolveVariable = (path, scope) => {
         // Split the path into parts (handles nested objects like 'constants.devRankFilter')
-        const parts = path.split(".");
+        const parts = path.split('.')
 
         // Traverse the provided scope (ctx or global) to find the value
-        let value = scope;
+        let value = scope
         for (const part of parts) {
-          if (value === undefined || value === null) break;
-          value = value[part];
+          if (value === undefined || value === null) break
+          value = value[part]
         }
 
         // Convert value to appropriate string representation
-        if (value === undefined || value === null) return "";
-        if (typeof value === "string") return `'${value}'`;
-        if (typeof value === "number") return value.toString();
-        if (typeof value === "boolean") return value.toString();
+        if (value === undefined || value === null) return ''
+        if (typeof value === 'string') return `'${value}'`
+        if (typeof value === 'number') return value.toString()
+        if (typeof value === 'boolean') return value.toString()
 
         // For objects or arrays, use JSON.stringify
-        return JSON.stringify(value);
-      };
+        return JSON.stringify(value)
+      }
 
       // Generate the template with the provided context and global context
       return templateFn(ctx, params).replace(/\${(.*?)}/g, (match, p1) => {
-        const [scope, path] = p1.includes(':') ? p1.split(':') : ['params', p1.trim()];
+        const [scope, path] = p1.includes(':') ? p1.split(':') : ['params', p1.trim()]
         return scope === 'ctx'
           ? resolveVariable(path.trim(), ctx)
-          : resolveVariable(path.trim(), params);
-      });
-    };
+          : resolveVariable(path.trim(), params)
+      })
+    }
   }
 }
 
