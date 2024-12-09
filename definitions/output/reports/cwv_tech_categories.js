@@ -3,7 +3,7 @@ const pastMonth = constants.fnPastMonth(constants.currentMonth)
 publish('cwv_tech_categories', {
   schema: 'reports',
   type: 'table',
-  tags: ['cwv_tech_report']
+  tags: ['crux_ready']
 }).query(ctx => `
 /* {"dataform_trigger": "report_cwv_tech_complete", "name": "categories", "type": "dict"} */
 WITH pages AS (

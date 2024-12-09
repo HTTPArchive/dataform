@@ -16,7 +16,7 @@ Tag: `crawl_complete`
 
 ### Core Web Vitals Technology Report
 
-Tag: `cwv_tech_report`
+Tag: `crux_ready`
 
 - httparchive.core_web_vitals.technologies
 
@@ -26,7 +26,7 @@ Consumers:
 
 ### Blink Features Report
 
-Tag: `blink_features_report`
+Tag: `crawl_complete`
 
 - httparchive.blink_features.features
 - httparchive.blink_features.usage
@@ -39,11 +39,11 @@ Consumers:
 
 1. [crawl-complete](https://console.cloud.google.com/cloudpubsub/subscription/detail/dataformTrigger?authuser=7&project=httparchive) PubSub subscription
 
-    Tags: ["crawl_complete", "blink_features_report", "crawl_results_legacy"]
+    Tags: ["crawl_complete"]
 
 2. [bq-poller-cwv-tech-report](https://console.cloud.google.com/cloudscheduler/jobs/edit/us-east4/bq-poller-cwv-tech-report?authuser=7&project=httparchive) Scheduler
 
-    Tags: ["cwv_tech_report"]
+    Tags: ["crux_ready"]
 
 ### Triggering workflows
 

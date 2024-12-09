@@ -8,7 +8,7 @@ publish('cwv_tech_adoption', {
     partitionBy: 'date',
     clusterBy: ['rank', 'geo']
   },
-  tags: ['cwv_tech_report']
+  tags: ['crux_ready']
 }).preOps(ctx => `
 CREATE TEMPORARY FUNCTION GET_ADOPTION(
   records ARRAY<STRUCT<

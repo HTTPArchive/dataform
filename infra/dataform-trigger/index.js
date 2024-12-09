@@ -3,7 +3,7 @@ const { BigQuery } = require('@google-cloud/bigquery')
 const { getCompilationResults, runWorkflow } = require('./dataform')
 
 const TRIGGERS = {
-  cwv_tech_report: {
+  crux_ready: {
     type: 'poller',
     query: `
 DECLARE previousMonth STRING DEFAULT FORMAT_DATE('%Y%m%d', DATE_SUB(DATE_TRUNC(CURRENT_DATE(), MONTH), INTERVAL 1 MONTH));
@@ -31,7 +31,7 @@ FROM crux, report;
     action: 'runDataformRepo',
     actionArgs: {
       repoName: 'crawl-data',
-      tags: ['cwv_tech_report']
+      tags: ['crux_ready']
     }
   },
   crawl_complete: {
@@ -40,9 +40,7 @@ FROM crux, report;
     actionArgs: {
       repoName: 'crawl-data',
       tags: [
-        'crawl_complete',
-        'crawl_reports',
-        'blink_features_report'
+        'crawl_complete'
       ]
     }
   }
@@ -163,7 +161,7 @@ async function runDataformRepo (args) {
  * Example request payload:
  * {
  *  "message": {
- *     "name": "cwv_tech_report"
+ *     "name": "crux_ready"
  *   }
  * }
  */

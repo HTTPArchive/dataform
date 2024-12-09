@@ -19,7 +19,7 @@ if (iterations.length === 1) {
         protected: true,
         bigquery: sql.type === 'histogram' ? { partitionBy: 'date', clusterBy: ['client'] } : {},
         schema: 'reports',
-        tags: ['crawl_complete', 'crawl_reports']
+        tags: ['crawl_complete']
       }).preOps(ctx => `
 --DELETE FROM ${ctx.self()}
 --WHERE date = '${params.date}';
@@ -33,7 +33,7 @@ sql.query(ctx, params))
     metrics.forEach(metric => {
       metric.SQL.forEach(sql => {
         operate(metric.id + '_' + sql.type + '_' + params.date, {
-          tags: ['crawl_complete', 'crawl_reports']
+          tags: ['crawl_complete']
         }).queries(ctx => `
 DELETE FROM reports.${metric.id}_${sql.type}
 WHERE date = '${params.date}';

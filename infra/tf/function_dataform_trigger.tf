@@ -82,10 +82,10 @@ resource "google_pubsub_subscription" "dataform_crawl_complete" {
 
 # Cloud Scheduler Job to trigger CWV Tech Report Dataform workflow
 locals {
-  cwv_tech_report_scheduler_body = <<EOF
+  crux_ready_scheduler_body = <<EOF
 {
   "message": {
-    "name": "cwv_tech_report"
+    "name": "crux_ready"
   }
 }
 EOF
@@ -108,7 +108,7 @@ resource "google_cloud_scheduler_job" "bq-poller-cwv-tech-report" {
   schedule         = "0 */7 8-14 * *"
   time_zone        = "Etc/UTC"
   http_target {
-    body = base64encode(local.cwv_tech_report_scheduler_body)
+    body = base64encode(local.crux_ready_scheduler_body)
     headers = {
       Content-Type = "application/json"
     }

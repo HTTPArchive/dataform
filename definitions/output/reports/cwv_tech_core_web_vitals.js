@@ -8,7 +8,7 @@ publish('cwv_tech_core_web_vitals', {
     partitionBy: 'date',
     clusterBy: ['rank', 'geo']
   },
-  tags: ['cwv_tech_report']
+  tags: ['crux_ready']
 }).preOps(ctx => `
 CREATE TEMPORARY FUNCTION GET_VITALS(
   records ARRAY<STRUCT<
