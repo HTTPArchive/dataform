@@ -6,7 +6,7 @@ for (
   let month = constants.currentMonth; month >= constants.currentMonth; month = constants.fnPastMonth(month)) {
   iterations.push({
     date: month,
-    rankFilter: constants.devRankFilter
+    devRankFilter: constants.devRankFilter
   })
 }
 
@@ -25,7 +25,7 @@ if (iterations.length === 1) {
 --WHERE date = '${params.date}';
   `).query(ctx => `
 /* {"dataform_trigger": "report_complete", "date": "${params.date}", "name": "${metric.id}", "type": "${sql.type}"} */` +
-constants.fillTemplate(sql.query, params))
+sql.query(ctx, params))
     })
   })
 } else {
@@ -40,7 +40,7 @@ WHERE date = '${params.date}';
 
 /* {"dataform_trigger": "report_complete", "date": "${params.date}", "name": "${metric.id}", "type": "${sql.type}"} */
 INSERT INTO reports.${metric.id}_${sql.type}` +
-        constants.fillTemplate(sql.query, params))
+        sql.query(ctx, params))
       })
     })
   })

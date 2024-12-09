@@ -1,4 +1,69 @@
-const { config } = require('./reports_config')
+const { DataformTemplateBuilder } = require('./constants')
+
+const config = {
+  _metrics: {
+    bytesTotal: {
+      SQL: [
+        {
+          type: 'histogram',
+          query: DataformTemplateBuilder.create((ctx, params) => `
+SELECT
+  *,
+  SUM(pdf) OVER (PARTITION BY client ORDER BY bin) AS cdf
+FROM (
+  SELECT
+    *,
+    volume / SUM(volume) OVER (PARTITION BY client) AS pdf
+  FROM (
+    SELECT
+      date,
+      client,
+      CAST(FLOOR(INT64(summary.bytesTotal) / 1024 / 100) * 100 AS INT64) AS bin,
+      COUNT(0) AS volume
+    FROM ${ctx.ref('crawl', 'pages')}
+    WHERE
+      date = '${params.date}' ${params.devRankFilter}
+    GROUP BY
+      date,
+      client,
+      bin
+    HAVING bin IS NOT NULL
+  )
+)
+`)
+        },
+        {
+          type: 'timeseries',
+          query:  DataformTemplateBuilder.create((ctx, params) => `
+SELECT
+  date,
+  client,
+  UNIX_SECONDS(TIMESTAMP(date)) AS timestamp,
+  ROUND(APPROX_QUANTILES(bytesTotal, 1001)[OFFSET(101)] / 1024, 2) AS p10,
+  ROUND(APPROX_QUANTILES(bytesTotal, 1001)[OFFSET(251)] / 1024, 2) AS p25,
+  ROUND(APPROX_QUANTILES(bytesTotal, 1001)[OFFSET(501)] / 1024, 2) AS p50,
+  ROUND(APPROX_QUANTILES(bytesTotal, 1001)[OFFSET(751)] / 1024, 2) AS p75,
+  ROUND(APPROX_QUANTILES(bytesTotal, 1001)[OFFSET(901)] / 1024, 2) AS p90
+FROM (
+  SELECT
+    date,
+    client,
+    INT64(summary.bytesTotal) AS bytesTotal
+  FROM ${ctx.ref('crawl', 'pages')}
+  WHERE
+    date = '${params.date}' ${params.devRankFilter} AND
+    INT64(summary.bytesTotal) > 0
+)
+GROUP BY
+  date,
+  client,
+  timestamp
+`)
+        }
+      ]
+    }
+  }
+}
 
 class HTTPArchiveReports {
   constructor () {
@@ -12,8 +77,6 @@ class HTTPArchiveReports {
       const report = this.getReport(reportId)
       return report
     })
-
-    console.log('reports', reports)
 
     return reports
   }
