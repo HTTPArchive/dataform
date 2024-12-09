@@ -45,16 +45,6 @@ FROM crux, report;
         'blink_features_report'
       ]
     }
-  },
-  test: {
-    type: 'event',
-    action: 'runDataformRepo',
-    actionArgs: {
-      repoName: 'crawl-data-test',
-      tags: [
-        'test_tag'
-      ]
-    }
   }
 }
 
