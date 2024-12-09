@@ -1,9 +1,9 @@
 const pastMonth = constants.fnPastMonth(constants.currentMonth)
 
-publish('meta_technologies', {
+publish('tech_detections', {
   type: 'table',
   description: 'Used in dashboard: https://lookerstudio.google.com/u/7/reporting/1jh_ScPlCIbSYTf2r2Y6EftqmX9SQy4Gn/page/p_an38lbzywc/edit',
-  schema: 'scratchspace',
+  schema: 'wappalyzer',
   tags: ['crawl_results']
 }).query(ctx => `
 WITH source AS (
