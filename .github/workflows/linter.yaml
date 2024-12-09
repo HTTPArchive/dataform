@@ -33,4 +33,3 @@ jobs:
           VALIDATE_JSCPD: false
           VALIDATE_JAVASCRIPT_PRETTIER: false
           VALIDATE_MARKDOWN_PRETTIER: false
-          

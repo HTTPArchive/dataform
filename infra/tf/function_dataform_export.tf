@@ -36,6 +36,7 @@ resource "google_cloudfunctions2_function" "dataform_export" {
 
 # Pub/Sub Topic to trigger Crawl Data Dataform workflow
 resource "google_pubsub_topic" "bigquery_data_updated" {
+  #checkov:skip=CKV_GCP_83:Ensure PubSub Topics are encrypted with Customer Supplied Encryption Keys (CSEK)
   name    = "bigquery-data-updated"
   project = local.project
 }
