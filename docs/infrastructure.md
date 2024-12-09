@@ -15,8 +15,8 @@ graph LR;
     dataformTrigger_subscription --> dataformTrigger
 
     subgraph Cloud_Scheduler
-        bq_poller_cwv_tech_report[CWV Report Poller Job]
-        bq_poller_cwv_tech_report --> dataformTrigger
+        bq_poller_crux_ready[CrUX Readiness Poller Job]
+        bq_poller_crux_ready --> dataformTrigger
     end
 
     subgraph Dataform

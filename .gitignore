@@ -3,4 +3,5 @@ node_modules/
 
 # Terraform
 infra/tf/.terraform/
+infra/tf/tmp/
 **/*.zip

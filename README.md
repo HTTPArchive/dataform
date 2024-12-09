@@ -16,7 +16,7 @@ Tag: `crawl_complete`
 
 ### Core Web Vitals Technology Report
 
-Tag: `cwv_tech_report`
+Tag: `crux_ready`
 
 - httparchive.core_web_vitals.technologies
 
@@ -26,7 +26,7 @@ Consumers:
 
 ### Blink Features Report
 
-Tag: `blink_features_report`
+Tag: `crawl_complete`
 
 - httparchive.blink_features.features
 - httparchive.blink_features.usage
@@ -35,30 +35,15 @@ Consumers:
 
 - chromestatus.com - [example](https://chromestatus.com/metrics/feature/timeline/popularity/2089)
 
-### Legacy crawl results (to be deprecated)
-
-Tag: `crawl_results_legacy`
-
-- httparchive.all.pages
-- httparchive.all.parsed_css
-- httparchive.all.requests
-- httparchive.lighthouse.YYYY_MM_DD_client
-- httparchive.pages.YYYY_MM_DD_client
-- httparchive.requests.YYYY_MM_DD_client
-- httparchive.response_bodies.YYYY_MM_DD_client
-- httparchive.summary_pages.YYYY_MM_DD_client
-- httparchive.summary_requests.YYYY_MM_DD_client
-- httparchive.technologies.YYYY_MM_DD_client
-
 ## Schedules
 
 1. [crawl-complete](https://console.cloud.google.com/cloudpubsub/subscription/detail/dataformTrigger?authuser=7&project=httparchive) PubSub subscription
 
-    Tags: ["crawl_complete", "blink_features_report", "crawl_results_legacy"]
+    Tags: ["crawl_complete"]
 
 2. [bq-poller-cwv-tech-report](https://console.cloud.google.com/cloudscheduler/jobs/edit/us-east4/bq-poller-cwv-tech-report?authuser=7&project=httparchive) Scheduler
 
-    Tags: ["cwv_tech_report"]
+    Tags: ["crux_ready"]
 
 ### Triggering workflows
 
@@ -72,20 +57,7 @@ In order to unify the workflow triggering mechanism, we use [a Cloud Run functio
 2. Make adjustments to the dataform configuration files and manually run a workflow to verify.
 3. Push all your changes to a dev branch & open a PR with the link to the BigQuery artifacts generated in the test workflow.
 
-### Dataform development workspace hints
+#### Workspace hints
 
-1. In workflow settings vars:
-
-    - set `env_name: dev` to process sampled data in dev workspace.
-    - change `today` variable to a month in the past. May be helpful for testing pipelines based on `chrome-ux-report` data.
-
-2. `definitions/extra/test_env.sqlx` script helps to setup the tables required to run pipelines when in dev workspace. It's disabled by default.
-
-### Error Monitoring
-
-The issues within the pipeline are being tracked using the following alerts:
-
-1. the event trigger processing fails - [Dataform Trigger Function Error](https://console.cloud.google.com/monitoring/alerting/policies/570799173843203905?authuser=7&project=httparchive)
-2. a job in the workflow fails - "[Dataform Workflow Invocation Failed](https://console.cloud.google.com/monitoring/alerting/policies/16526940745374967367?authuser=7&project=httparchive)
-
-Error notifications are sent to [#10x-infra](https://httparchive.slack.com/archives/C030V4WAVL3) Slack channel.
+1. In `workflow_settings.yaml` set `env_name: dev` to process sampled data.
+2. In `includes/constants.js` set `today` or other variables to a custome value.

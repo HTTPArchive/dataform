@@ -2,7 +2,7 @@ publish('usage', {
   schema: 'blink_features',
   type: 'incremental',
   protected: true,
-  tags: ['blink_features_report']
+  tags: ['crawl_complete']
 }).preOps(ctx => `
 DELETE FROM ${ctx.self()}
 WHERE yyyymmdd = REPLACE('${constants.currentMonth}', '-', '');

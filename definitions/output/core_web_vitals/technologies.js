@@ -9,17 +9,25 @@ publish('technologies', {
     clusterBy: ['geo', 'app', 'rank', 'client'],
     requirePartitionFilter: true
   },
-  tags: ['cwv_tech_report'],
+  tags: ['crux_ready'],
   dependOnDependencyAssertions: true
 }).preOps(ctx => `
 DELETE FROM ${ctx.self()}
 WHERE date = '${pastMonth}';
 
-CREATE TEMP FUNCTION IS_GOOD(good FLOAT64, needs_improvement FLOAT64, poor FLOAT64) RETURNS BOOL AS (
+CREATE TEMP FUNCTION IS_GOOD(
+  good FLOAT64,
+  needs_improvement FLOAT64,
+  poor FLOAT64
+) RETURNS BOOL AS (
   SAFE_DIVIDE(good, good + needs_improvement + poor) >= 0.75
 );
 
-CREATE TEMP FUNCTION IS_NON_ZERO(good FLOAT64, needs_improvement FLOAT64, poor FLOAT64) RETURNS BOOL AS (
+CREATE TEMP FUNCTION IS_NON_ZERO(
+  good FLOAT64,
+  needs_improvement FLOAT64,
+  poor FLOAT64
+) RETURNS BOOL AS (
   good + needs_improvement + poor > 0
 );
 `).query(ctx => `
@@ -28,8 +36,7 @@ WITH geo_summary AS (
     CAST(REGEXP_REPLACE(CAST(yyyymm AS STRING), r'(\\d{4})(\\d{2})', r'\\1-\\2-01') AS DATE) AS date,
     * EXCEPT (country_code),
     \`chrome-ux-report\`.experimental.GET_COUNTRY(country_code) AS geo
-  FROM
-    ${ctx.ref('chrome-ux-report', 'materialized', 'country_summary')}
+  FROM ${ctx.ref('chrome-ux-report', 'materialized', 'country_summary')}
   WHERE
     yyyymm = CAST(FORMAT_DATE('%Y%m', '${pastMonth}') AS INT64) AND
     device IN ('desktop', 'phone')
@@ -37,8 +44,7 @@ UNION ALL
   SELECT
     * EXCEPT (yyyymmdd, p75_fid_origin, p75_cls_origin, p75_lcp_origin, p75_inp_origin),
     'ALL' AS geo
-  FROM
-    ${ctx.ref('chrome-ux-report', 'materialized', 'device_summary')}
+  FROM ${ctx.ref('chrome-ux-report', 'materialized', 'device_summary')}
   WHERE
     date = '${pastMonth}' AND
     device IN ('desktop', 'phone')
@@ -81,11 +87,9 @@ crux AS (
     IS_GOOD(fast_ttfb, avg_ttfb, slow_ttfb) AS good_ttfb,
     IS_NON_ZERO(fast_inp, avg_inp, slow_inp) AS any_inp,
     IS_GOOD(fast_inp, avg_inp, slow_inp) AS good_inp
-  FROM
-    geo_summary,
+  FROM geo_summary,
     UNNEST([1000, 10000, 100000, 1000000, 10000000, 100000000]) AS _rank
-  WHERE
-    rank <= _rank
+  WHERE rank <= _rank
 ),
 
 technologies AS (
@@ -93,8 +97,7 @@ technologies AS (
     technology.technology AS app,
     client,
     page AS url
-  FROM
-    ${ctx.ref('crawl', 'pages')},
+  FROM ${ctx.ref('crawl', 'pages')},
     UNNEST(technologies) AS technology
   WHERE
     date = '${pastMonth}'
@@ -106,8 +109,7 @@ UNION ALL
     'ALL' AS app,
     client,
     page AS url
-  FROM
-    ${ctx.ref('crawl', 'pages')}
+  FROM ${ctx.ref('crawl', 'pages')}
   WHERE
     date = '${pastMonth}'
     ${constants.devRankFilter}
@@ -117,21 +119,18 @@ categories AS (
   SELECT
     technology.technology AS app,
     ARRAY_TO_STRING(ARRAY_AGG(DISTINCT category IGNORE NULLS ORDER BY category), ', ') AS category
-  FROM
-    ${ctx.ref('crawl', 'pages')},
+  FROM ${ctx.ref('crawl', 'pages')},
     UNNEST(technologies) AS technology,
     UNNEST(technology.categories) AS category
   WHERE
     date = '${pastMonth}'
     ${constants.devRankFilter}
-  GROUP BY
-    app
+  GROUP BY app
 UNION ALL
   SELECT
     'ALL' AS app,
     ARRAY_TO_STRING(ARRAY_AGG(DISTINCT category IGNORE NULLS ORDER BY category), ', ') AS category
-  FROM
-    ${ctx.ref('crawl', 'pages')},
+  FROM ${ctx.ref('crawl', 'pages')},
     UNNEST(technologies) AS technology,
     UNNEST(technology.categories) AS category
   WHERE
@@ -153,8 +152,7 @@ summary_stats AS (
     SAFE.FLOAT64(lighthouse.categories.performance.score) AS performance,
     SAFE.FLOAT64(lighthouse.categories.pwa.score) AS pwa,
     SAFE.FLOAT64(lighthouse.categories.seo.score) AS seo
-  FROM
-    ${ctx.ref('crawl', 'pages')}
+  FROM ${ctx.ref('crawl', 'pages')}
   WHERE
     date = '${pastMonth}'
     ${constants.devRankFilter}
@@ -174,16 +172,11 @@ lab_data AS (
     AVG(performance) AS performance,
     AVG(pwa) AS pwa,
     AVG(seo) AS seo
-  FROM
-    summary_stats
-  JOIN
-    technologies
-  USING
-    (client, url)
-  JOIN
-    categories
-  USING
-    (app)
+  FROM summary_stats
+  JOIN technologies
+  USING (client, url)
+  JOIN categories
+  USING (app)
   GROUP BY
     client,
     root_page_url,
@@ -232,10 +225,8 @@ SELECT
   SAFE_CAST(APPROX_QUANTILES(bytesJS, 1000)[OFFSET(500)] AS INT64) AS median_bytes_js,
   SAFE_CAST(APPROX_QUANTILES(bytesImg, 1000)[OFFSET(500)] AS INT64) AS median_bytes_image
 
-FROM
-  lab_data
-JOIN
-  crux
+FROM lab_data
+JOIN crux
 USING
   (client, root_page_url)
 GROUP BY

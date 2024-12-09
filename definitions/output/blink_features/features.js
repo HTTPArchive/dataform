@@ -6,7 +6,7 @@ publish('features', {
     partitionBy: 'yyyymmdd',
     clusterBy: ['client', 'rank']
   },
-  tags: ['blink_features_report']
+  tags: ['crawl_complete']
 }).preOps(ctx => `
 DELETE FROM ${ctx.self()}
 WHERE yyyymmdd = DATE '${constants.currentMonth}';
