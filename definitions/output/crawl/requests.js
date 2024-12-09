@@ -59,59 +59,11 @@ WHERE date = '${constants.currentMonth}' AND
   client = 'desktop';
 `).query(ctx => `
 SELECT
-  date,
-  client,
-  requests.page,
-  is_root_page,
-  root_page,
-  crux.rank,
-  url,
-  is_main_document,
-  type,
-  index,
-  JSON_REMOVE(
-    payload,
-    '$._headers',
-    '$.request.headers',
-    '$.response.headers'
-  ) AS payload,
-  pruneHeaders(
-    JSON_REMOVE(
-      summary,
-      '$.crawlid',
-      '$.firstHtml',
-      '$.firstReq',
-      '$.pageid',
-      '$.reqOtherHeaders',
-      '$.requestid',
-      '$.respOtherHeaders',
-      '$.startedDateTime',
-      '$.type',
-      '$.url',
-      '$.urlShort'
-    )
-  ) as summary,
-  request_headers,
-  response_headers,
-  response_body
-FROM (
-  SELECT
-    * EXCEPT (payload, summary),
-    SAFE.PARSE_JSON(payload, wide_number_mode => 'round') AS payload,
-    SAFE.PARSE_JSON(summary, wide_number_mode => 'round') AS summary
-  FROM ${ctx.ref('crawl_staging', 'requests')}
-  WHERE date = '${constants.currentMonth}'
-    AND client = 'desktop'
-    ${constants.devRankFilter}
-) AS requests
-LEFT JOIN (
-  SELECT DISTINCT
-    CONCAT(origin, '/') AS page,
-    experimental.popularity.rank AS rank
-  FROM ${ctx.ref('chrome-ux-report', 'experimental', 'global')}
-  WHERE yyyymm = ${constants.fnPastMonth(constants.currentMonth).substring(0, 7).replace('-', '')}
-) AS crux
-ON requests.root_page = crux.page
+  *
+FROM ${ctx.ref('crawl_staging', 'requests')}
+WHERE date = '${constants.currentMonth}' AND
+  client = 'desktop'
+  ${constants.devRankFilter}
 `).postOps(ctx => `
 DELETE FROM ${ctx.self()}
 WHERE date = '${constants.currentMonth}' AND
@@ -119,57 +71,9 @@ WHERE date = '${constants.currentMonth}' AND
 
 INSERT INTO ${ctx.self()}
 SELECT
-  date,
-  client,
-  requests.page,
-  is_root_page,
-  root_page,
-  crux.rank,
-  url,
-  is_main_document,
-  type,
-  index,
-  JSON_REMOVE(
-    payload,
-    '$._headers',
-    '$.request.headers',
-    '$.response.headers'
-  ) AS payload,
-  pruneHeaders(
-    JSON_REMOVE(
-      summary,
-      '$.crawlid',
-      '$.firstHtml',
-      '$.firstReq',
-      '$.pageid',
-      '$.reqOtherHeaders',
-      '$.requestid',
-      '$.respOtherHeaders',
-      '$.startedDateTime',
-      '$.type',
-      '$.url',
-      '$.urlShort'
-    )
-  ) as summary,
-  request_headers,
-  response_headers,
-  response_body
-FROM (
-  SELECT
-    * EXCEPT (payload, summary),
-    SAFE.PARSE_JSON(payload, wide_number_mode => 'round') AS payload,
-    SAFE.PARSE_JSON(summary, wide_number_mode => 'round') AS summary
-  FROM ${ctx.ref('crawl_staging', 'requests')}
-  WHERE date = '${constants.currentMonth}'
-    AND client = 'mobile'
-    ${constants.devRankFilter}
-) AS requests
-LEFT JOIN (
-  SELECT DISTINCT
-    CONCAT(origin, '/') AS page,
-    experimental.popularity.rank AS rank
-  FROM ${ctx.ref('chrome-ux-report', 'experimental', 'global')}
-  WHERE yyyymm = ${constants.fnPastMonth(constants.currentMonth).substring(0, 7).replace('-', '')}
-) AS crux
-ON requests.root_page = crux.page;
+  *
+FROM ${ctx.ref('crawl_staging', 'requests')}
+WHERE date = '${constants.currentMonth}' AND
+  client = 'mobile'
+  ${constants.devRankFilter}
 `)
