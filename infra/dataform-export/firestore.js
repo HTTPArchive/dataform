@@ -15,7 +15,7 @@ export class FirestoreBatch {
   constructor () {
     this.firestore = new Firestore()
     this.bigquery = new BigQueryExport()
-    this.firestore.settings({ databaseId: 'tech-report-apis-dev' })
+    this.firestore.settings({ databaseId: 'tech-report-apis-prod' })
     this.batchSize = 500
     this.maxConcurrentBatches = 200
   }
@@ -28,7 +28,7 @@ export class FirestoreBatch {
         batch.delete(doc.ref)
       } else if (operation === 'set') {
         const docId = technologyHashId(doc, this.collectionName, TECHNOLOGY_QUERY_ID_KEYS)
-        const docRef = this.firestore.collection(this.collectionName + '_v2').doc(docId) // TODO: remove _v2 used for testing
+        const docRef = this.firestore.collection(this.collectionName).doc(docId)
         batch.set(docRef, doc)
       } else {
         throw new Error('Invalid operation')
@@ -68,7 +68,7 @@ export class FirestoreBatch {
     this.batchPromises = []
 
     let totalDocsDeleted = 0
-    const collectionRef = this.firestore.collection(this.collectionName + '_v2') // TODO: remove _v2 used for testing
+    const collectionRef = this.firestore.collection(this.collectionName)
 
     let collectionQuery
     if (this.collectionType === 'report') {
