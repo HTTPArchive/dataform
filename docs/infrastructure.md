@@ -69,7 +69,7 @@ Triggers the Dataform workflow execution, based on events or cron schedules.
 
 ### Cloud Scheduler
 
-- [bq-poller-cwv-tech-report](https://console.cloud.google.com/cloudscheduler/jobs/edit/us-east4/bq-poller-cwv-tech-report?authuser=7&project=httparchive)
+- [bq-poller-crux-ready](https://console.cloud.google.com/cloudscheduler/jobs/edit/us-central1/bq-poller-crux-ready?authuser=7&project=httparchive)
 
 ### Pub/Sub Subscription
 

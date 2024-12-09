@@ -41,7 +41,7 @@ Consumers:
 
     Tags: ["crawl_complete"]
 
-2. [bq-poller-cwv-tech-report](https://console.cloud.google.com/cloudscheduler/jobs/edit/us-east4/bq-poller-cwv-tech-report?authuser=7&project=httparchive) Scheduler
+2. [bq-poller-crux-ready](https://console.cloud.google.com/cloudscheduler/jobs/edit/us-central1/bq-poller-crux-ready?authuser=7&project=httparchive) Scheduler
 
     Tags: ["crux_ready"]
 

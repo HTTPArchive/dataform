@@ -93,15 +93,15 @@ EOF
 
 /*import {
   provider = google-beta
-  id       = "projects/${local.project}/locations/us-east4/jobs/bq-poller-cwv-tech-report"
-  to       = google_cloud_scheduler_job.bq-poller-cwv-tech-report
+  id       = "projects/${local.project}/locations/us-central1/jobs/bq-poller-crux-ready"
+  to       = google_cloud_scheduler_job.bq-poller-crux-ready
 }*/
 
-resource "google_cloud_scheduler_job" "bq-poller-cwv-tech-report" {
+resource "google_cloud_scheduler_job" "bq-poller-crux-ready" {
   provider         = google-beta
   attempt_deadline = "180s"
   description      = null
-  name             = "bq-poller-cwv-tech-report"
+  name             = "bq-poller-crux-ready"
   paused           = false
   project          = local.project
   region           = local.region
