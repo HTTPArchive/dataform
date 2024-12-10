@@ -86,7 +86,7 @@ resource "google_pubsub_subscription" "dataform_export" {
     }
   }
   retry_policy {
-    maximum_backoff = "60s"
-    minimum_backoff = "10s"
+    maximum_backoff = "600s"
+    minimum_backoff = "600s"
   }
 }
