@@ -32,6 +32,7 @@ technologies AS (
   FROM pages,
     UNNEST(technologies) AS t,
     UNNEST(t.categories) AS category
+  WHERE technology IS NOT NULL
   GROUP BY
     category,
     technology
@@ -42,7 +43,7 @@ SELECT
   categories.origins,
   ARRAY_AGG(technology ORDER BY technologies.origins DESC) AS technologies
 FROM categories
-JOIN technologies
+LEFT JOIN technologies
 USING (category)
 GROUP BY
   category,
