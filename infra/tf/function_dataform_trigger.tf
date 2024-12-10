@@ -29,7 +29,7 @@ resource "google_cloudfunctions2_function" "default" {
   service_config {
     max_instance_count    = 1
     available_memory      = "256M"
-    timeout_seconds       = 60
+    timeout_seconds       = 600
     service_account_email = local.function_identity
     ingress_settings      = "ALLOW_INTERNAL_ONLY"
   }
@@ -53,12 +53,12 @@ resource "google_cloud_run_service_iam_member" "member" {
 }*/
 
 resource "google_pubsub_subscription" "dataform_crawl_complete" {
-  ack_deadline_seconds         = 60
+  ack_deadline_seconds         = 600
   enable_exactly_once_delivery = false
   enable_message_ordering      = false
   filter                       = null
   labels                       = {}
-  message_retention_duration   = "604800s"
+  message_retention_duration   = "3600s"
   name                         = "dataform-trigger-crawl-complete"
   project                      = local.project
   retain_acked_messages        = false

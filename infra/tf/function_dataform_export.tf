@@ -68,7 +68,7 @@ resource "google_pubsub_subscription" "dataform_export" {
   enable_message_ordering      = false
   filter                       = null
   labels                       = {}
-  message_retention_duration   = "604800s"
+  message_retention_duration   = "3600s"
   name                         = google_cloudfunctions2_function.dataform_export.name
   project                      = local.project
   retain_acked_messages        = false
