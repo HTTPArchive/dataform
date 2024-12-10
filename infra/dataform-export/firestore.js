@@ -90,7 +90,6 @@ export class FirestoreBatch {
 
       snapshot.forEach(async (doc) => {
         this.currentBatch.push(doc)
-        totalDocsDeleted++
 
         if (this.currentBatch.length >= this.batchSize) {
           this.queueBatch('delete')
@@ -99,12 +98,13 @@ export class FirestoreBatch {
         if (this.batchPromises.length >= this.maxConcurrentBatches) {
           await this.commitBatches()
         }
+        totalDocsDeleted++
       })
-      await this.finalFlush('delete')
-
-      const duration = (Date.now() - startTime) / 1000
-      console.info(`Deletion complete. Total docs deleted: ${totalDocsDeleted}. Time: ${duration} seconds`)
     }
+    await this.finalFlush('delete')
+
+    const duration = (Date.now() - startTime) / 1000
+    console.info(`Deletion complete. Total docs deleted: ${totalDocsDeleted}. Time: ${duration} seconds`)
   }
 
   /**
