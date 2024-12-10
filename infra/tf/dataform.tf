@@ -76,8 +76,6 @@ resource "google_dataform_repository" "crawl_data" {
   }
   workspace_compilation_overrides {
     default_database = local.project
-    schema_suffix    = "dev"
-    table_prefix     = "dev"
   }
 }
 
