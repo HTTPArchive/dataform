@@ -39,7 +39,7 @@ export class FirestoreBatch {
   }
 
   async commitBatches () {
-    console.log(`Committing ${this.batchPromises.length} batches`)
+    console.log(`Committing ${this.batchPromises.length} batches to ${this.collectionName}`)
     await Promise.all(
       this.batchPromises.map(async (batchPromise) => await batchPromise.commit()
         .catch((error) => {
@@ -135,7 +135,7 @@ export class FirestoreBatch {
     await this.finalFlush('set')
 
     const duration = (Date.now() - startTime) / 1000
-    console.info(`Transfer complete. Total rows processed: ${totalRowsProcessed}. Time: ${duration} seconds`)
+    console.info(`Transfer to ${this.collectionName} complete. Total rows processed: ${totalRowsProcessed}. Time: ${duration} seconds`)
   }
 
   async export (config, query) {
