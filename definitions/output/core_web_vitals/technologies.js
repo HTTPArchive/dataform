@@ -61,7 +61,7 @@ crux AS (
       WHEN 10000 THEN 'Top 10k'
       WHEN 1000 THEN 'Top 1k'
     END AS rank,
-    CONCAT(origin, '/') AS root_page_url,
+    CONCAT(origin, '/') AS root_page,
     IF(device = 'desktop', 'desktop', 'mobile') AS client,
 
     # CWV
@@ -94,9 +94,9 @@ crux AS (
 
 technologies AS (
   SELECT
-    technology.technology AS app,
+    technology.technology,
     client,
-    page AS url
+    page
   FROM ${ctx.ref('crawl', 'pages')},
     UNNEST(technologies) AS technology
   WHERE
@@ -106,9 +106,9 @@ technologies AS (
     technology.technology != ''
 UNION ALL
   SELECT
-    'ALL' AS app,
+    'ALL' AS technology,
     client,
-    page AS url
+    page
   FROM ${ctx.ref('crawl', 'pages')}
   WHERE
     date = '${pastMonth}'
@@ -117,7 +117,7 @@ UNION ALL
 
 categories AS (
   SELECT
-    technology.technology AS app,
+    technology.technology,
     ARRAY_TO_STRING(ARRAY_AGG(DISTINCT category IGNORE NULLS ORDER BY category), ', ') AS category
   FROM ${ctx.ref('crawl', 'pages')},
     UNNEST(technologies) AS technology,
@@ -125,10 +125,10 @@ categories AS (
   WHERE
     date = '${pastMonth}'
     ${constants.devRankFilter}
-  GROUP BY app
+  GROUP BY technology
 UNION ALL
   SELECT
-    'ALL' AS app,
+    'ALL' AS technology,
     ARRAY_TO_STRING(ARRAY_AGG(DISTINCT category IGNORE NULLS ORDER BY category), ', ') AS category
   FROM ${ctx.ref('crawl', 'pages')},
     UNNEST(technologies) AS technology,
@@ -142,8 +142,8 @@ UNION ALL
 summary_stats AS (
   SELECT
     client,
-    page AS url,
-    root_page AS root_page_url,
+    page,
+    root_page AS root_page,
     SAFE.INT64(summary.bytesTotal) AS bytesTotal,
     SAFE.INT64(summary.bytesJS) AS bytesJS,
     SAFE.INT64(summary.bytesImg) AS bytesImg,
@@ -161,8 +161,8 @@ summary_stats AS (
 lab_data AS (
   SELECT
     client,
-    root_page_url,
-    app,
+    root_page,
+    technology,
     ANY_VALUE(category) AS category,
     AVG(bytesTotal) AS bytesTotal,
     AVG(bytesJS) AS bytesJS,
@@ -174,13 +174,13 @@ lab_data AS (
     AVG(seo) AS seo
   FROM summary_stats
   JOIN technologies
-  USING (client, url)
+  USING (client, page)
   JOIN categories
-  USING (app)
+  USING (technology)
   GROUP BY
     client,
-    root_page_url,
-    app
+    root_page,
+    technology
 )
 
 SELECT
@@ -188,7 +188,7 @@ SELECT
   geo,
   rank,
   ANY_VALUE(category) AS category,
-  app,
+  technology AS app,
   client,
   COUNT(0) AS origins,
 
@@ -226,9 +226,8 @@ SELECT
   SAFE_CAST(APPROX_QUANTILES(bytesImg, 1000)[OFFSET(500)] AS INT64) AS median_bytes_image
 
 FROM lab_data
-JOIN crux
-USING
-  (client, root_page_url)
+INNER JOIN crux
+USING (client, root_page)
 GROUP BY
   app,
   geo,

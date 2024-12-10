@@ -40,7 +40,7 @@ technologies AS (
 SELECT
   category,
   categories.origins,
-  ARRAY_AGG(technology ORDER BY technologies.origins DESC) AS technologies
+  ARRAY_AGG(technology IGNORE NULLS ORDER BY technologies.origins DESC) AS technologies
 FROM categories
 JOIN technologies
 USING (category)
