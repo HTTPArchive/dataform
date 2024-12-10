@@ -22,10 +22,10 @@ CREATE TEMPORARY FUNCTION GET_LIGHTHOUSE(
 RETURNS ARRAY<STRUCT<
   name STRING,
   desktop STRUCT<
-    median_score NUMERIC
+    median_score FLOAT64
   >,
   mobile STRUCT<
-    median_score NUMERIC
+    median_score FLOAT64
 >>>
 LANGUAGE js AS '''
 const METRIC_MAP = {
