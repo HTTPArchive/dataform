@@ -1,12 +1,10 @@
 # Infrastructure for the HTTP Archive data pipeline
 
-## Cloud function for triggering Dataform workflows
+## Cloud Function for triggering Dataform workflows
 
 [dataformTrigger](https://console.cloud.google.com/functions/details/us-central1/dataformTrigger?env=gen2&authuser=7&project=httparchive) Cloud Run Function
 
-This function may be triggered by a PubSub message or Cloud Scheduler and triggers a Dataform workflow based on the trigger configuration provided.
-
-### Trigger configuration
+This function may be triggered by a PubSub message or Cloud Scheduler and invokes a Dataform workflow based on the provided configuration.
 
 Trigger types:
 
@@ -16,7 +14,7 @@ Trigger types:
 
 See [available trigger configurations](https://github.com/HTTPArchive/dataform/blob/main/src/index.js#L4).
 
-Request body example with trigger name:
+Request body example:
 
 ```json
 {
@@ -26,7 +24,7 @@ Request body example with trigger name:
 }
 ```
 
-Trigger for local development:
+Request example for local development:
 
 ```bash
 curl -X POST http://localhost:8080/ \
@@ -38,25 +36,23 @@ curl -X POST http://localhost:8080/ \
   }'
 ```
 
-## Cloud Function for report data exports
+## Cloud Function for triggering data exports
 
 [exportReport](https://console.cloud.google.com/functions/details/us-central1/bqExport?env=gen2&authuser=7&project=httparchive) Cloud Run Function
 
-This function exports reports data to GCS or Firestore.
+This function triggers a job to export data to GCS or Firestore.
 
-### Export configuration
+Request body example:
 
 ```json
 {
-  "message": {
-    "protoPayload": {
-      "serviceData": {
-        "jobCompletedEvent": {
-          "job": {
-            "jobConfiguration": {
-              "query": {
-                "query": "/* {\"dataform_trigger\": \"report_cwv_tech_complete\", \"date\": \"2024-11-01\", \"name\": \"technologies\", \"type\": \"dict\"} *\/"
-              }
+  "protoPayload": {
+    "serviceData": {
+      "jobCompletedEvent": {
+        "job": {
+          "jobConfiguration": {
+            "query": {
+              "query": "/* {\"dataform_trigger\": \"report_cwv_tech_complete\", \"date\": \"2024-11-01\", \"name\": \"technologies\", \"type\": \"dict\"} *\/"
             }
           }
         }
@@ -66,21 +62,19 @@ This function exports reports data to GCS or Firestore.
 }
 ```
 
-Trigger for local development:
+Request example for local development:
 
 ```bash
 curl -X POST http://localhost:8080/ \
   -H "Content-Type: application/json" \
   -d '{
-  "message": {
-    "protoPayload": {
-      "serviceData": {
-        "jobCompletedEvent": {
-          "job": {
-            "jobConfiguration": {
-              "query": {
-                "query": "/* {\"dataform_trigger\": \"report_complete\", \"date\": \"2024-11-01\", \"name\": \"bytesTotal\", \"type\": \"timeseries\"} *\/"
-              }
+  "protoPayload": {
+    "serviceData": {
+      "jobCompletedEvent": {
+        "job": {
+          "jobConfiguration": {
+            "query": {
+              "query": "/* {\"dataform_trigger\": \"report_complete\", \"date\": \"2024-11-01\", \"name\": \"bytesTotal\", \"type\": \"timeseries\"} *\/"
             }
           }
         }
@@ -96,15 +90,13 @@ or
 curl -X POST http://localhost:8080/ \
   -H "Content-Type: application/json" \
   -d '{
-  "message": {
-    "protoPayload": {
-      "serviceData": {
-        "jobCompletedEvent": {
-          "job": {
-            "jobConfiguration": {
-              "query": {
-                "query": "/* {\"dataform_trigger\": \"report_cwv_tech_complete\", \"date\": \"2024-11-01\", \"name\": \"adoption\", \"type\": \"report\"} *\/"
-              }
+  "protoPayload": {
+    "serviceData": {
+      "jobCompletedEvent": {
+        "job": {
+          "jobConfiguration": {
+            "query": {
+              "query": "/* {\"dataform_trigger\": \"report_cwv_tech_complete\", \"date\": \"2024-11-01\", \"name\": \"lighthouse\", \"type\": \"report\"} *\/"
             }
           }
         }
@@ -112,6 +104,25 @@ curl -X POST http://localhost:8080/ \
     }
   }
 }'
+```
+
+## Cloud Run Job for exporting data
+
+[exportData](https://console.cloud.google.com/run/detail/us-central1/export-data?authuser=7&project=httparchive) Cloud Run Job
+
+This job exports data to GCS or Firestore based on the provided configuration.
+
+Input parameters:
+
+- `EXPORT_CONFIG` - JSON string with the export configuration.
+
+Example values:
+
+```plaintext
+{"dataform_trigger":"report_cwv_tech_complete","name":"technologies","type":"dict"}
+{"dataform_trigger":"report_cwv_tech_complete","date":"2024-11-01","name":"page_weight","type":"report"}
+{"dataform_trigger":"report_complete","name":"bytesTotal","type":"timeseries"}
+{"dataform_trigger":"report_complete","date":"2024-11-01","name":"bytesTotal","type":"histogram"}
 ```
 
 ## Monitoring
@@ -133,6 +144,15 @@ npm run start
 ```
 
 Then, in a separate terminal, run the command with the test trigger payload.
+
+## Build
+
+Building a container image for the `bigquery-export` Cloud Run Job:
+
+```bash
+cd infra/bigquery-export
+npm run buildpack
+```
 
 ## Deployment
 

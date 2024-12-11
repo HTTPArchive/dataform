@@ -15,7 +15,9 @@ export class FirestoreBatch {
   constructor () {
     this.firestore = new Firestore()
     this.bigquery = new BigQueryExport()
-    this.firestore.settings({ databaseId: 'tech-report-apis-prod' })
+    this.firestore.settings({
+      databaseId: 'tech-report-apis-prod'
+    })
     this.batchSize = 500
     this.maxConcurrentBatches = 200
   }

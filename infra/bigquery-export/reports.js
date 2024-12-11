@@ -5,8 +5,7 @@ import { FirestoreBatch } from './firestore.js'
 export class ReportsExporter {
   constructor () {
     this.bigquery = new BigQueryExport()
-    this.storage = new StorageExport('httparchive')
-    this.storagePath = 'reports/dev/' // TODO change to prod
+    this.storage = new StorageExport()
   }
 
   // Export timeseries reports
@@ -19,7 +18,7 @@ SELECT
 FROM reports.${metric}_timeseries
 `
     const rows = await this.bigquery.queryResults(query)
-    await this.storage.exportToJson(rows, `${this.storagePath}${metric}.json`)
+    await this.storage.exportToJson(rows, metric)
   }
 
   // Export monthly histogram report
