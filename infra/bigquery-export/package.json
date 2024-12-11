@@ -4,7 +4,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "buildpack": "gcloud builds submit --pack image=gcr.io/httparchive/bigquery-export"
+    "buildpack": "rm -rf node_modules; gcloud builds submit --pack image=gcr.io/httparchive/bigquery-export"
   },
   "type": "module",
   "dependencies": {
