@@ -34,7 +34,7 @@ async function callRunJob (payload = {}) {
  * @param {object} req Cloud Function request context.
  * @param {object} res Cloud Function response context.
  */
-async function messageHandler (req, res) {
+functions.http('dataform-export', async (req, res) => {
   try {
     console.log(JSON.stringify(req.body))
     const message = req.body
@@ -67,12 +67,4 @@ async function messageHandler (req, res) {
     console.error(error)
     res.status(500).send('Internal Server Error')
   }
-}
-
-/**
- * Trigger function for Dataform export.
- *
- * @param {object} req Cloud Function request context.
- * @param {object} res Cloud Function response context.
- */
-functions.http('dataform-export', (req, res) => messageHandler(req, res))
+})
