@@ -5,39 +5,27 @@ const projectId = 'httparchive'
 const location = 'us-central1'
 const jobId = 'bigquery-export'
 
-async function callCreateJob (
-  payload = {}
-) {
+async function callRunJob (payload = {}) {
   const client = new run.v2.JobsClient()
-  const parent = `projects/${projectId}/locations/${location}`
+  const name = `projects/${projectId}/locations/${location}/jobs/${jobId}`
 
   const request = {
-    parent,
-    jobId,
-    job: {
-      template: {
-        template: {
-          containers: [
-            {
-              image: `gcr.io/httparchive/${jobId}:latest`,
-              env: [
-                {
-                  name: 'CONFIG_DATA',
-                  value: JSON.stringify(payload)
-                }
-              ]
-            }
-          ]
-        }
-      }
+    name,
+    overrides: {
+      containerOverrides: [{
+        env: [
+          {
+            name: 'EXPORT_CONFIG',
+            value: JSON.stringify(payload)
+          }
+        ]
+      }]
     }
   }
-  // console.log(request)
 
-  const [operation] = await client.createJob(request)
-  const [response] = await operation.promise()
+  const [operation] = await client.runJob(request)
 
-  console.info(`Job created: ${response.name}`)
+  console.info(`Job initialized: ${operation.name}`)
 }
 
 /**
@@ -48,7 +36,8 @@ async function callCreateJob (
  */
 async function messageHandler (req, res) {
   try {
-    const message = req.body.message
+    console.log(JSON.stringify(req.body))
+    const message = req.body
     if (!message) {
       console.log(`no message received: ${JSON.stringify(req.body)}`)
       res.status(400).send('Bad Request: no message received')
@@ -71,7 +60,7 @@ async function messageHandler (req, res) {
     }
 
     const eventData = JSON.parse(reportConfig[1])
-    await callCreateJob(eventData)
+    await callRunJob(eventData)
 
     res.status(200).send('OK')
   } catch (error) {
@@ -85,22 +74,5 @@ async function messageHandler (req, res) {
  *
  * @param {object} req Cloud Function request context.
  * @param {object} res Cloud Function response context.
- *
- * Example request payload:
- * {
- *  "message": {
- *    "protoPayload": {
- *      "serviceData": {
- *        "jobCompletedEvent": {
- *          "job": {
- *            "jobConfiguration": {
- *              "query": {
- *                "query": "/* {"dataform_trigger": "report_complete", "date": "2024-11-01", "name": "bytesTotal", "type": "histogram"} *\/"
- *              }
- *           }
- *        }
- *     }
- *   }
- * }
  */
 functions.http('dataform-export', (req, res) => messageHandler(req, res))

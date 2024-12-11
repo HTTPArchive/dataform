@@ -46,15 +46,13 @@ Request body example:
 
 ```json
 {
-  "message": {
-    "protoPayload": {
-      "serviceData": {
-        "jobCompletedEvent": {
-          "job": {
-            "jobConfiguration": {
-              "query": {
-                "query": "/* {\"dataform_trigger\": \"report_cwv_tech_complete\", \"date\": \"2024-11-01\", \"name\": \"technologies\", \"type\": \"dict\"} *\/"
-              }
+  "protoPayload": {
+    "serviceData": {
+      "jobCompletedEvent": {
+        "job": {
+          "jobConfiguration": {
+            "query": {
+              "query": "/* {\"dataform_trigger\": \"report_cwv_tech_complete\", \"date\": \"2024-11-01\", \"name\": \"technologies\", \"type\": \"dict\"} *\/"
             }
           }
         }
@@ -70,15 +68,13 @@ Request example for local development:
 curl -X POST http://localhost:8080/ \
   -H "Content-Type: application/json" \
   -d '{
-  "message": {
-    "protoPayload": {
-      "serviceData": {
-        "jobCompletedEvent": {
-          "job": {
-            "jobConfiguration": {
-              "query": {
-                "query": "/* {\"dataform_trigger\": \"report_complete\", \"date\": \"2024-11-01\", \"name\": \"bytesTotal\", \"type\": \"timeseries\"} *\/"
-              }
+  "protoPayload": {
+    "serviceData": {
+      "jobCompletedEvent": {
+        "job": {
+          "jobConfiguration": {
+            "query": {
+              "query": "/* {\"dataform_trigger\": \"report_complete\", \"date\": \"2024-11-01\", \"name\": \"bytesTotal\", \"type\": \"timeseries\"} *\/"
             }
           }
         }
@@ -94,15 +90,13 @@ or
 curl -X POST http://localhost:8080/ \
   -H "Content-Type: application/json" \
   -d '{
-  "message": {
-    "protoPayload": {
-      "serviceData": {
-        "jobCompletedEvent": {
-          "job": {
-            "jobConfiguration": {
-              "query": {
-                "query": "/* {\"dataform_trigger\": \"report_cwv_tech_complete\", \"date\": \"2024-11-01\", \"name\": \"lighthouse\", \"type\": \"report\"} *\/"
-              }
+  "protoPayload": {
+    "serviceData": {
+      "jobCompletedEvent": {
+        "job": {
+          "jobConfiguration": {
+            "query": {
+              "query": "/* {\"dataform_trigger\": \"report_cwv_tech_complete\", \"date\": \"2024-11-01\", \"name\": \"lighthouse\", \"type\": \"report\"} *\/"
             }
           }
         }
