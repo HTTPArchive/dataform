@@ -83,23 +83,22 @@ export class FirestoreBatch {
     }
 
     while (true) {
-      const snapshot = await collectionQuery.limit(100000).get()
+      const snapshot = await collectionQuery.limit(this.batchSize * this.maxConcurrentBatches).get()
       if (snapshot.empty) {
         break
       }
 
-      snapshot.forEach(async (doc) => {
+      for await (const doc of snapshot.docs) {
         this.currentBatch.push(doc)
 
         if (this.currentBatch.length >= this.batchSize) {
           this.queueBatch('delete')
         }
-
         if (this.batchPromises.length >= this.maxConcurrentBatches) {
           await this.commitBatches()
         }
         totalDocsDeleted++
-      })
+      }
     }
     await this.finalFlush('delete')
 
