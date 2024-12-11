@@ -36,19 +36,22 @@ async function callRunJob (payload = {}) {
  */
 functions.http('dataform-export', async (req, res) => {
   try {
-    console.log(JSON.stringify(req.body))
-    const message = req.body
+    const message = req.body.message
     if (!message) {
       console.log(`no message received: ${JSON.stringify(req.body)}`)
       res.status(400).send('Bad Request: no message received')
-      return
     }
 
-    const query = message.protoPayload.serviceData.jobCompletedEvent.job.jobConfiguration.query.query
+    const messageData = (message.data && JSON.parse(Buffer.from(message.data, 'base64').toString('utf-8'))) || message
+    if (!messageData) {
+      console.info(JSON.stringify(message))
+      res.status(400).send('Bad Request: invalid message format')
+    }
+
+    const query = messageData.protoPayload.serviceData.jobCompletedEvent.job.jobConfiguration.query.query
     if (!query) {
-      console.log(`no query found: ${JSON.stringify(message)}`)
+      console.log(`no query found: ${JSON.stringify(messageData)}`)
       res.status(400).send('Bad Request: no query found')
-      return
     }
 
     const regex = /\/\* ({"dataform_trigger":.+) \*\//
@@ -56,7 +59,6 @@ functions.http('dataform-export', async (req, res) => {
     if (!reportConfig) {
       console.log(`no trigger config found: ${query}`)
       res.status(400).send('Bad Request: no trigger config found')
-      return
     }
 
     const eventData = JSON.parse(reportConfig[1])
@@ -64,6 +66,7 @@ functions.http('dataform-export', async (req, res) => {
 
     res.status(200).send('OK')
   } catch (error) {
+    console.log(JSON.stringify(req.body))
     console.error(error)
     res.status(500).send('Internal Server Error')
   }
