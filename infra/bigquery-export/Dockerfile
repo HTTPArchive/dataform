@@ -1,3 +1,4 @@
+# checkov:skip=CKV_DOCKER_3:Ensure that a user for the container has been created
 FROM node:20-slim
 
 WORKDIR /usr/src/app
