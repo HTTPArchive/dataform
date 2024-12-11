@@ -82,6 +82,9 @@ resource "google_pubsub_subscription" "dataform_export" {
       audience              = google_cloudfunctions2_function.dataform_export.service_config[0].uri
       service_account_email = local.function_identity
     }
+    no_wrapper {
+      write_metadata = false
+    }
   }
   retry_policy {
     maximum_backoff = "60s"
