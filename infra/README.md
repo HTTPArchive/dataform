@@ -122,9 +122,13 @@ Input parameters:
 
 - `EXPORT_CONFIG` - JSON string with the export configuration.
 
-Example value:
-```
-{"dataform_trigger":"report_cwv_tech_complete","date":"2024-11-01","name":"core_web_vitals","type":"report"}
+Example values:
+
+```plaintext
+{"dataform_trigger":"report_cwv_tech_complete","name":"technologies","type":"dict"}
+{"dataform_trigger":"report_cwv_tech_complete","date":"2024-11-01","name":"page_weight","type":"report"}
+{"dataform_trigger":"report_complete","name":"bytesTotal","type":"timeseries"}
+{"dataform_trigger":"report_complete","date":"2024-11-01","name":"bytesTotal","type":"histogram"}
 ```
 
 ## Monitoring

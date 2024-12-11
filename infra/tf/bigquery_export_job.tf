@@ -12,8 +12,12 @@ resource "google_cloud_run_v2_job" "bigquery_export" {
             memory = "4Gi"
           }
         }
+        env {
+          name  = "EXPORT_CONFIG"
+          value = ""
+        }
       }
-      timeout = "3600s"
+      timeout         = "3600s"
       service_account = local.function_identity
     }
   }

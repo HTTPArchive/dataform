@@ -19,7 +19,7 @@ async function main (exportConfig) {
     await reports.export(exportConfig)
   } else if (eventName === 'report_cwv_tech_complete') {
     console.info('Tech Report export')
-
+    console.log(exportConfig)
     const techReports = new TechReportsExporter()
     await techReports.export(exportConfig)
   } else {

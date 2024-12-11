@@ -1,5 +1,9 @@
 .PHONY: *
 
+clean:
+	rm -rf **/node_modules
+	rm -rf infra/tf/tmp/*
+
 tf_plan:
 	terraform -chdir=infra/tf init -upgrade && terraform -chdir=infra/tf plan
 
