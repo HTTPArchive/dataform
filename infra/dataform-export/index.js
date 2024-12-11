@@ -1,5 +1,44 @@
 import functions from '@google-cloud/functions-framework'
-import { ReportsExporter, TechReportsExporter } from './reports.js'
+import run from '@google-cloud/run'
+
+const projectId = 'httparchive'
+const location = 'us-central1'
+const jobId = 'bigquery-export'
+
+async function callCreateJob (
+  payload = {}
+) {
+  const client = new run.v2.JobsClient()
+  const parent = `projects/${projectId}/locations/${location}`
+
+  const request = {
+    parent,
+    jobId,
+    job: {
+      template: {
+        template: {
+          containers: [
+            {
+              image: `gcr.io/httparchive/${jobId}:latest`,
+              env: [
+                {
+                  name: 'CONFIG_DATA',
+                  value: JSON.stringify(payload)
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  }
+  // console.log(request)
+
+  const [operation] = await client.createJob(request)
+  const [response] = await operation.promise()
+
+  console.info(`Job created: ${response.name}`)
+}
 
 /**
  * Handle incoming message and trigger the appropriate action.
@@ -9,25 +48,16 @@ import { ReportsExporter, TechReportsExporter } from './reports.js'
  */
 async function messageHandler (req, res) {
   try {
-    const message = req.body.message // TODO: switch to unwrapped payload https://cloud.google.com/pubsub/docs/payload-unwrapping
+    const message = req.body.message
     if (!message) {
-      const msg = 'no message received'
-      console.error(`error: ${msg}`)
-      console.info(req.body)
-      res.status(400).send(`Bad Request: ${msg}`)
+      console.log(`no message received: ${JSON.stringify(req.body)}`)
+      res.status(400).send('Bad Request: no message received')
       return
     }
 
-    const messageData = (message.data && JSON.parse(Buffer.from(message.data, 'base64').toString('utf-8'))) || message
-    if (!messageData) {
-      console.info(message)
-      res.status(400).send('Bad Request: invalid message format')
-      return
-    }
-
-    const query = messageData.protoPayload.serviceData.jobCompletedEvent.job.jobConfiguration.query.query
+    const query = message.protoPayload.serviceData.jobCompletedEvent.job.jobConfiguration.query.query
     if (!query) {
-      console.info(messageData)
+      console.log(`no query found: ${JSON.stringify(message)}`)
       res.status(400).send('Bad Request: no query found')
       return
     }
@@ -35,34 +65,14 @@ async function messageHandler (req, res) {
     const regex = /\/\* ({"dataform_trigger":.+) \*\//
     const reportConfig = regex.exec(query)
     if (!reportConfig) {
-      console.info(query.substring(0, 30))
+      console.log(`no trigger config found: ${query}`)
       res.status(400).send('Bad Request: no trigger config found')
       return
     }
 
     const eventData = JSON.parse(reportConfig[1])
-    const eventName = eventData.dataform_trigger
-    if (!eventName) {
-      console.info(eventData)
-      res.status(400).send('Bad Request: no trigger name found')
-      return
-    }
+    await callCreateJob(eventData)
 
-    if (eventName === 'report_complete') {
-      console.info('Report export')
-      console.info(eventData)
-      const reports = new ReportsExporter()
-      await reports.export(eventData)
-    } else if (eventName === 'report_cwv_tech_complete') {
-      console.info('Tech Report export')
-      console.info(eventData)
-      const techReports = new TechReportsExporter()
-      await techReports.export(eventData)
-    } else {
-      console.info(eventData)
-      res.status(400).send('Bad Request: unknown trigger name')
-      return
-    }
     res.status(200).send('OK')
   } catch (error) {
     console.error(error)
