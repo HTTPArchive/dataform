@@ -10,22 +10,6 @@ publish('cwv_tech_adoption', {
   },
   tags: ['crux_ready']
 }).preOps(ctx => `
-CREATE TEMPORARY FUNCTION GET_ADOPTION(
-  records ARRAY<STRUCT<
-    client STRING,
-    origins INT64
->>)
-RETURNS STRUCT<
-  desktop INT64,
-  mobile INT64
->
-LANGUAGE js AS '''
-return Object.fromEntries(
-  records.map(({client, origins}) => {
-    return [client, origins]
-}))
-''';
-
 DELETE FROM ${ctx.self()}
 WHERE date = '${pastMonth}';
 `).query(ctx => `
@@ -35,10 +19,10 @@ SELECT
   app AS technology,
   rank,
   geo,
-  GET_ADOPTION(ARRAY_AGG(STRUCT(
-    client,
-    origins
-  ))) AS adoption
+  STRUCT(
+    COALESCE(MAX(IF(client = 'desktop', origins, NULL))) AS desktop,
+    COALESCE(MAX(IF(client = 'mobile', origins, NULL))) AS mobile
+  ) AS adoption
 FROM ${ctx.ref('core_web_vitals', 'technologies')}
 WHERE date = '${pastMonth}'
 GROUP BY
