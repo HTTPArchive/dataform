@@ -38,42 +38,28 @@ publish('requests', {
   },
   tags: ['crawl_complete']
 }).preOps(ctx => `
-CREATE TEMP FUNCTION pruneHeaders(
-  jsonObject JSON
-) RETURNS JSON
-LANGUAGE js AS '''
-try {
-  for (const [key, value] of Object.entries(jsonObject)) {
-    if(key.startsWith('req_') || key.startsWith('resp_')) {
-      delete jsonObject[key]
-    }
-  }
-  return jsonObject
-} catch (e) {
-  return jsonObject
-}
-''';
+FOR client_value IN (SELECT * FROM UNNEST(['desktop', 'mobile']) AS client) DO
+  FOR is_root_page_value IN (SELECT * FROM UNNEST([TRUE, FALSE]) AS is_root_page) DO
 
-DELETE FROM ${ctx.self()}
-WHERE date = '${constants.currentMonth}' AND
-  client = 'desktop';
+    -- Delete old entries
+    DELETE FROM ${ctx.self()}
+    WHERE date = '${constants.currentMonth}'
+      AND client = client_value.client
+      AND is_root_page = is_root_page_value.is_root_page;
+
+    -- Insert new entries
+    INSERT INTO ${ctx.self()}
+    SELECT *
+    FROM ${ctx.ref('crawl_staging', 'requests')}
+    WHERE date = '${constants.currentMonth}' AND
+      client = client_value.client AND
+      is_root_page = is_root_page_value.is_root_page ${constants.devRankFilter};
+
+  END FOR;
+END FOR;
 `).query(ctx => `
-SELECT
-  *
+SELECT *
 FROM ${ctx.ref('crawl_staging', 'requests')}
-WHERE date = '${constants.currentMonth}' AND
-  client = 'desktop'
-  ${constants.devRankFilter}
-`).postOps(ctx => `
-DELETE FROM ${ctx.self()}
-WHERE date = '${constants.currentMonth}' AND
-  client = 'mobile';
-
-INSERT INTO ${ctx.self()}
-SELECT
-  *
-FROM ${ctx.ref('crawl_staging', 'requests')}
-WHERE date = '${constants.currentMonth}' AND
-  client = 'mobile'
-  ${constants.devRankFilter}
+WHERE date IS NULL ${constants.devRankFilter}
+LIMIT 0
 `)

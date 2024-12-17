@@ -15,7 +15,7 @@ WITH pages AS (
     date = '${pastMonth}' AND
     client = 'mobile'
     ${constants.devRankFilter}
-),categories AS (
+), categories AS (
   SELECT
     category,
     COUNT(DISTINCT root_page) AS origins
@@ -23,8 +23,7 @@ WITH pages AS (
     UNNEST(technologies) AS t,
     UNNEST(t.categories) AS category
   GROUP BY category
-),
-technologies AS (
+), technologies AS (
   SELECT
     category,
     technology,
