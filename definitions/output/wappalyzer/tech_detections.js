@@ -6,7 +6,7 @@ publish('tech_detections', {
   type: 'incremental',
   protected: true,
   bigquery: {
-    partitionBy: 'date',
+    partitionBy: 'date'
   },
   tags: ['crawl_complete']
 }).preOps(ctx => `
