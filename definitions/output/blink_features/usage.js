@@ -2,13 +2,32 @@ publish('usage', {
   schema: 'blink_features',
   type: 'incremental',
   protected: true,
+  bigquery: {
+    partitionBy: 'date',
+    clusterBy: ['client', 'feature'],
+    requirePartitionFilter: true
+  },
   tags: ['crawl_complete']
 }).preOps(ctx => `
 DELETE FROM ${ctx.self()}
-WHERE yyyymmdd = REPLACE('${constants.currentMonth}', '-', '');
+WHERE date = '${constants.currentMonth}';
 `).query(ctx => `
+WITH pages AS (
 SELECT
-  REPLACE(CAST(date AS STRING), '-', '') AS yyyymmdd,
+  date,
+  client,
+  page,
+  rank,
+  features
+FROM ${ctx.ref('crawl', 'pages')}
+WHERE
+  date = '${constants.currentMonth}' AND
+  is_root_page = TRUE
+  ${constants.devRankFilter}
+)
+
+SELECT
+  date,
   client,
   id,
   feature,
@@ -19,19 +38,17 @@ SELECT
   sample_urls
 FROM (
   SELECT
-    yyyymmdd AS date,
+    date,
     client,
-    id,
-    feature,
-    type,
-    COUNT(DISTINCT url) AS num_urls,
-    ARRAY_AGG(url ORDER BY rank, url LIMIT 100) AS sample_urls
-  FROM ${ctx.ref('blink_features', 'features')}
-  WHERE
-    yyyymmdd = '${constants.currentMonth}'
-    ${constants.devRankFilter}
+    feature.id,
+    feature.feature,
+    feature.type,
+    COUNT(DISTINCT page) AS num_urls,
+    ARRAY_AGG(page ORDER BY rank, page LIMIT 100) AS sample_urls
+  FROM pages,
+    UNNEST(features) AS feature
   GROUP BY
-    yyyymmdd,
+    date,
     client,
     id,
     feature,
@@ -42,11 +59,7 @@ JOIN (
     date,
     client,
     COUNT(DISTINCT page) AS total_urls
-  FROM ${ctx.ref('crawl', 'pages')}
-  WHERE
-    date = '${constants.currentMonth}' AND
-    is_root_page = TRUE
-    ${constants.devRankFilter}
+  FROM pages
   GROUP BY
     date,
     client
