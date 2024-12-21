@@ -4,7 +4,7 @@ publish('usage', {
   protected: true,
   bigquery: {
     partitionBy: 'date',
-    clusterBy: ['client', 'feature'],
+    clusterBy: ['client', 'rank', 'feature'],
     requirePartitionFilter: true
   },
   tags: ['crawl_complete']
@@ -16,19 +16,22 @@ WITH pages AS (
 SELECT
   date,
   client,
-  page,
   rank,
+  page,
   features
 FROM ${ctx.ref('crawl', 'pages')}
 WHERE
   date = '${constants.currentMonth}' AND
   is_root_page = TRUE
   ${constants.devRankFilter}
+), ranks AS (
+  SELECT DISTINCT rank FROM pages
 )
 
 SELECT
   date,
   client,
+  rank,
   id,
   feature,
   type,
@@ -40,16 +43,20 @@ FROM (
   SELECT
     date,
     client,
+    ranks.rank,
     feature.id,
     feature.feature,
     feature.type,
     COUNT(DISTINCT page) AS num_urls,
-    ARRAY_AGG(page ORDER BY rank, page LIMIT 100) AS sample_urls
-  FROM pages,
-    UNNEST(features) AS feature
+    ARRAY_AGG(page ORDER BY pages.rank, page LIMIT 100) AS sample_urls
+  FROM pages
+  CROSS JOIN UNNEST(features) AS feature
+  FULL OUTER JOIN ranks
+  ON pages.rank <= ranks.rank
   GROUP BY
     date,
     client,
+    ranks.rank,
     id,
     feature,
     type
@@ -58,11 +65,15 @@ JOIN (
   SELECT
     date,
     client,
+    ranks.rank,
     COUNT(DISTINCT page) AS total_urls
   FROM pages
+  FULL OUTER JOIN ranks
+  ON pages.rank <= ranks.rank
   GROUP BY
     date,
-    client
+    client,
+    ranks.rank
 )
-USING (date, client)
+USING (date, client, rank)
 `)
