@@ -29,7 +29,7 @@ WITH pages AS (
     ARRAY_TO_STRING(categories, ', ') AS category,
     categories AS category_obj,
     NULL AS similar_technologies
-  FROM ${ctx.ref('wappalyzer', 'apps')}
+  FROM ${ctx.ref('wappalyzer', 'technologies')}
 ), tech_origins AS (
   SELECT
     client,
