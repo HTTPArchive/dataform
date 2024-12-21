@@ -31,7 +31,16 @@ CREATE TEMP FUNCTION IS_NON_ZERO(
   good + needs_improvement + poor > 0
 );
 `).query(ctx => `
-WITH geo_summary AS (
+WITH pages AS (
+  SELECT
+    client,
+    page,
+    technologies
+  FROM ${ctx.ref('crawl', 'pages')}
+  WHERE
+    date = '${pastMonth}'
+    ${constants.devRankFilter}
+), geo_summary AS (
   SELECT
     CAST(REGEXP_REPLACE(CAST(yyyymm AS STRING), r'(\\d{4})(\\d{2})', r'\\1-\\2-01') AS DATE) AS date,
     * EXCEPT (country_code),
@@ -94,49 +103,36 @@ crux AS (
 
 technologies AS (
   SELECT
-    technology.technology,
+    tech.technology,
     client,
     page
-  FROM ${ctx.ref('crawl', 'pages')},
-    UNNEST(technologies) AS technology
-  WHERE
-    date = '${pastMonth}'
-    ${constants.devRankFilter} AND
-    technology.technology IS NOT NULL AND
-    technology.technology != ''
+  FROM pages,
+    UNNEST(technologies) AS tech
 UNION ALL
   SELECT
     'ALL' AS technology,
     client,
     page
-  FROM ${ctx.ref('crawl', 'pages')}
-  WHERE
-    date = '${pastMonth}'
-    ${constants.devRankFilter}
+  FROM pages
 ),
 
 categories AS (
   SELECT
     technology.technology,
     ARRAY_TO_STRING(ARRAY_AGG(DISTINCT category IGNORE NULLS ORDER BY category), ', ') AS category
-  FROM ${ctx.ref('crawl', 'pages')},
+  FROM pages,
     UNNEST(technologies) AS technology,
     UNNEST(technology.categories) AS category
-  WHERE
-    date = '${pastMonth}'
-    ${constants.devRankFilter}
   GROUP BY technology
 UNION ALL
   SELECT
     'ALL' AS technology,
     ARRAY_TO_STRING(ARRAY_AGG(DISTINCT category IGNORE NULLS ORDER BY category), ', ') AS category
-  FROM ${ctx.ref('crawl', 'pages')},
+  FROM pages,
     UNNEST(technologies) AS technology,
     UNNEST(technology.categories) AS category
   WHERE
-    date = '${pastMonth}' AND
     client = 'mobile'
-    ${constants.devRankFilter}
 ),
 
 summary_stats AS (
@@ -152,10 +148,7 @@ summary_stats AS (
     SAFE.FLOAT64(lighthouse.categories.performance.score) AS performance,
     SAFE.FLOAT64(lighthouse.categories.pwa.score) AS pwa,
     SAFE.FLOAT64(lighthouse.categories.seo.score) AS seo
-  FROM ${ctx.ref('crawl', 'pages')}
-  WHERE
-    date = '${pastMonth}'
-    ${constants.devRankFilter}
+  FROM pages
 ),
 
 lab_data AS (
