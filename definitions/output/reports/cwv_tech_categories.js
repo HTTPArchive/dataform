@@ -41,7 +41,7 @@ SELECT
   categories.origins,
   ARRAY_AGG(technology IGNORE NULLS ORDER BY technologies.origins DESC) AS technologies
 FROM categories
-JOIN technologies
+INNER JOIN technologies
 USING (category)
 GROUP BY
   category,
