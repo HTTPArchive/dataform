@@ -10,3 +10,8 @@ declare({
   schema: 'wappalyzer',
   name: 'technologies'
 })
+
+declare({
+  schema: 'wappalyzer',
+  name: 'categories'
+})
