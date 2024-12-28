@@ -22,14 +22,19 @@ FROM (
       COUNT(0) AS volume
     FROM ${ctx.ref('crawl', 'pages')}
     WHERE
-      date = '${params.date}' ${params.devRankFilter}
+      date = '${params.date}' ${params.devRankFilter} AND
+      is_root_page AND
+      INT64(summary.bytesTotal) > 0
     GROUP BY
       date,
       client,
       bin
-    HAVING bin IS NOT NULL
   )
 )
+ORDER BY
+  date,
+  bin,
+  client
 `)
         },
         {
@@ -52,6 +57,7 @@ FROM (
   FROM ${ctx.ref('crawl', 'pages')}
   WHERE
     date = '${params.date}' ${params.devRankFilter} AND
+    is_root_page AND
     INT64(summary.bytesTotal) > 0
 )
 GROUP BY
