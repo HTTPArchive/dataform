@@ -35,28 +35,70 @@ WITH pages AS (
   SELECT
     client,
     page,
-    technologies
+    root_page AS origin,
+    technologies,
+    summary,
+    lighthouse
   FROM ${ctx.ref('crawl', 'pages')}
   WHERE
     date = '${pastMonth}'
     ${constants.devRankFilter}
 ), geo_summary AS (
   SELECT
-    CAST(REGEXP_REPLACE(CAST(yyyymm AS STRING), r'(\\d{4})(\\d{2})', r'\\1-\\2-01') AS DATE) AS date,
-    * EXCEPT (country_code),
-    \`chrome-ux-report\`.experimental.GET_COUNTRY(country_code) AS geo
+    \`chrome-ux-report\`.experimental.GET_COUNTRY(country_code) AS geo,
+    rank,
+    device,
+    origin,
+    avg_fcp,
+    avg_fid,
+    avg_inp,
+    avg_lcp,
+    avg_ttfb,
+    fast_fcp,
+    fast_fid,
+    fast_inp,
+    fast_lcp,
+    fast_ttfb,
+    slow_fcp,
+    slow_fid,
+    slow_inp,
+    slow_lcp,
+    slow_ttfb,
+    small_cls,
+    medium_cls,
+    large_cls
   FROM ${ctx.ref('chrome-ux-report', 'materialized', 'country_summary')}
   WHERE
     yyyymm = CAST(FORMAT_DATE('%Y%m', '${pastMonth}') AS INT64) AND
     device IN ('desktop', 'phone')
-UNION ALL
-  SELECT
-    * EXCEPT (yyyymmdd, p75_fid_origin, p75_cls_origin, p75_lcp_origin, p75_inp_origin),
-    'ALL' AS geo
-  FROM ${ctx.ref('chrome-ux-report', 'materialized', 'device_summary')}
-  WHERE
-    date = '${pastMonth}' AND
-    device IN ('desktop', 'phone')
+  UNION ALL
+    SELECT
+      'ALL' AS geo,
+      rank,
+      device,
+      origin,
+      avg_fcp,
+      avg_fid,
+      avg_inp,
+      avg_lcp,
+      avg_ttfb,
+      fast_fcp,
+      fast_fid,
+      fast_inp,
+      fast_lcp,
+      fast_ttfb,
+      slow_fcp,
+      slow_fid,
+      slow_inp,
+      slow_lcp,
+      slow_ttfb,
+      small_cls,
+      medium_cls,
+      large_cls
+    FROM ${ctx.ref('chrome-ux-report', 'materialized', 'device_summary')}
+    WHERE
+      date = '${pastMonth}' AND
+      device IN ('desktop', 'phone')
 ),
 
 crux AS (
@@ -70,7 +112,7 @@ crux AS (
       WHEN 10000 THEN 'Top 10k'
       WHEN 1000 THEN 'Top 1k'
     END AS rank,
-    CONCAT(origin, '/') AS root_page,
+    CONCAT(origin, '/') AS origin,
     IF(device = 'desktop', 'desktop', 'mobile') AS client,
 
     # CWV
@@ -139,7 +181,7 @@ summary_stats AS (
   SELECT
     client,
     page,
-    root_page AS root_page,
+    origin,
     SAFE.INT64(summary.bytesTotal) AS bytesTotal,
     SAFE.INT64(summary.bytesJS) AS bytesJS,
     SAFE.INT64(summary.bytesImg) AS bytesImg,
@@ -154,7 +196,7 @@ summary_stats AS (
 lab_data AS (
   SELECT
     client,
-    root_page,
+    origin,
     technology,
     ANY_VALUE(category) AS category,
     AVG(bytesTotal) AS bytesTotal,
@@ -166,13 +208,13 @@ lab_data AS (
     AVG(pwa) AS pwa,
     AVG(seo) AS seo
   FROM summary_stats
-  JOIN technologies
+  INNER JOIN technologies
   USING (client, page)
-  JOIN categories
+  INNER JOIN categories
   USING (technology)
   GROUP BY
     client,
-    root_page,
+    origin,
     technology
 )
 
@@ -183,7 +225,7 @@ SELECT
   ANY_VALUE(category) AS category,
   technology AS app,
   client,
-  COUNT(0) AS origins,
+  COUNT(DISTINCT origin) AS origins,
 
   # CrUX data
   COUNTIF(good_fid) AS origins_with_good_fid,
@@ -220,7 +262,7 @@ SELECT
 
 FROM lab_data
 INNER JOIN crux
-USING (client, root_page)
+USING (client, origin)
 GROUP BY
   app,
   geo,
