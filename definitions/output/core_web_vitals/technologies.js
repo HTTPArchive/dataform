@@ -71,34 +71,36 @@ WITH pages AS (
   WHERE
     yyyymm = CAST(FORMAT_DATE('%Y%m', '${pastMonth}') AS INT64) AND
     device IN ('desktop', 'phone')
+
   UNION ALL
-    SELECT
-      'ALL' AS geo,
-      rank,
-      device,
-      origin,
-      avg_fcp,
-      avg_fid,
-      avg_inp,
-      avg_lcp,
-      avg_ttfb,
-      fast_fcp,
-      fast_fid,
-      fast_inp,
-      fast_lcp,
-      fast_ttfb,
-      slow_fcp,
-      slow_fid,
-      slow_inp,
-      slow_lcp,
-      slow_ttfb,
-      small_cls,
-      medium_cls,
-      large_cls
-    FROM ${ctx.ref('chrome-ux-report', 'materialized', 'device_summary')}
-    WHERE
-      date = '${pastMonth}' AND
-      device IN ('desktop', 'phone')
+
+  SELECT
+    'ALL' AS geo,
+    rank,
+    device,
+    origin,
+    avg_fcp,
+    avg_fid,
+    avg_inp,
+    avg_lcp,
+    avg_ttfb,
+    fast_fcp,
+    fast_fid,
+    fast_inp,
+    fast_lcp,
+    fast_ttfb,
+    slow_fcp,
+    slow_fid,
+    slow_inp,
+    slow_lcp,
+    slow_ttfb,
+    small_cls,
+    medium_cls,
+    large_cls
+  FROM ${ctx.ref('chrome-ux-report', 'materialized', 'device_summary')}
+  WHERE
+    date = '${pastMonth}' AND
+    device IN ('desktop', 'phone')
 ),
 
 crux AS (
@@ -146,13 +148,29 @@ crux AS (
 technologies AS (
   SELECT
     tech.technology,
+    REGEXP_EXTRACT_ALL(version, r'(0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)')[SAFE_OFFSET(0)] AS version,
+    client,
+    page
+  FROM pages,
+    UNNEST(technologies) AS tech,
+    UNNEST(tech.info) AS version
+  WHERE REGEXP_EXTRACT_ALL(version, r'(0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)')[SAFE_OFFSET(0)] IS NOT NULL
+
+  UNION ALL
+
+  SELECT
+    tech.technology,
+    'ALL' AS version,
     client,
     page
   FROM pages,
     UNNEST(technologies) AS tech
-UNION ALL
+
+  UNION ALL
+
   SELECT
     'ALL' AS technology,
+    'ALL' AS version,
     client,
     page
   FROM pages
@@ -166,7 +184,9 @@ categories AS (
     UNNEST(technologies) AS technology,
     UNNEST(technology.categories) AS category
   GROUP BY technology
-UNION ALL
+
+  UNION ALL
+
   SELECT
     'ALL' AS technology,
     ARRAY_TO_STRING(ARRAY_AGG(DISTINCT category IGNORE NULLS ORDER BY category), ', ') AS category
@@ -198,6 +218,7 @@ lab_data AS (
     client,
     origin,
     technology,
+    version,
     ANY_VALUE(category) AS category,
     AVG(bytesTotal) AS bytesTotal,
     AVG(bytesJS) AS bytesJS,
@@ -215,7 +236,8 @@ lab_data AS (
   GROUP BY
     client,
     origin,
-    technology
+    technology,
+    version
 )
 
 SELECT
@@ -224,6 +246,7 @@ SELECT
   rank,
   ANY_VALUE(category) AS category,
   technology AS app,
+  version,
   client,
   COUNT(DISTINCT origin) AS origins,
 
@@ -265,6 +288,7 @@ INNER JOIN crux
 USING (client, origin)
 GROUP BY
   app,
+  version,
   geo,
   rank,
   client
