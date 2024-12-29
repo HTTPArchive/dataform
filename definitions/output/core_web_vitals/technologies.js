@@ -278,6 +278,11 @@ SELECT
   SAFE_CAST(APPROX_QUANTILES(pwa, 1000)[OFFSET(500)] AS NUMERIC) AS median_lighthouse_score_pwa,
   SAFE_CAST(APPROX_QUANTILES(seo, 1000)[OFFSET(500)] AS NUMERIC) AS median_lighthouse_score_seo,
 
+  SAFE_DIVIDE(COUNTIF(accessibility >= 0.9), COUNTIF(accessibility > 0)) AS lighthouse_score_accessibility_pass_rate,
+  SAFE_DIVIDE(COUNTIF(best_practices >= 0.9), COUNTIF(best_practices > 0)) AS lighthouse_score_best_practices_pass_rate,
+  SAFE_DIVIDE(COUNTIF(performance >= 0.9), COUNTIF(performance > 0)) AS lighthouse_score_performance_pass_rate,
+  SAFE_DIVIDE(COUNTIF(seo >= 0.9), COUNTIF(seo > 0)) AS lighthouse_score_seo_pass_rate,
+
   # Page weight stats
   SAFE_CAST(APPROX_QUANTILES(bytesTotal, 1000)[OFFSET(500)] AS INT64) AS median_bytes_total,
   SAFE_CAST(APPROX_QUANTILES(bytesJS, 1000)[OFFSET(500)] AS INT64) AS median_bytes_js,
