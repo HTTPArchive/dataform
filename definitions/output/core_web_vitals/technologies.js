@@ -30,6 +30,38 @@ CREATE TEMP FUNCTION IS_NON_ZERO(
 ) RETURNS BOOL AS (
   good + needs_improvement + poor > 0
 );
+
+CREATE TEMP FUNCTION extract_audits (lighthouse JSON)
+RETURNS ARRAY<STRUCT<
+  id STRING,
+  savings_ms INT64,
+  savings_bytes INT64
+>>
+LANGUAGE js AS """
+const results = []
+const performance_audits = lighthouse?.categories ? lighthouse.categories.performance.auditRefs
+  .filter((audit) => audit.group === "diagnostics")
+  .map((audit) => audit.id) : null
+
+if(performance_audits) {
+  for (const [key, audit] of Object.entries(lighthouse.audits)) {
+    if (
+      performance_audits.includes(audit.id) &&
+      audit.score !== null &&
+      audit.scoreDisplayMode === 'metricSavings'
+    ) {
+      results.push({
+        id: audit.id,
+        savings_ms: audit?.details?.overallSavingsMs || audit?.numericUnit === 'millisecond' ? audit.numericValue : null,
+        savings_bytes: audit?.details?.overallSavingsBytes || audit?.numericUnit === 'byte' ? audit.numericValue : null,
+      })
+    }
+  }
+  return results;
+} else {
+  return null;
+}
+""";
 `).query(ctx => `
 WITH pages AS (
   SELECT
@@ -145,6 +177,20 @@ crux AS (
   WHERE rank <= _rank
 ),
 
+/*
+audits AS (
+  SELECT
+    client,
+    page,
+    performance_opportunities.id
+  FROM pages,
+    UNNEST(extract_audits(lighthouse)) AS performance_opportunities
+  WHERE
+    performance_opportunities.savings_ms > 0 OR
+    performance_opportunities.savings_bytes > 0
+),
+*/
+
 technologies AS (
   SELECT
     tech.technology,
@@ -197,7 +243,7 @@ categories AS (
     client = 'mobile'
 ),
 
-summary_stats AS (
+lab_metrics AS (
   SELECT
     client,
     page,
@@ -209,7 +255,8 @@ summary_stats AS (
     SAFE.FLOAT64(lighthouse.categories['best-practices'].score) AS best_practices,
     SAFE.FLOAT64(lighthouse.categories.performance.score) AS performance,
     SAFE.FLOAT64(lighthouse.categories.pwa.score) AS pwa,
-    SAFE.FLOAT64(lighthouse.categories.seo.score) AS seo
+    SAFE.FLOAT64(lighthouse.categories.seo.score) AS seo,
+    extract_audits(lighthouse) AS performance_opportunities,
   FROM pages
 ),
 
@@ -228,7 +275,7 @@ lab_data AS (
     AVG(performance) AS performance,
     AVG(pwa) AS pwa,
     AVG(seo) AS seo
-  FROM summary_stats
+  FROM lab_metrics
   INNER JOIN technologies
   USING (client, page)
   INNER JOIN categories
