@@ -6,6 +6,7 @@ export class ReportsExporter {
   constructor () {
     this.bigquery = new BigQueryExport()
     this.storage = new StorageExport()
+    this.storagePath = 'reports/dev/' // TODO change to prod
   }
 
   // Export timeseries reports
@@ -18,7 +19,7 @@ SELECT
 FROM reports.${metric}_timeseries
 `
     const rows = await this.bigquery.queryResults(query)
-    await this.storage.exportToJson(rows, metric)
+    await this.storage.exportToJson(rows, `${this.storagePath}${metric}.json`)
   }
 
   // Export monthly histogram report
@@ -39,6 +40,10 @@ WHERE date = '${date}'
     if (exportData.dataform_trigger !== 'report_complete') {
       console.error('Invalid dataform trigger')
       return
+    }
+
+    if (exportData.lense && exportData.lense !== 'all') {
+      this.storagePath = this.storagePath + `${exportData.lense}/`
     }
 
     if (exportData.type === 'histogram') {
