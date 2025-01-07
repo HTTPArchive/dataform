@@ -33,7 +33,7 @@ for (
           date,
           metric,
           sql,
-          lense: { key, value },
+          lense: { name: key, sql: value },
           devRankFilter: constants.devRankFilter
         })
       }
@@ -43,7 +43,7 @@ for (
 
 if (startDate === endDate) {
   iterations.forEach((params, i) => {
-    publish(params.metric.id + '_' + params.sql.type + '_' + params.lense.key, {
+    publish(params.metric.id + '_' + params.sql.type + '_' + params.lense.name, {
       type: 'incremental',
       protected: true,
       bigquery: params.sql.type === 'histogram' ? { partitionBy: 'date', clusterBy: ['client'] } : {},
@@ -53,20 +53,20 @@ if (startDate === endDate) {
 --DELETE FROM ${ctx.self()}
 --WHERE date = '${params.date}';
     `).query(ctx => `
-/* {"dataform_trigger": "report_complete", "date": "${params.date}", "name": "${params.metric.id}", "type": "${params.sql.type}", "lense": "${params.lense.key}"} */` +
+/* {"dataform_trigger": "report_complete", "date": "${params.date}", "name": "${params.metric.id}", "type": "${params.sql.type}", "lense": "${params.lense.name}"} */` +
 params.sql.query(ctx, params)
     )
   })
 } else {
   iterations.forEach((params, i) => {
     operate(
-      params.metric.id + '_' + params.sql.type + '_' + params.lense.key + '_' + params.date)
+      params.metric.id + '_' + params.sql.type + '_' + params.lense.name + '_' + params.date)
       .tags(['crawl_complete', 'reports'])
       .queries(ctx => `
 DELETE FROM reports.${params.metric.id}_${params.sql.type}
 WHERE date = '${params.date}';
 
-/* {"dataform_trigger": "report_complete", "date": "${params.date}", "name": "${params.metric.id}", "type": "${params.sql.type}", "lense": "${params.lense.key}"} */
+/* {"dataform_trigger": "report_complete", "date": "${params.date}", "name": "${params.metric.id}", "type": "${params.sql.type}", "lense": "${params.lense.name}"} */
 INSERT INTO reports.${params.metric.id}_${params.sql.type}` +
 params.sql.query(ctx, params)
       )

@@ -22,13 +22,14 @@ FROM (
       COUNT(0) AS volume
     FROM ${ctx.ref('crawl', 'pages')}
     WHERE
-      date = '${params.date}' ${params.devRankFilter} AND
+      date = '${params.date}' ${params.devRankFilter} ${params.lense.sql} AND
       is_root_page AND
       INT64(summary.bytesTotal) > 0
     GROUP BY
       date,
       client,
       bin
+    HAVING bin IS NOT NULL
   )
 )
 ORDER BY
@@ -40,6 +41,18 @@ ORDER BY
         {
           type: 'timeseries',
           query: DataformTemplateBuilder.create((ctx, params) => `
+WITH pages AS (
+  SELECT
+    date,
+    client,
+    INT64(summary.bytesTotal) AS bytesTotal
+  FROM ${ctx.ref('crawl', 'pages')}
+  WHERE
+    date = '${params.date}' ${params.devRankFilter} ${params.lense.sql} AND
+    is_root_page AND
+    INT64(summary.bytesTotal) > 0
+)
+
 SELECT
   date,
   client,
@@ -49,17 +62,7 @@ SELECT
   ROUND(APPROX_QUANTILES(bytesTotal, 1001)[OFFSET(501)] / 1024, 2) AS p50,
   ROUND(APPROX_QUANTILES(bytesTotal, 1001)[OFFSET(751)] / 1024, 2) AS p75,
   ROUND(APPROX_QUANTILES(bytesTotal, 1001)[OFFSET(901)] / 1024, 2) AS p90
-FROM (
-  SELECT
-    date,
-    client,
-    INT64(summary.bytesTotal) AS bytesTotal
-  FROM ${ctx.ref('crawl', 'pages')}
-  WHERE
-    date = '${params.date}' ${params.devRankFilter} AND
-    is_root_page AND
-    INT64(summary.bytesTotal) > 0
-)
+FROM pages
 GROUP BY
   date,
   client,
