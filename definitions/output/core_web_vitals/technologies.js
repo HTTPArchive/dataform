@@ -30,38 +30,6 @@ CREATE TEMP FUNCTION IS_NON_ZERO(
 ) RETURNS BOOL AS (
   good + needs_improvement + poor > 0
 );
-
-CREATE TEMP FUNCTION extract_audits (lighthouse JSON)
-RETURNS ARRAY<STRUCT<
-  id STRING,
-  savings_ms INT64,
-  savings_bytes INT64
->>
-LANGUAGE js AS """
-const results = []
-const performance_audits = lighthouse?.categories ? lighthouse.categories.performance.auditRefs
-  .filter((audit) => audit.group === "diagnostics")
-  .map((audit) => audit.id) : null
-
-if(performance_audits) {
-  for (const [key, audit] of Object.entries(lighthouse.audits)) {
-    if (
-      performance_audits.includes(audit.id) &&
-      audit.score !== null &&
-      audit.scoreDisplayMode === 'metricSavings'
-    ) {
-      results.push({
-        id: audit.id,
-        savings_ms: audit?.details?.overallSavingsMs || audit?.numericUnit === 'millisecond' ? audit.numericValue : null,
-        savings_bytes: audit?.details?.overallSavingsBytes || audit?.numericUnit === 'byte' ? audit.numericValue : null,
-      })
-    }
-  }
-  return results;
-} else {
-  return null;
-}
-""";
 `).query(ctx => `
 WITH pages AS (
   SELECT
@@ -228,7 +196,6 @@ lab_metrics AS (
     SAFE.FLOAT64(lighthouse.categories.performance.score) AS performance,
     SAFE.FLOAT64(lighthouse.categories.pwa.score) AS pwa,
     SAFE.FLOAT64(lighthouse.categories.seo.score) AS seo,
-    extract_audits(lighthouse) AS performance_opportunities,
   FROM pages
 ),
 
