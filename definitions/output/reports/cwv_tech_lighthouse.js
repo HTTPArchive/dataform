@@ -52,12 +52,12 @@ const result = metrics.map(metric => {
   return {
     name: metric,
     mobile: {
-      median_score: mobileData ? mobileData[`median_lighthouse_score_${metric}`] || null : null,
-      pass_rate: mobileData ? mobileData[`lighthouse_score_${metric}_pass_rate`] || null : null
+      median_score: mobileData ? mobileData[\`median_lighthouse_score_\${metric}\`] || null : null,
+      pass_rate: mobileData ? mobileData[\`lighthouse_score_\${metric}_pass_rate\`] || null : null
     },
     desktop: {
-      median_score: desktopData ? desktopData[`median_lighthouse_score_${metric}`] || null : null,
-      pass_rate: desktopData ? desktopData[`lighthouse_score_${metric}_pass_rate`] || null : null
+      median_score: desktopData ? desktopData[\`median_lighthouse_score_\${metric}\`] || null : null,
+      pass_rate: desktopData ? desktopData[\`lighthouse_score_\${metric}_pass_rate\`] || null : null
     }
   };
 });
