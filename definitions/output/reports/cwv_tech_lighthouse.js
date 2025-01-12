@@ -82,8 +82,8 @@ SELECT
     median_lighthouse_score_pwa,
     median_lighthouse_score_seo,
     lighthouse_score_accessibility_pass_rate,
-    lighthouse_score_accessibility_pass_rate,
-    lighthouse_score_accessibility_pass_rate,
+    lighthouse_score_best_practices_pass_rate,
+    lighthouse_score_performance_pass_rate,
     lighthouse_score_pwa_pass_rate,
     lighthouse_score_seo_pass_rate
   ))) AS lighthouse
