@@ -311,6 +311,7 @@ SELECT
   SAFE_DIVIDE(COUNTIF(accessibility >= 0.9), COUNTIF(accessibility > 0)) AS lighthouse_score_accessibility_pass_rate,
   SAFE_DIVIDE(COUNTIF(best_practices >= 0.9), COUNTIF(best_practices > 0)) AS lighthouse_score_best_practices_pass_rate,
   SAFE_DIVIDE(COUNTIF(performance >= 0.9), COUNTIF(performance > 0)) AS lighthouse_score_performance_pass_rate,
+  SAFE_DIVIDE(COUNTIF(pwa >= 0.9), COUNTIF(pwa > 0)) AS lighthouse_score_pwa_pass_rate,
   SAFE_DIVIDE(COUNTIF(seo >= 0.9), COUNTIF(seo > 0)) AS lighthouse_score_seo_pass_rate,
 
   # Page weight stats

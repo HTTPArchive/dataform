@@ -17,38 +17,52 @@ CREATE TEMPORARY FUNCTION GET_LIGHTHOUSE(
     median_lighthouse_score_best_practices NUMERIC,
     median_lighthouse_score_performance NUMERIC,
     median_lighthouse_score_pwa NUMERIC,
-    median_lighthouse_score_seo NUMERIC
->>)
+    median_lighthouse_score_seo NUMERIC,
+    lighthouse_score_accessibility_pass_rate NUMERIC,
+    lighthouse_score_best_practices_pass_rate NUMERIC,
+    lighthouse_score_performance_pass_rate NUMERIC,
+    lighthouse_score_pwa_pass_rate NUMERIC,
+    lighthouse_score_seo_pass_rate NUMERIC
+  >>
+)
 RETURNS ARRAY<STRUCT<
   name STRING,
   desktop STRUCT<
-    median_score FLOAT64
+    median_score FLOAT64,
+    pass_rate FLOAT64
   >,
   mobile STRUCT<
-    median_score FLOAT64
->>>
+    median_score FLOAT64,
+    pass_rate FLOAT64
+  >
+>>
 LANGUAGE js AS '''
-const METRIC_MAP = {
-  accessibility: 'median_lighthouse_score_accessibility',
-  best_practices: 'median_lighthouse_score_best_practices',
-  performance: 'median_lighthouse_score_performance',
-  pwa: 'median_lighthouse_score_pwa',
-  seo: 'median_lighthouse_score_seo',
-}
+const metrics = [
+  'accessibility',
+  'best_practices',
+  'performance',
+  'pwa',
+  'seo'
+];
 
-// Initialize the Lighthouse map.
-const lighthouse = Object.fromEntries(Object.keys(METRIC_MAP).map(metricName => {
-  return [metricName, {name: metricName}]
-}));
+const result = metrics.map(metric => {
+  const mobileData = records.find(record => record.client === 'mobile');
+  const desktopData = records.find(record => record.client === 'desktop');
 
-// Populate each client record.
-records.forEach(record => {
-  Object.entries(METRIC_MAP).forEach(([metricName, median_score]) => {
-    lighthouse[metricName][record.client] = {median_score: record[median_score]}
-  });
+  return {
+    name: metric,
+    mobile: {
+      median_score: mobileData ? mobileData[`median_lighthouse_score_${metric}`] || null : null,
+      pass_rate: mobileData ? mobileData[`lighthouse_score_${metric}_pass_rate`] || null : null
+    },
+    desktop: {
+      median_score: desktopData ? desktopData[`median_lighthouse_score_${metric}`] || null : null,
+      pass_rate: desktopData ? desktopData[`lighthouse_score_${metric}_pass_rate`] || null : null
+    }
+  };
 });
 
-return Object.values(lighthouse)
+return result;
 ''';
 
 DELETE FROM ${ctx.self()}
@@ -66,7 +80,12 @@ SELECT
     median_lighthouse_score_best_practices,
     median_lighthouse_score_performance,
     median_lighthouse_score_pwa,
-    median_lighthouse_score_seo
+    median_lighthouse_score_seo,
+    lighthouse_score_accessibility_pass_rate,
+    lighthouse_score_accessibility_pass_rate,
+    lighthouse_score_accessibility_pass_rate,
+    lighthouse_score_pwa_pass_rate,
+    lighthouse_score_seo_pass_rate
   ))) AS lighthouse
 FROM ${ctx.ref('core_web_vitals', 'technologies')}
 WHERE date = '${pastMonth}'
