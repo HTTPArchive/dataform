@@ -154,7 +154,10 @@ technologies AS (
   FROM pages,
     UNNEST(technologies) AS tech,
     UNNEST(tech.info) AS version
-  WHERE REGEXP_EXTRACT_ALL(version, r'(0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)')[SAFE_OFFSET(0)] IS NOT NULL
+  WHERE
+    technology.technology IS NOT NULL AND
+    technology.technology != '' AND
+    REGEXP_EXTRACT_ALL(version, r'(0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)')[SAFE_OFFSET(0)] IS NOT NULL
 
   UNION ALL
 
@@ -165,6 +168,9 @@ technologies AS (
     page
   FROM pages,
     UNNEST(technologies) AS tech
+  WHERE
+    technology.technology IS NOT NULL AND
+    technology.technology != ''
 
   UNION ALL
 
