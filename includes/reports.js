@@ -7,8 +7,21 @@ const config = {
         {
           type: 'histogram',
           query: DataformTemplateBuilder.create((ctx, params) => `
+WITH pages AS (
+  SELECT
+    date,
+    client,
+    CAST(FLOOR(INT64(summary.bytesTotal) / 1024 / 100) * 100 AS INT64) AS bin
+  FROM crawl.pages
+  WHERE
+    date = '${params.date}' ${params.lens.sql} AND
+    is_root_page AND
+    INT64(summary.bytesTotal) > 0
+)
+
 SELECT
   *,
+  '${params.lens.name}' AS lens,
   SUM(pdf) OVER (PARTITION BY client ORDER BY bin) AS cdf
 FROM (
   SELECT
@@ -16,15 +29,9 @@ FROM (
     volume / SUM(volume) OVER (PARTITION BY client) AS pdf
   FROM (
     SELECT
-      date,
-      client,
-      CAST(FLOOR(INT64(summary.bytesTotal) / 1024 / 100) * 100 AS INT64) AS bin,
+      *,
       COUNT(0) AS volume
-    FROM ${ctx.ref('crawl', 'pages')}
-    WHERE
-      date = '${params.date}' ${params.devRankFilter} ${params.lense.sql} AND
-      is_root_page AND
-      INT64(summary.bytesTotal) > 0
+    FROM pages
     GROUP BY
       date,
       client,
@@ -46,9 +53,9 @@ WITH pages AS (
     date,
     client,
     INT64(summary.bytesTotal) AS bytesTotal
-  FROM ${ctx.ref('crawl', 'pages')}
+  FROM crawl.pages
   WHERE
-    date = '${params.date}' ${params.devRankFilter} ${params.lense.sql} AND
+    date = '${params.date}' $ ${params.lens.sql} AND
     is_root_page AND
     INT64(summary.bytesTotal) > 0
 )
@@ -56,6 +63,7 @@ WITH pages AS (
 SELECT
   date,
   client,
+  '${params.lens.name}' AS lens,
   UNIX_SECONDS(TIMESTAMP(date)) AS timestamp,
   ROUND(APPROX_QUANTILES(bytesTotal, 1001)[OFFSET(101)] / 1024, 2) AS p10,
   ROUND(APPROX_QUANTILES(bytesTotal, 1001)[OFFSET(251)] / 1024, 2) AS p25,

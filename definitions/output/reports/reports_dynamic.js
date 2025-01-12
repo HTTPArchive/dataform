@@ -33,7 +33,7 @@ for (
           date,
           metric,
           sql,
-          lense: { name: key, sql: value },
+          lens: { name: key, sql: value },
           devRankFilter: constants.devRankFilter
         })
       }
@@ -41,34 +41,29 @@ for (
   })
 }
 
-if (startDate === endDate) {
-  iterations.forEach((params, i) => {
-    publish(params.metric.id + '_' + params.sql.type + '_' + params.lens.name, {
-      type: 'incremental',
-      protected: true,
-      bigquery: params.sql.type === 'histogram' ? { partitionBy: 'date', clusterBy: ['client'] } : {},
-      schema: 'reports',
-      tags: ['crawl_complete', 'reports']
-    }).preOps(ctx => `
---DELETE FROM ${ctx.self()}
---WHERE date = '${params.date}';
-    `).query(ctx => `
-/* {"dataform_trigger": "report_complete", "date": "${params.date}", "name": "${params.metric.id}", "type": "${params.sql.type}", "lense": "${params.lens.name}"} */` +
-params.sql.query(ctx, params)
-    )
-  })
-} else {
-  iterations.forEach((params, i) => {
-    operate(
-      params.metric.id + '_' + params.sql.type + '_' + params.lens.name + '_' + params.date)
-      .tags(['crawl_complete', 'reports'])
-      .queries(ctx => `
+iterations.forEach((params, i) => {
+  operate(
+    params.metric.id + '_' + params.sql.type + '_' + params.lens.name + '_' + params.date)
+    .tags(['crawl_complete', 'reports'])
+    .queries(ctx => `
+CREATE TABLE IF NOT EXISTS reports.${params.metric.id}_${params.sql.type} (
+  metric STRING,
+  date DATE,
+  client STRING,
+  lens STRING,
+  bin INT64,
+  volume INT64,
+  pdf FLOAT64,
+  cdf FLOAT64
+)
+PARTITION BY date
+CLUSTER BY client, lens;
+
 DELETE FROM reports.${params.metric.id}_${params.sql.type}
 WHERE date = '${params.date}';
 
 /* {"dataform_trigger": "report_complete", "date": "${params.date}", "name": "${params.metric.id}", "type": "${params.sql.type}", "lense": "${params.lens.name}"} */
 INSERT INTO reports.${params.metric.id}_${params.sql.type}` +
 params.sql.query(ctx, params)
-      )
-  })
-}
+    )
+})
