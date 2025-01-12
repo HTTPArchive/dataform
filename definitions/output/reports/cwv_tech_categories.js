@@ -30,26 +30,23 @@ WITH pages AS (
   SELECT
     client,
     category,
-    ARRAY_AGG(DISTINCT technology IGNORE NULLS ORDER BY origins DESC) AS technologies
+    technology,
+    origins
   FROM ${ctx.ref('reports', 'cwv_tech_technologies')}
-  GROUP BY
-    client,
-    category
-  HAVING client = 'mobile'
+  WHERE client = 'mobile'
 )
 
 SELECT
   category,
   STRUCT(
-    COALESCE(MAX(IF(categories.client = 'desktop', origins, 0))) AS desktop,
-    COALESCE(MAX(IF(categories.client = 'mobile', origins, 0))) AS mobile
+    COALESCE(MAX(IF(categories.client = 'desktop', categories.origins, 0))) AS desktop,
+    COALESCE(MAX(IF(categories.client = 'mobile', categories.origins, 0))) AS mobile
   ) AS origins,
-  technologies
+  ARRAY_AGG(technologies.technology IGNORE NULLS ORDER BY technologies.origins DESC) AS technologies
 FROM categories
 INNER JOIN technologies
 USING (category)
 GROUP BY
-  category,
-  origins
-ORDER BY origins DESC
+  category
+ORDER BY origins.mobile DESC
 `)
