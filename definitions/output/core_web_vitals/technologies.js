@@ -177,20 +177,6 @@ crux AS (
   WHERE rank <= _rank
 ),
 
-/*
-audits AS (
-  SELECT
-    client,
-    page,
-    performance_opportunities.id
-  FROM pages,
-    UNNEST(extract_audits(lighthouse)) AS performance_opportunities
-  WHERE
-    performance_opportunities.savings_ms > 0 OR
-    performance_opportunities.savings_bytes > 0
-),
-*/
-
 technologies AS (
   SELECT
     tech.technology,
