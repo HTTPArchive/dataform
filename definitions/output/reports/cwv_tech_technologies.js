@@ -27,7 +27,7 @@ WITH pages AS (
     technology
 ), technologies AS (
   SELECT
-    technology,
+    name AS technology,
     description,
     ARRAY_TO_STRING(categories, ', ') AS category,
     categories AS category_obj,
@@ -52,7 +52,6 @@ SELECT
 FROM tech_origins
 INNER JOIN technologies
 USING(technology)
-ORDER BY origins DESC
 
 UNION ALL
 
