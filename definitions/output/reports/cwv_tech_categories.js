@@ -32,12 +32,13 @@ categories AS (
 
 technologies AS (
   SELECT
-    client,
     category,
     technology,
-    origins
+    SUM(origins) AS total_origins
   FROM ${ctx.ref('reports', 'cwv_tech_technologies')}
-  WHERE client = 'mobile'
+  GROUP BY
+    category,
+    technology
 )
 
 SELECT
@@ -46,7 +47,7 @@ SELECT
     COALESCE(MAX(IF(categories.client = 'desktop', categories.origins, 0))) AS desktop,
     COALESCE(MAX(IF(categories.client = 'mobile', categories.origins, 0))) AS mobile
   ) AS origins,
-  ARRAY_AGG(technologies.technology IGNORE NULLS ORDER BY technologies.origins DESC) AS technologies
+  ARRAY_AGG(technology IGNORE NULLS ORDER BY total_origins DESC) AS technologies
 FROM categories
 INNER JOIN technologies
 USING (category)
