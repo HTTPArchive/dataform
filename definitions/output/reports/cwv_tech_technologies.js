@@ -33,7 +33,9 @@ WITH pages AS (
     categories AS category_obj,
     NULL AS similar_technologies
   FROM ${ctx.ref('wappalyzer', 'apps')}
-), total_pages AS (
+),
+
+total_pages AS (
   SELECT
     client,
     COUNT(DISTINCT origin) AS origins
