@@ -25,7 +25,9 @@ WITH pages AS (
   GROUP BY
     client,
     technology
-), technologies AS (
+),
+
+technologies AS (
   SELECT
     name AS technology,
     description,
