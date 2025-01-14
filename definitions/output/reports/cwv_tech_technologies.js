@@ -16,7 +16,9 @@ WITH pages AS (
   WHERE
     date = '${pastMonth}'
     ${constants.devRankFilter}
-), tech_origins AS (
+),
+
+tech_origins AS (
   SELECT
     client,
     technology,
