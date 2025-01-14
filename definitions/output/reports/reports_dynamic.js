@@ -46,24 +46,21 @@ iterations.forEach((params, i) => {
     params.metric.id + '_' + params.sql.type + '_' + params.lens.name + '_' + params.date)
     .tags(['crawl_complete', 'reports'])
     .queries(ctx => `
-CREATE TABLE IF NOT EXISTS reports.${params.metric.id}_${params.sql.type} (
-  metric STRING,
+CREATE TABLE IF NOT EXISTS reports.${params.sql.type} (
   date DATE,
-  client STRING,
   lens STRING,
-  bin INT64,
-  volume INT64,
-  pdf FLOAT64,
-  cdf FLOAT64
+  metric STRING,
+  client STRING,
+  data JSON
 )
 PARTITION BY date
 CLUSTER BY client, lens;
 
-DELETE FROM reports.${params.metric.id}_${params.sql.type}
+DELETE FROM reports.${params.sql.type}
 WHERE date = '${params.date}';
 
 /* {"dataform_trigger": "report_complete", "date": "${params.date}", "name": "${params.metric.id}", "type": "${params.sql.type}", "lense": "${params.lens.name}"} */
-INSERT INTO reports.${params.metric.id}_${params.sql.type}` +
+INSERT INTO reports.${params.sql.type}` +
 params.sql.query(ctx, params)
     )
 })

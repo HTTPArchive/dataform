@@ -21,7 +21,6 @@ WITH pages AS (
 
 SELECT
   *,
-  '${params.lens.name}' AS lens,
   SUM(pdf) OVER (PARTITION BY client ORDER BY bin) AS cdf
 FROM (
   SELECT
@@ -63,7 +62,6 @@ WITH pages AS (
 SELECT
   date,
   client,
-  '${params.lens.name}' AS lens,
   UNIX_SECONDS(TIMESTAMP(date)) AS timestamp,
   ROUND(APPROX_QUANTILES(bytesTotal, 1001)[OFFSET(101)] / 1024, 2) AS p10,
   ROUND(APPROX_QUANTILES(bytesTotal, 1001)[OFFSET(251)] / 1024, 2) AS p25,
