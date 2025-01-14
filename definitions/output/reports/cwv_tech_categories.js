@@ -15,7 +15,9 @@ WITH pages AS (
   WHERE
     date = '${pastMonth}'
     ${constants.devRankFilter}
-), categories AS (
+),
+
+categories AS (
   SELECT
     client,
     category,
