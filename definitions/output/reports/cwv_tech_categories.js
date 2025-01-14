@@ -28,7 +28,9 @@ categories AS (
   GROUP BY
     client,
     category
-), technologies AS (
+),
+
+technologies AS (
   SELECT
     client,
     category,
