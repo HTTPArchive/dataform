@@ -9,7 +9,7 @@ publish('cwv_tech_categories', {
 WITH pages AS (
   SELECT
     client,
-    root_page AS origin,
+    root_page,
     technologies
   FROM ${ctx.ref('crawl', 'pages')}
   WHERE
@@ -21,7 +21,7 @@ categories AS (
   SELECT
     client,
     category,
-    COUNT(DISTINCT origin) AS origins
+    COUNT(DISTINCT root_page) AS origins
   FROM pages,
     UNNEST(technologies) AS tech,
     UNNEST(tech.categories) AS category
