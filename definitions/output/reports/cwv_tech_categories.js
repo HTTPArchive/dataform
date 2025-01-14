@@ -52,5 +52,5 @@ INNER JOIN technologies
 USING (category)
 GROUP BY
   category
-ORDER BY origins.mobile DESC
+ORDER BY category ASC
 `)
