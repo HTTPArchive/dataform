@@ -65,15 +65,9 @@ SELECT
   client,
   'ALL' AS technology,
   NULL AS description,
-  ARRAY_TO_STRING(categories, ', ') AS category,
-  categories AS category_obj,
+  NULL AS category,
+  NULL AS category_obj,
   NULL AS similar_technologies,
   origins
 FROM total_pages
-CROSS JOIN (
-  SELECT
-    ARRAY_AGG(DISTINCT category IGNORE NULLS ORDER BY category) AS categories
-  FROM technologies,
-    UNNEST(category_obj) AS category
-)
 `)
