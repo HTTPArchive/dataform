@@ -8,7 +8,7 @@ publish('cwv_tech_categories', {
 /* {"dataform_trigger": "report_cwv_tech_complete", "name": "categories", "type": "dict"} */
 WITH pages AS (
   SELECT
-    root_page AS origin,
+    root_page,
     technologies
   FROM ${ctx.ref('crawl', 'pages')}
   WHERE
@@ -18,7 +18,7 @@ WITH pages AS (
 ), categories AS (
   SELECT
     category,
-    COUNT(DISTINCT origin) AS origins
+    COUNT(DISTINCT root_page) AS origins
   FROM pages,
     UNNEST(technologies) AS t,
     UNNEST(t.categories) AS category
@@ -27,7 +27,7 @@ WITH pages AS (
   SELECT
     category,
     technology,
-    COUNT(DISTINCT origin) AS origins
+    COUNT(DISTINCT root_page) AS origins
   FROM pages,
     UNNEST(technologies) AS t,
     UNNEST(t.categories) AS category
@@ -51,7 +51,7 @@ UNION ALL
 
 SELECT
   'ALL' AS category,
-  COUNT(DISTINCT origin) AS origins,
+  COUNT(DISTINCT root_page) AS origins,
   NULL AS technologies
 FROM pages
 `)
