@@ -9,7 +9,7 @@ publish('cwv_tech_technologies', {
 WITH pages AS (
   SELECT DISTINCT
     client,
-    root_page AS origin,
+    root_page,
     tech.technology
   FROM ${ctx.ref('crawl', 'pages')},
     UNNEST(technologies) AS tech
@@ -22,7 +22,7 @@ tech_origins AS (
   SELECT
     client,
     technology,
-    COUNT(origin) AS origins
+    COUNT(DISTINCT root_page) AS origins
   FROM pages
   GROUP BY
     client,
@@ -42,7 +42,7 @@ technologies AS (
 total_pages AS (
   SELECT
     client,
-    COUNT(DISTINCT origin) AS origins
+    COUNT(DISTINCT root_page) AS origins
   FROM pages
   GROUP BY client
 )
@@ -54,7 +54,7 @@ SELECT
   category,
   category_obj,
   similar_technologies,
-  COALESCE(origins, 0) AS origins
+  origins
 FROM tech_origins
 INNER JOIN technologies
 USING(technology)
@@ -75,5 +75,5 @@ CROSS JOIN (
     ARRAY_AGG(DISTINCT category IGNORE NULLS ORDER BY category) AS categories
   FROM technologies,
     UNNEST(category_obj) AS category
-) AS cat
+)
 `)
