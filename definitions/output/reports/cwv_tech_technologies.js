@@ -33,10 +33,15 @@ technologies AS (
   SELECT
     name AS technology,
     description,
-    ARRAY_TO_STRING(categories, ', ') AS category,
+    STRING_AGG(DISTINCT category, ', ' ORDER BY category ASC) AS category,
     categories AS category_obj,
     NULL AS similar_technologies
-  FROM ${ctx.ref('wappalyzer', 'apps')}
+  FROM ${ctx.ref('wappalyzer', 'apps')},
+    UNNEST(categories) AS category
+  GROUP BY
+    technology,
+    description,
+    categories
 ),
 
 total_pages AS (
