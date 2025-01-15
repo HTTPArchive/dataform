@@ -112,7 +112,7 @@ tech_deprecated_gone_origins AS (
 -- aggregation of technology adoption/deprecation metrics
 SELECT
   DATE('${constants.currentMonth}') AS date,
-  COALESCE(before_summary.technology, tech_adopted_existing_origins.technology, tech_adopted_new_origins.technology, apps.name) AS technology,
+  COALESCE(before_summary.technology, tech_adopted_existing_origins.technology, tech_adopted_new_origins.technology, technologies.name) AS technology,
 
   -- origins summary
   0-COALESCE(total_origins_deprecated_existing, 0) AS total_origins_deprecated_existing,
@@ -139,6 +139,6 @@ LEFT JOIN tech_deprecated_existing_origins
   ON before_summary.technology = tech_deprecated_existing_origins.technology
 LEFT JOIN tech_deprecated_gone_origins
   ON before_summary.technology = tech_deprecated_gone_origins.technology
-FULL OUTER JOIN wappalyzer.apps
-  ON before_summary.technology = apps.name
+FULL OUTER JOIN wappalyzer.technologies
+  ON before_summary.technology = technologies.name
 `)

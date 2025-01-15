@@ -17,13 +17,18 @@ WITH pages AS (
     ${constants.devRankFilter}
 ), categories AS (
   SELECT
+    name AS category,
+    description
+  FROM ${ctx.ref('wappalyzer', 'categories')}
+), category_stats AS (
+  SELECT
     category,
     COUNT(DISTINCT root_page) AS origins
   FROM pages,
     UNNEST(technologies) AS t,
     UNNEST(t.categories) AS category
   GROUP BY category
-), technologies AS (
+), technology_stats AS (
   SELECT
     category,
     technology,
@@ -38,13 +43,17 @@ WITH pages AS (
 
 SELECT
   category,
-  categories.origins,
-  ARRAY_AGG(technology IGNORE NULLS ORDER BY technologies.origins DESC) AS technologies
-FROM categories
-JOIN technologies
+  description,
+  category_stats.origins,
+  ARRAY_AGG(technology IGNORE NULLS ORDER BY technology_stats.origins DESC) AS technologies
+FROM category_stats
+INNER JOIN technology_stats
+USING (category)
+LEFT JOIN categories
 USING (category)
 GROUP BY
   category,
-  categories.origins
-ORDER BY categories.origins DESC
+  description,
+  origins
+ORDER BY origins DESC
 `)

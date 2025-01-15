@@ -15,7 +15,7 @@ SELECT
   NULL AS similar_technologies,
   origins
 FROM ${ctx.ref('core_web_vitals', 'technologies')}
-LEFT JOIN ${ctx.ref('wappalyzer', 'apps')}
+LEFT JOIN ${ctx.ref('wappalyzer', 'technologies')}
 ON app = name
 WHERE date = '${pastMonth}' AND
   geo = 'ALL' AND
