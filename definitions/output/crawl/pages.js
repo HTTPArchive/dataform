@@ -133,7 +133,7 @@ CREATE TEMP TABLE technologies_cleaned AS (
 );
 
 -- Update the crawl.pages table with the cleaned and restored technologies
-UPDATE crawl.pages
+UPDATE ${ctx.self()} AS pages
 SET technologies = technologies_cleaned.technologies
 FROM technologies_cleaned
 WHERE pages.date = '${constants.currentMonth}' AND
