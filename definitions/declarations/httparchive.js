@@ -1,4 +1,4 @@
-// Tables source: https://github.com/HTTPArchive/crawl/blob/main/crawl.py
+// Staging tables source: https://github.com/HTTPArchive/crawl/blob/main/crawl.py
 ['pages', 'requests', 'parsed_css'].forEach(table =>
   declare({
     schema: 'crawl_staging',
@@ -6,14 +6,16 @@
   })
 )
 
-assert('corrupted_technology_values').query(ctx => `
+assert('corrupted_technology_values')
+  .tags(['crawl_complete'])
+  .query(ctx => `
 SELECT
   date,
   client,
   tech,
   COUNT(DISTINCT page) AS cnt_pages,
   ARRAY_AGG(DISTINCT page LIMIT 3) AS sample_pages
-FROM ${ctx.ref('crawl_staging', 'pages')}
+FROM ${ctx.ref('crawl_staging', 'pages')} AS pages
 LEFT JOIN pages.technologies AS tech
 LEFT JOIN tech.categories AS category
 WHERE
@@ -27,10 +29,10 @@ GROUP BY
   date,
   client,
   tech
-ORDER BY cnt DESC
+ORDER BY cnt_pages DESC
 `);
 
-// Tables source: https://github.com/HTTPArchive/wappalyzer/blob/main/.github/workflows/upload.yml
+// Wappalyzer tables source: https://github.com/HTTPArchive/wappalyzer/blob/main/.github/workflows/upload.yml
 ['technologies', 'categories'].forEach(table =>
   declare({
     schema: 'wappalyzer',
