@@ -1,7 +1,7 @@
 // Tables source: https://github.com/HTTPArchive/crawl/blob/main/crawl.py
 ['pages', 'requests', 'parsed_css'].forEach(table =>
   declare({
-    schema: 'wappalyzer',
+    schema: 'crawl_staging',
     name: table
   })
 )
@@ -27,7 +27,7 @@ GROUP BY
   date,
   client,
   tech
-ORDER BY cnt DESC;
+ORDER BY cnt DESC
 `);
 
 // Tables source: https://github.com/HTTPArchive/wappalyzer/blob/main/.github/workflows/upload.yml
