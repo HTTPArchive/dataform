@@ -15,9 +15,12 @@ WITH pages AS (
   WHERE
     date = '${pastMonth}'
     ${constants.devRankFilter}
-),
-
-categories AS (
+), categories AS (
+  SELECT
+    name AS category,
+    description
+  FROM ${ctx.ref('wappalyzer', 'categories')}
+), category_stats AS (
   SELECT
     client,
     category,
@@ -30,7 +33,7 @@ categories AS (
     category
 ),
 
-technologies AS (
+technology_stats AS (
   SELECT
     category,
     technology,
@@ -43,15 +46,20 @@ technologies AS (
 
 SELECT
   category,
+  description,
   STRUCT(
     COALESCE(MAX(IF(categories.client = 'desktop', categories.origins, 0))) AS desktop,
     COALESCE(MAX(IF(categories.client = 'mobile', categories.origins, 0))) AS mobile
   ) AS origins,
-  ARRAY_AGG(technology IGNORE NULLS ORDER BY total_origins DESC) AS technologies
-FROM categories
-INNER JOIN technologies
+  ARRAY_AGG(technology IGNORE NULLS ORDER BY technology_stats.origins DESC) AS technologies
+FROM category_stats
+INNER JOIN technology_stats
+USING (category)
+LEFT JOIN categories
 USING (category)
 GROUP BY
-  category
+  category,
+  description,
+  origins
 ORDER BY category ASC
 `)
