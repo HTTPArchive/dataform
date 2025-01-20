@@ -7,7 +7,7 @@ publish('cwv_tech_categories', {
 }).query(ctx => `
 /* {"dataform_trigger": "report_cwv_tech_complete", "name": "categories", "type": "dict"} */
 WITH pages AS (
-  SELECT
+  SELECT DISTINCT
     client,
     root_page,
     technologies
@@ -15,47 +15,57 @@ WITH pages AS (
   WHERE
     date = '${pastMonth}'
     ${constants.devRankFilter}
-), categories AS (
+),
+
+category_descriptions AS (
   SELECT
     name AS category,
     description
   FROM ${ctx.ref('wappalyzer', 'categories')}
-), category_stats AS (
+),
+
+category_stats AS (
   SELECT
-    client,
     category,
-    COUNT(DISTINCT root_page) AS origins
-  FROM pages,
-    UNNEST(technologies) AS tech,
-    UNNEST(tech.categories) AS category
-  GROUP BY
-    client,
-    category
+    STRUCT(
+      COALESCE(MAX(IF(client = 'desktop', origins, 0))) AS desktop,
+      COALESCE(MAX(IF(client = 'mobile', origins, 0))) AS mobile
+    ) AS origins
+  FROM (
+    SELECT
+      client,
+      category,
+      COUNT(DISTINCT root_page) AS origins
+    FROM pages
+    LEFT JOIN pages.technologies AS tech
+    LEFT JOIN tech.categories AS category
+    GROUP BY
+      client,
+      category
+  )
+  GROUP BY category
 ),
 
 technology_stats AS (
   SELECT
-    category,
     technology,
+    category_obj AS categories,
     SUM(origins) AS total_origins
   FROM ${ctx.ref('reports', 'cwv_tech_technologies')}
   GROUP BY
-    category,
-    technology
+    technology,
+    categories
 )
 
 SELECT
   category,
   description,
-  STRUCT(
-    COALESCE(MAX(IF(categories.client = 'desktop', categories.origins, 0))) AS desktop,
-    COALESCE(MAX(IF(categories.client = 'mobile', categories.origins, 0))) AS mobile
-  ) AS origins,
-  ARRAY_AGG(technology IGNORE NULLS ORDER BY technology_stats.origins DESC) AS technologies
+  origins,
+  ARRAY_AGG(technology IGNORE NULLS ORDER BY technology_stats.total_origins DESC) AS technologies
 FROM category_stats
 INNER JOIN technology_stats
-USING (category)
-LEFT JOIN categories
+ON category_stats.category IN UNNEST(technology_stats.categories)
+INNER JOIN category_descriptions
 USING (category)
 GROUP BY
   category,
