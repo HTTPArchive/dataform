@@ -36,7 +36,7 @@ technologies AS (
     STRING_AGG(DISTINCT category, ', ' ORDER BY category ASC) AS category,
     categories AS category_obj,
     NULL AS similar_technologies
-  FROM ${ctx.ref('wappalyzer', 'apps')},
+  FROM ${ctx.ref('wappalyzer', 'technologies')},
     UNNEST(categories) AS category
   GROUP BY
     technology,
