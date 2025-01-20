@@ -74,9 +74,9 @@ WHERE date = '${constants.currentMonth}' AND
 `).postOps(ctx => `
 CREATE TEMP TABLE technologies_cleaned AS (
   WITH wappalyzer AS (
-    SELECT
+    SELECT DISTINCT
       name AS technology,
-      categories AS valid_categories
+      categories
     FROM ${ctx.ref('wappalyzer', 'technologies')}
   ), pages AS (
     SELECT
@@ -85,7 +85,7 @@ CREATE TEMP TABLE technologies_cleaned AS (
       tech.technology,
       tech.categories,
       tech.info
-    FROM ${ctx.ref('crawl', 'pages')} AS pages
+    FROM ${ctx.self()} AS pages
     LEFT JOIN pages.technologies AS tech
     WHERE date = '${constants.currentMonth}' ${constants.devRankFilter}
   ), -- Identify impacted pages
@@ -94,47 +94,32 @@ CREATE TEMP TABLE technologies_cleaned AS (
       client,
       page
     FROM pages
+    LEFT JOIN pages.categories AS category
     WHERE
-      -- Categories are empty OR technology is corrupted OR contains invalid categories
-      (technology IS NOT NULL AND ARRAY_LENGTH(categories) = 0)
-      OR technology NOT IN (SELECT technology FROM wappalyzer)
-      OR EXISTS (
-        SELECT category
-        FROM UNNEST(categories) AS category
-        WHERE category NOT IN (SELECT DISTINCT UNNEST(valid_categories) FROM wappalyzer)
+      -- Technology is corrupted
+      technology NOT IN (SELECT DISTINCT technology FROM wappalyzer) OR
+      -- Technology's category is corrupted
+      CONCAT(technology, category) NOT IN (
+        SELECT DISTINCT
+          CONCAT(technology, category)
+        FROM wappalyzer
+        LEFT JOIN wappalyzer.categories AS category
       )
-  ), -- Flatten technologies for reconstruction
-  flattened_technologies AS (
-    SELECT
-      client,
-      page,
-      technology,
-      ARRAY(
-        SELECT category
-        FROM UNNEST(categories) AS category
-        WHERE category IN (
-          SELECT DISTINCT UNNEST(valid_categories)
-          FROM wappalyzer
-          WHERE technology = flattened_technologies.technology
-        )
-      ) AS valid_categories,
-      info
-    FROM pages
-    WHERE page IN (SELECT DISTINCT page FROM impacted_pages)
-  ), -- Reconstruct valid technologies
+  ), -- Keep valid technologies and use correct categories
   reconstructed_technologies AS (
     SELECT
       client,
       page,
       ARRAY_AGG(STRUCT(
-        f.technology,
-        IF(ARRAY_LENGTH(f.valid_categories) = 0, w.valid_categories, f.valid_categories) AS categories,
-        f.info
+        pages.technology,
+        wappalyzer.categories,
+        pages.info
       )) AS technologies
-    FROM flattened_technologies f
-    LEFT JOIN wappalyzer w
-    ON f.technology = w.technology
-    WHERE f.technology IN (SELECT technology FROM wappalyzer)
+    FROM pages
+    INNER JOIN impacted_pages
+    USING (client, page)
+    INNER JOIN wappalyzer
+    ON pages.technology = wappalyzer.technology
     GROUP BY
       client,
       page
@@ -143,10 +128,8 @@ CREATE TEMP TABLE technologies_cleaned AS (
   SELECT
     client,
     page,
-    r.technologies
-  FROM impacted_pages
-  LEFT JOIN reconstructed_technologies r
-  USING (client, page)
+    technologies
+  FROM reconstructed_technologies
 );
 
 -- Update the crawl.pages table with the cleaned and restored technologies
