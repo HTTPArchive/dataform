@@ -1,144 +1,83 @@
-const month = constants.currentMonth
+const issue_month = constants.currentMonth
 
-// Restore categories for valid technologies
-operate('crawl_page_categories_clean').queries(ctx => `
-WITH wappalyzer AS (
-  SELECT
-    name as technology,
-    categories
-  FROM ${ctx.ref('wappalyzer', 'technologies')}
-), pages AS (
-  SELECT
-    client,
-    page,
-    tech.technology,
-    tech.categories,
-    tech.info
-  FROM ${ctx.ref('crawl', 'pages')}
-  LEFT JOIN pages.technologies AS tech
-  WHERE date = '${month}'
-    ${constants.devRankFilter}
-), impacted_pages AS (
-  SELECT DISTINCT
-    client,
-    page
-  FROM pages
-  WHERE
-    technology IS NOT NULL AND
-    ARRAY_LENGTH(categories) = 0
-), repaired AS (
-  SELECT
-    client,
-    page,
-    ARRAY_AGG(STRUCT(
-      pages.technology,
-      wappalyzer.categories,
-      pages.info
-    )) AS technologies
-  FROM pages
-  INNER JOIN impacted_pages
-  USING (client, page)
-  LEFT JOIN wappalyzer
-  ON pages.technology = wappalyzer.technology
-  GROUP BY 1,2
-)
-
-SELECT
-  client,
-  page,
-  technologies
-FROM repaired
-`)
-
-// Cleanup corrupted technologies
-operate('crawl_page_categories_clean').queries(ctx => `
-CREATE TEMP TABLE technologies_cleaned AS (
+operate('crawl_page_technologies_patch').queries(ctx => `
+CREATE TEMP TABLE crawl_page_technologies_patch AS (
   WITH wappalyzer AS (
     SELECT
-      name as technology,
-      category
-    FROM ${ctx.ref('wappalyzer', 'apps')}
-    LEFT JOIN apps.categories AS category
+      name AS technology,
+      categories
+    FROM ${ctx.ref('wappalyzer', 'technologies')}
   ), pages AS (
     SELECT
-      date,
       client,
       page,
-      technologies
-    FROM ${ctx.ref('crawl', 'pages')}
-    WHERE date = '${month}'
-  ), impacted_pages AS (
+      tech.technology,
+      tech.categories,
+      tech.info
+    FROM ${ctx.ref('crawl', 'pages')} AS pages
+    LEFT JOIN pages.technologies AS tech
+    WHERE date = '${issue_month}' ${constants.devRankFilter}
+  ),
+
+  -- Identify impacted pages
+  impacted_pages AS (
     SELECT DISTINCT
-      date,
       client,
       page
     FROM pages
-    LEFT JOIN pages.technologies AS tech,
-    LEFT JOIN tech.categories AS category
-    LEFT JOIN wappalyzer
-    USING (technology, category)
-    WHERE wappalyzer.technology IS NULL
-  ), flattened_technologies AS (
+    WHERE
+      -- Categories are empty OR the technology is corrupted
+      (technology IS NOT NULL AND ARRAY_LENGTH(categories) = 0)
+      OR technology NOT IN (SELECT technology FROM wappalyzer)
+  ),
+
+  -- Flatten technologies for reconstruction
+  flattened_technologies AS (
     SELECT
-      date,
       client,
       page,
       technology,
-      category,
+      categories,
       info
     FROM pages
-    LEFT JOIN pages.technologies AS tech
-    LEFT JOIN tech.categories AS category
     WHERE page IN (SELECT DISTINCT page FROM impacted_pages)
-  ), whitelisted_technologies AS (
+  ),
+
+  -- Reconstruct valid technologies
+  reconstructed_technologies AS (
     SELECT
-      date,
-      client,
-      page,
-      f.technology,
-      f.category,
-      f.info
-    FROM flattened_technologies f
-    INNER JOIN wappalyzer
-    USING (technology, category)
-  ), reconstructed_technologies AS (
-    SELECT
-      date,
       client,
       page,
       ARRAY_AGG(STRUCT(
-        technology,
-        categories,
-        info
+        f.technology,
+        -- Use the categories from Wappalyzer if the categories are empty
+        IF(ARRAY_LENGTH(f.categories) = 0, w.categories, f.categories) AS categories,
+        f.info
       )) AS technologies
-    FROM (
-      SELECT
-        date,
-        client,
-        page,
-        technology,
-        ARRAY_AGG(DISTINCT category IGNORE NULLS) AS categories,
-        info
-      FROM whitelisted_technologies
-      GROUP BY date, client, page, technology, info
-    )
-    GROUP BY date, client, page
+    FROM flattened_technologies f
+    LEFT JOIN wappalyzer w
+    ON f.technology = w.technology
+    -- Only reconstruct technologies existing in Wappalyzer
+    WHERE f.technology IN (SELECT technology FROM wappalyzer)
+    GROUP BY
+      client,
+      page
   )
 
   SELECT
-    date,
     client,
     page,
-    r.technologies
+    technologies
   FROM impacted_pages
-  LEFT JOIN reconstructed_technologies r
-  USING (date, client, page)
+  LEFT JOIN reconstructed_technologies
+  USING (client, page)
 );
 
+-- Update the crawl.pages table with the cleaned and restored technologies
 UPDATE crawl.pages
-SET technologies = technologies_cleaned.technologies
-FROM technologies_cleaned
-WHERE pages.date = crawl_month AND
-  pages.client = technologies_cleaned.client AND
-  pages.page = technologies_cleaned.page;
+SET technologies = crawl_page_technologies_patch.technologies
+FROM crawl_page_technologies_patch
+WHERE pages.date = '${issue_month}' AND
+  pages.client = crawl_page_technologies_patch.client AND
+  pages.page = crawl_page_technologies_patch.page;
 `)
