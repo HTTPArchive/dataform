@@ -6,6 +6,7 @@
   })
 )
 
+// See https://github.com/HTTPArchive/dataform/issues/43
 assert('corrupted_technology_values')
   .tags(['crawl_complete'])
   .query(ctx => `
