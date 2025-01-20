@@ -78,7 +78,9 @@ CREATE TEMP TABLE technologies_cleaned AS (
       name AS technology,
       categories
     FROM ${ctx.ref('wappalyzer', 'technologies')}
-  ), pages AS (
+  ),
+  
+  pages AS (
     SELECT
       client,
       page,
