@@ -90,7 +90,9 @@ CREATE TEMP TABLE technologies_cleaned AS (
     FROM ${ctx.self()} AS pages
     LEFT JOIN pages.technologies AS tech
     WHERE date = '${constants.currentMonth}' ${constants.devRankFilter}
-  ), -- Identify impacted pages
+  ),
+
+  -- Identify impacted pages
   impacted_pages AS (
     SELECT DISTINCT
       client,
