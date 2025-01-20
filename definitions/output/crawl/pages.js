@@ -109,7 +109,9 @@ CREATE TEMP TABLE technologies_cleaned AS (
         FROM wappalyzer
         LEFT JOIN wappalyzer.categories AS category
       )
-  ), -- Keep valid technologies and use correct categories
+  ),
+
+  -- Keep valid technologies and use correct categories
   reconstructed_technologies AS (
     SELECT
       client,
