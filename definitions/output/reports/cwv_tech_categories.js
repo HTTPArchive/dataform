@@ -76,7 +76,7 @@ UNION ALL
 
 SELECT
   'ALL' AS category,
-  NULL AS description
+  NULL AS description,
   STRUCT(
     COALESCE(MAX(IF(client = 'desktop', origins, 0))) AS desktop,
     COALESCE(MAX(IF(client = 'mobile', origins, 0))) AS mobile
