@@ -73,7 +73,7 @@ WHERE date = '${constants.currentMonth}' AND
   ${constants.devRankFilter}
 `).postOps(ctx => `
 CREATE TEMP TABLE technologies_cleaned AS (
-  WITH wappalyzer AS (
+  WITH technologies AS (
     SELECT DISTINCT
       name AS technology,
       categories
@@ -101,13 +101,13 @@ CREATE TEMP TABLE technologies_cleaned AS (
     LEFT JOIN pages.categories AS category
     WHERE
       -- Technology is corrupted
-      technology NOT IN (SELECT DISTINCT technology FROM wappalyzer) OR
+      technology NOT IN (SELECT DISTINCT technology FROM technologies) OR
       -- Technology's category is corrupted
       CONCAT(technology, category) NOT IN (
         SELECT DISTINCT
           CONCAT(technology, category)
-        FROM wappalyzer
-        LEFT JOIN wappalyzer.categories AS category
+        FROM technologies
+        INNER JOIN technologies.categories AS category
       )
   ),
 
@@ -118,14 +118,14 @@ CREATE TEMP TABLE technologies_cleaned AS (
       page,
       ARRAY_AGG(STRUCT(
         pages.technology,
-        wappalyzer.categories,
+        technologies.categories,
         pages.info
       )) AS technologies
     FROM pages
     INNER JOIN impacted_pages
     USING (client, page)
-    INNER JOIN wappalyzer
-    ON pages.technology = wappalyzer.technology
+    INNER JOIN technologies
+    USING (technology)
     GROUP BY
       client,
       page
@@ -134,8 +134,10 @@ CREATE TEMP TABLE technologies_cleaned AS (
   SELECT
     client,
     page,
-    technologies
-  FROM reconstructed_technologies
+    reconstructed_technologies.technologies
+  FROM impacted_pages
+  LEFT JOIN reconstructed_technologies
+  USING(client,page)
 );
 
 -- Update the crawl.pages table with the cleaned and restored technologies
