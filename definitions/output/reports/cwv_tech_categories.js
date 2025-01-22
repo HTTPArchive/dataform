@@ -71,5 +71,22 @@ GROUP BY
   category,
   description,
   origins
-ORDER BY category ASC
+
+UNION ALL
+
+SELECT
+  'ALL' AS category,
+  NULL AS description,
+  STRUCT(
+    COALESCE(MAX(IF(client = 'desktop', origins, 0))) AS desktop,
+    COALESCE(MAX(IF(client = 'mobile', origins, 0))) AS mobile
+  ) AS origins,
+  NULL AS technologies
+FROM (
+  SELECT
+    client,
+    COUNT(DISTINCT root_page) AS origins
+  FROM pages
+  GROUP BY client
+)
 `)
