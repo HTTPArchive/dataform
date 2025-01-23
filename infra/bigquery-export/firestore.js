@@ -145,7 +145,7 @@ export class FirestoreBatch {
     this.collectionType = config.type
 
     // Delete documents before writing new ones
-    // await this.batchDelete()
+    await this.batchDelete()
 
     const rowStream = await this.bigquery.queryResultsStream(query)
     await this.streamFromBigQuery(rowStream)

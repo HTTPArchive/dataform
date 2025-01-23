@@ -8,7 +8,7 @@ publish('cwv_tech_adoption', {
     partitionBy: 'date',
     clusterBy: ['rank', 'geo']
   },
-  tags: ['crux_ready']
+  tags: ['crux_ready', 'tech_report']
 }).preOps(ctx => `
 DELETE FROM ${ctx.self()}
 WHERE date = '${pastMonth}';
@@ -20,8 +20,8 @@ SELECT
   rank,
   geo,
   STRUCT(
-    COALESCE(MAX(IF(client = 'desktop', origins, NULL))) AS desktop,
-    COALESCE(MAX(IF(client = 'mobile', origins, NULL))) AS mobile
+    COALESCE(MAX(IF(client = 'desktop', origins, 0))) AS desktop,
+    COALESCE(MAX(IF(client = 'mobile', origins, 0))) AS mobile
   ) AS adoption
 FROM ${ctx.ref('core_web_vitals', 'technologies')}
 WHERE date = '${pastMonth}'
