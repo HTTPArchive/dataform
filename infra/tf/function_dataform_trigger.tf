@@ -12,7 +12,7 @@ resource "google_storage_bucket_object" "dataform_trigger_build" {
   source = data.archive_file.dataform-trigger.output_path
 }
 
-resource "google_cloudfunctions2_function" "default" {
+resource "google_cloudfunctions2_function" "dataform_trigger" {
   name     = "dataform-trigger"
   location = local.region
   build_config {
@@ -36,12 +36,12 @@ resource "google_cloudfunctions2_function" "default" {
 }
 
 locals {
-  function_uri = google_cloudfunctions2_function.default.service_config[0].uri
+  function_uri = google_cloudfunctions2_function.dataform_trigger.service_config[0].uri
 }
 
 resource "google_cloud_run_service_iam_member" "member" {
-  location = google_cloudfunctions2_function.default.location
-  service  = google_cloudfunctions2_function.default.name
+  location = google_cloudfunctions2_function.dataform_trigger.location
+  service  = google_cloudfunctions2_function.dataform_trigger.name
   role     = "roles/run.invoker"
   member   = "serviceAccount:${local.function_identity}"
 }

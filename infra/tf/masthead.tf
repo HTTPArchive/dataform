@@ -21,9 +21,15 @@ resource "google_pubsub_subscription" "masthead_agent_subscription" {
 # 2. Create Logs Router
 resource "google_logging_project_sink" "masthead_agent_sink" {
   destination = "pubsub.googleapis.com/projects/${local.project}/topics/masthead-topic"
-  filter      = "protoPayload.methodName=\"google.cloud.bigquery.storage.v1.BigQueryWrite.AppendRows\" OR \"google.cloud.bigquery.v2.JobService.InsertJob\" OR \"google.cloud.bigquery.v2.TableService.InsertTable\" OR \"google.cloud.bigquery.v2.JobService.Query\" OR resource.type=\"bigquery_table\" OR resource.type=\"bigquery_dataset\" OR resource.type=\"bigquery_project\""
+  filter      = <<EOT
+  protoPayload.methodName="google.cloud.bigquery.v2.JobService.InsertJob" OR "google.cloud.bigquery.v2.TableService.InsertTable" OR "google.cloud.bigquery.v2.JobService.Query" OR
+    resource.type="bigquery_dataset" OR "bigquery_project" OR
+    (resource.type="bigquery_table" AND protoPayload.methodName!="google.cloud.bigquery.storage.v1.BigQueryWrite.AppendRows") OR
+    (resource.type="bigquery_table" AND protoPayload.methodName="google.cloud.bigquery.storage.v1.BigQueryWrite.AppendRows" AND sample(insertId, 0.0001))
+  EOT
   name        = "masthead-agent-sink"
 }
+
 
 resource "google_project_iam_member" "masthead_pubsub_publisherer_member" {
   role    = "roles/pubsub.publisher"

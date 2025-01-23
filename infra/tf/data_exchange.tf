@@ -49,10 +49,12 @@ resource "google_bigquery_analytics_hub_listing" "crawl" {
 }
 
 resource "google_bigquery_analytics_hub_listing_iam_member" "member" {
+  for_each = toset(["roles/analyticshub.viewer", "roles/analyticshub.subscriber"])
+
   project          = local.project
   location         = local.location
   data_exchange_id = google_bigquery_analytics_hub_data_exchange.default.data_exchange_id
   listing_id       = google_bigquery_analytics_hub_listing.crawl.listing_id
-  role             = "roles/analyticshub.viewer"
+  role             = each.value
   member           = "allUsers"
 }
