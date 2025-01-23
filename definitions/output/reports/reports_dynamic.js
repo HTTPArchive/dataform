@@ -19,7 +19,7 @@ if (iterations.length === 1) {
         protected: true,
         bigquery: sql.type === 'histogram' ? { partitionBy: 'date', clusterBy: ['client'] } : {},
         schema: 'reports',
-        tags: ['crawl_complete']
+        tags: ['crawl_complete', 'http_reports']
       }).preOps(ctx => `
 --DELETE FROM ${ctx.self()}
 --WHERE date = '${params.date}';
