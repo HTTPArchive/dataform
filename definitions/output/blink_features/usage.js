@@ -7,7 +7,7 @@ publish('usage', {
     clusterBy: ['client', 'rank', 'feature'],
     requirePartitionFilter: true
   },
-  tags: ['crawl_complete']
+  tags: ['crawl_complete', 'blink_report']
 }).preOps(ctx => `
 DELETE FROM ${ctx.self()}
 WHERE date = '${constants.currentMonth}';

@@ -54,6 +54,12 @@ functions.http('dataform-export', async (req, res) => {
       res.status(400).send('Bad Request: no query found')
     }
 
+    const repoEnvironment = messageData.protoPayload.serviceData.jobCompletedEvent.job.jobConfiguration.labels.dataform_repository_id
+    if (!repoEnvironment) {
+      console.log(`no repo environment found: ${JSON.stringify(messageData)}`)
+      res.status(400).send('Bad Request: no repo environment found')
+    }
+
     const regex = /\/\* ({"dataform_trigger":.+) \*\//
     const reportConfig = regex.exec(query)
     if (!reportConfig) {
@@ -62,6 +68,11 @@ functions.http('dataform-export', async (req, res) => {
     }
 
     const eventData = JSON.parse(reportConfig[1])
+    if (!eventData) {
+      console.log(`no event data found: ${reportConfig[1]}`)
+      res.status(400).send('Bad Request: no event data found')
+    }
+    eventData.environment = repoEnvironment === 'crawl-data' ? 'prod' : 'dev'
     await callRunJob(eventData)
 
     res.status(200).send('OK')

@@ -8,6 +8,8 @@ Update Frequency: Monthly
 
 ## Dataset Access
 
+[Get Started](https://har.fyi/guides/getting-started/#setting-up-bigquery-to-access-the-http-archive)
+
 The dataset is free and can be publicly accessed via Google BigQuery for fast, scalable analysis or download for offline research. Ideal for developers, analysts, and researchers exploring web performance trends and optimization opportunities.
 
 ## Dataset Contents

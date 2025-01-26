@@ -9,10 +9,6 @@ terraform {
       source  = "hashicorp/google-beta"
       version = ">= 6.13.0"
     }
-    archive = {
-      source  = "hashicorp/archive"
-      version = "2.6.0"
-    }
   }
 
   backend "gcs" {
@@ -28,9 +24,39 @@ provider "google" {
   billing_project       = local.project
 }
 
-locals {
-  project        = "httparchive"
-  project_number = "226352634162"
-  region         = "us-central1"
-  location       = "us"
+module "dataform_export" {
+  source = "./dataform_export"
+
+  project           = local.project
+  project_number    = local.project_number
+  region            = local.region
+  function_identity = "cloud-function@httparchive.iam.gserviceaccount.com"
+  function_name     = "dataform-export"
+}
+
+module "dataform_trigger" {
+  source = "./dataform_trigger"
+
+  project           = local.project
+  project_number    = local.project_number
+  region            = local.region
+  function_identity = "cloud-function@httparchive.iam.gserviceaccount.com"
+  function_name     = "dataform-trigger"
+}
+
+module "bigquery_export" {
+  source = "./bigquery_export"
+
+  project           = local.project
+  project_number    = local.project_number
+  region            = local.region
+  location          = local.location
+  function_identity = "cloud-function@httparchive.iam.gserviceaccount.com"
+  function_name     = "bigquery-export"
+}
+
+module "masthead" {
+  source = "./masthead"
+
+  project = local.project
 }
