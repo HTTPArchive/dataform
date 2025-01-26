@@ -30,11 +30,11 @@ resource "google_storage_bucket_object" "source" {
 }
 
 resource "google_cloudfunctions2_function" "dataform_trigger" {
-  name     = "dataform-trigger"
+  name     = var.function_name
   location = var.region
   build_config {
     runtime     = "nodejs20"
-    entry_point = "dataform-trigger"
+    entry_point = var.function_name
     source {
       storage_source {
         bucket     = google_storage_bucket_object.source.bucket
