@@ -12,8 +12,8 @@ publish('tech_crux', {
   tags: ['tech_report'],
   dependOnDependencyAssertions: true
 }).preOps(ctx => `
---DELETE FROM ${ctx.self()}
---WHERE date = '${pastMonth}';
+DELETE FROM ${ctx.self()}
+WHERE date = '${pastMonth}';
 
 CREATE TEMP FUNCTION IS_GOOD(
   good FLOAT64,
@@ -155,8 +155,8 @@ technologies AS (
     UNNEST(technologies) AS tech,
     UNNEST(tech.info) AS version
   WHERE
-    technology.technology IS NOT NULL AND
-    technology.technology != '' AND
+    tech.technology IS NOT NULL AND
+    tech.technology != '' AND
     REGEXP_EXTRACT_ALL(version, r'(0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)')[SAFE_OFFSET(0)] IS NOT NULL
 
   UNION ALL
@@ -168,9 +168,6 @@ technologies AS (
     page
   FROM pages,
     UNNEST(technologies) AS tech
-  WHERE
-    technology.technology IS NOT NULL AND
-    technology.technology != ''
 
   UNION ALL
 
@@ -184,11 +181,11 @@ technologies AS (
 
 categories AS (
   SELECT
-    technology.technology,
+    tech.technology,
     ARRAY_TO_STRING(ARRAY_AGG(DISTINCT category IGNORE NULLS ORDER BY category), ', ') AS category
   FROM pages,
-    UNNEST(technologies) AS technology,
-    UNNEST(technology.categories) AS category
+    UNNEST(technologies) AS tech,
+    UNNEST(tech.categories) AS category
   GROUP BY technology
 
   UNION ALL
@@ -197,8 +194,8 @@ categories AS (
     'ALL' AS technology,
     ARRAY_TO_STRING(ARRAY_AGG(DISTINCT category IGNORE NULLS ORDER BY category), ', ') AS category
   FROM pages,
-    UNNEST(technologies) AS technology,
-    UNNEST(technology.categories) AS category
+    UNNEST(technologies) AS tech,
+    UNNEST(tech.categories) AS category
   WHERE
     client = 'mobile'
 ),
