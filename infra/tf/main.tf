@@ -25,7 +25,7 @@ provider "google" {
 }
 
 module "dataform_export" {
-  source = "./dataform_export/"
+  source = "./dataform_export"
 
   project           = local.project
   project_number    = local.project_number
@@ -35,7 +35,7 @@ module "dataform_export" {
 }
 
 module "dataform_trigger" {
-  source = "./dataform_trigger/"
+  source = "./dataform_trigger"
 
   project           = local.project
   project_number    = local.project_number
@@ -45,7 +45,7 @@ module "dataform_trigger" {
 }
 
 module "bigquery_export" {
-  source = "./bigquery_export/"
+  source = "./bigquery_export"
 
   project           = local.project
   project_number    = local.project_number
@@ -56,7 +56,7 @@ module "bigquery_export" {
 }
 
 module "masthead" {
-  source = "./masthead/"
+  source = "./masthead"
 
   project = local.project
 }

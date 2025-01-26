@@ -1,3 +1,14 @@
+terraform {
+  required_version = ">= 1.9.7"
+
+  required_providers {
+    google = {
+      source  = "hashicorp/google"
+      version = ">= 6.13.0"
+    }
+  }
+}
+
 # Documentation:
 # https://docs.mastheadata.com/saas-manual-resource-creation-google-cloud-+-bigquery
 
