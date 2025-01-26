@@ -7,14 +7,14 @@ data "archive_file" "dataform-trigger" {
 }
 
 resource "google_storage_bucket_object" "dataform_trigger_build" {
-  bucket = "gcf-v2-uploads-${local.project_number}-${local.region}"
+  bucket = "gcf-v2-uploads-${var.project_number}-${var.region}"
   name   = "dataform-trigger/function-source.zip"
   source = data.archive_file.dataform-trigger.output_path
 }
 
 resource "google_cloudfunctions2_function" "dataform_trigger" {
   name     = "dataform-trigger"
-  location = local.region
+  location = var.region
   build_config {
     runtime     = "nodejs20"
     entry_point = "dataform-trigger"
@@ -30,7 +30,7 @@ resource "google_cloudfunctions2_function" "dataform_trigger" {
     max_instance_count    = 1
     available_memory      = "256M"
     timeout_seconds       = 600
-    service_account_email = local.function_identity
+    service_account_email = var.function_identity
     ingress_settings      = "ALLOW_INTERNAL_ONLY"
   }
 }
@@ -43,14 +43,8 @@ resource "google_cloud_run_service_iam_member" "member" {
   location = google_cloudfunctions2_function.dataform_trigger.location
   service  = google_cloudfunctions2_function.dataform_trigger.name
   role     = "roles/run.invoker"
-  member   = "serviceAccount:${local.function_identity}"
+  member   = "serviceAccount:${var.function_identity}"
 }
-
-# Pub/Sub Subscription to trigger Crawl Data Dataform workflow
-/*import {
-  id = "projects/${local.project}/subscriptions/dataformTrigger"
-  to = google_pubsub_subscription.dataformTrigger
-}*/
 
 resource "google_pubsub_subscription" "dataform_crawl_complete" {
   ack_deadline_seconds         = 600
@@ -60,9 +54,9 @@ resource "google_pubsub_subscription" "dataform_crawl_complete" {
   labels                       = {}
   message_retention_duration   = "3600s"
   name                         = "dataform-trigger-crawl-complete"
-  project                      = local.project
+  project                      = var.project
   retain_acked_messages        = false
-  topic                        = "projects/${local.project}/topics/crawl-complete"
+  topic                        = "projects/${var.project}/topics/crawl-complete"
   expiration_policy {
     ttl = ""
   }
@@ -71,7 +65,7 @@ resource "google_pubsub_subscription" "dataform_crawl_complete" {
     push_endpoint = local.function_uri
     oidc_token {
       audience              = local.function_uri
-      service_account_email = local.function_identity
+      service_account_email = var.function_identity
     }
   }
   retry_policy {
@@ -91,20 +85,14 @@ locals {
 EOF
 }
 
-/*import {
-  provider = google-beta
-  id       = "projects/${local.project}/locations/us-central1/jobs/bq-poller-crux-ready"
-  to       = google_cloud_scheduler_job.bq-poller-crux-ready
-}*/
-
 resource "google_cloud_scheduler_job" "bq-poller-crux-ready" {
   provider         = google-beta
   attempt_deadline = "180s"
   description      = null
   name             = "bq-poller-crux-ready"
   paused           = false
-  project          = local.project
-  region           = local.region
+  project          = var.project
+  region           = var.region
   schedule         = "0 */8 8-14 * *"
   time_zone        = "Etc/UTC"
   http_target {
@@ -116,7 +104,7 @@ resource "google_cloud_scheduler_job" "bq-poller-crux-ready" {
     uri         = local.function_uri
     oidc_token {
       audience              = local.function_uri
-      service_account_email = local.function_identity
+      service_account_email = var.function_identity
     }
   }
   retry_config {

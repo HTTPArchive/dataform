@@ -1,11 +1,13 @@
 resource "google_cloud_run_v2_job" "bigquery_export" {
-  name     = "bigquery-export"
-  location = local.region
+  name     = var.function_name
+  location = var.region
+
+  deletion_protection = false
 
   template {
     template {
       containers {
-        image = "gcr.io/${local.project}/bigquery-export:latest"
+        image = "${var.location}.gcr.io/${var.project}/cloud-run/${var.function_name}:latest"
         resources {
           limits = {
             cpu    = "4"
@@ -18,7 +20,7 @@ resource "google_cloud_run_v2_job" "bigquery_export" {
         }
       }
       timeout         = "3600s"
-      service_account = local.function_identity
+      service_account = var.function_identity
     }
   }
 }
