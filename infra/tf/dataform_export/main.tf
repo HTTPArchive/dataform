@@ -1,15 +1,28 @@
+terraform {
+  required_version = ">= 1.9.7"
 
+  required_providers {
+    archive = {
+      source  = "hashicorp/archive"
+      version = "2.6.0"
+    }
+    google = {
+      source  = "hashicorp/google"
+      version = ">= 6.13.0"
+    }
+  }
+}
 
-data "archive_file" "dataform-export" {
+data "archive_file" "zip" {
   type        = "zip"
   source_dir  = "../${var.function_name}/"
   output_path = "./tmp/${var.function_name}.zip"
 }
 
-resource "google_storage_bucket_object" "dataform_export_build" {
+resource "google_storage_bucket_object" "source" {
   bucket = "gcf-v2-uploads-${var.project_number}-${var.region}"
-  name   = "${var.function_name}_${data.archive_file.dataform-export.id}.zip"
-  source = data.archive_file.dataform-export.output_path
+  name   = "${var.function_name}_${data.archive_file.zip.id}.zip"
+  source = data.archive_file.zip.output_path
 }
 
 resource "google_cloudfunctions2_function" "dataform_export" {
@@ -20,9 +33,9 @@ resource "google_cloudfunctions2_function" "dataform_export" {
     entry_point = var.function_name
     source {
       storage_source {
-        bucket     = google_storage_bucket_object.dataform_export_build.bucket
-        object     = google_storage_bucket_object.dataform_export_build.name
-        generation = google_storage_bucket_object.dataform_export_build.generation
+        bucket     = google_storage_bucket_object.source.bucket
+        object     = google_storage_bucket_object.source.name
+        generation = google_storage_bucket_object.source.generation
       }
     }
   }

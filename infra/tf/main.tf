@@ -9,10 +9,6 @@ terraform {
       source  = "hashicorp/google-beta"
       version = ">= 6.13.0"
     }
-    archive = {
-      source  = "hashicorp/archive"
-      version = "2.6.0"
-    }
   }
 
   backend "gcs" {
@@ -52,6 +48,7 @@ module "bigquery_export" {
   source = "./bigquery_export/"
 
   project           = local.project
+  project_number    = local.project_number
   region            = local.region
   location          = local.location
   function_identity = "cloud-function@httparchive.iam.gserviceaccount.com"
@@ -61,5 +58,5 @@ module "bigquery_export" {
 module "masthead" {
   source = "./masthead/"
 
-  project           = local.project
+  project = local.project
 }

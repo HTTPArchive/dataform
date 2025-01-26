@@ -1,15 +1,32 @@
+terraform {
+  required_version = ">= 1.9.7"
 
-
-data "archive_file" "dataform-trigger" {
-  type        = "zip"
-  source_dir  = "../dataform-trigger/"
-  output_path = "./tmp/dataform-trigger.zip"
+  required_providers {
+    archive = {
+      source  = "hashicorp/archive"
+      version = "2.6.0"
+    }
+    google = {
+      source  = "hashicorp/google"
+      version = ">= 6.13.0"
+    }
+    google-beta = {
+      source  = "hashicorp/google-beta"
+      version = ">= 6.13.0"
+    }
+  }
 }
 
-resource "google_storage_bucket_object" "dataform_trigger_build" {
+data "archive_file" "zip" {
+  type        = "zip"
+  source_dir  = "../${var.function_name}/"
+  output_path = "./tmp/${var.function_name}.zip"
+}
+
+resource "google_storage_bucket_object" "source" {
   bucket = "gcf-v2-uploads-${var.project_number}-${var.region}"
-  name   = "dataform-trigger/function-source.zip"
-  source = data.archive_file.dataform-trigger.output_path
+  name   = "${var.function_name}_${data.archive_file.zip.id}.zip"
+  source = data.archive_file.zip.output_path
 }
 
 resource "google_cloudfunctions2_function" "dataform_trigger" {
@@ -20,9 +37,9 @@ resource "google_cloudfunctions2_function" "dataform_trigger" {
     entry_point = "dataform-trigger"
     source {
       storage_source {
-        bucket     = google_storage_bucket_object.dataform_trigger_build.bucket
-        object     = google_storage_bucket_object.dataform_trigger_build.name
-        generation = google_storage_bucket_object.dataform_trigger_build.generation
+        bucket     = google_storage_bucket_object.source.bucket
+        object     = google_storage_bucket_object.source.name
+        generation = google_storage_bucket_object.source.generation
       }
     }
   }
