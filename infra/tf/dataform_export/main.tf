@@ -1,26 +1,41 @@
-data "archive_file" "dataform-export" {
-  type        = "zip"
-  source_dir  = "../dataform-export/"
-  output_path = "./tmp/dataform-export.zip"
+terraform {
+  required_version = ">= 1.9.7"
+
+  required_providers {
+    archive = {
+      source  = "hashicorp/archive"
+      version = "2.6.0"
+    }
+    google = {
+      source  = "hashicorp/google"
+      version = ">= 6.13.0"
+    }
+  }
 }
 
-resource "google_storage_bucket_object" "dataform_export_build" {
-  bucket = "gcf-v2-uploads-${local.project_number}-${local.region}"
-  name   = "dataform-export/function-source.zip"
-  source = data.archive_file.dataform-export.output_path
+data "archive_file" "zip" {
+  type        = "zip"
+  source_dir  = "../${var.function_name}/"
+  output_path = "./tmp/${var.function_name}.zip"
+}
+
+resource "google_storage_bucket_object" "source" {
+  bucket = "gcf-v2-uploads-${var.project_number}-${var.region}"
+  name   = "${var.function_name}_${data.archive_file.zip.id}.zip"
+  source = data.archive_file.zip.output_path
 }
 
 resource "google_cloudfunctions2_function" "dataform_export" {
-  name     = "dataform-export"
-  location = local.region
+  name     = var.function_name
+  location = var.region
   build_config {
     runtime     = "nodejs20"
-    entry_point = "dataform-export"
+    entry_point = var.function_name
     source {
       storage_source {
-        bucket     = google_storage_bucket_object.dataform_export_build.bucket
-        object     = google_storage_bucket_object.dataform_export_build.name
-        generation = google_storage_bucket_object.dataform_export_build.generation
+        bucket     = google_storage_bucket_object.source.bucket
+        object     = google_storage_bucket_object.source.name
+        generation = google_storage_bucket_object.source.generation
       }
     }
   }
@@ -28,7 +43,7 @@ resource "google_cloudfunctions2_function" "dataform_export" {
     max_instance_count    = 2
     available_cpu         = 1
     available_memory      = "256M"
-    service_account_email = local.function_identity
+    service_account_email = var.function_identity
     ingress_settings      = "ALLOW_INTERNAL_ONLY"
   }
 }
@@ -37,27 +52,27 @@ resource "google_cloudfunctions2_function" "dataform_export" {
 resource "google_pubsub_topic" "bigquery_data_updated" {
   #checkov:skip=CKV_GCP_83:Ensure PubSub Topics are encrypted with Customer Supplied Encryption Keys (CSEK)
   name    = "bigquery-data-updated"
-  project = local.project
+  project = var.project
 }
 
 # Logs sink for Dataform triggers
 resource "google_logging_project_sink" "dataform_export_triggers" {
   name        = "dataform-export-triggers"
-  destination = "pubsub.googleapis.com/projects/${local.project}/topics/bigquery-data-updated"
+  destination = "pubsub.googleapis.com/projects/${var.project}/topics/bigquery-data-updated"
   filter      = <<EOT
--- PROD dataform
+-- dataform
 protoPayload.authenticationInfo.principalEmail="service-226352634162@gcp-sa-dataform.iam.gserviceaccount.com"
-protoPayload.serviceData.jobCompletedEvent.job.jobConfiguration.labels.dataform_repository_id="crawl-data"
+protoPayload.serviceData.jobCompletedEvent.job.jobConfiguration.labels.dataform_repository_id=~"crawl-data"
+protoPayload.resourceName=~"projects/httparchive/jobs/dataform-gcp-"
 
 --successful query
-protoPayload.resourceName=~"projects/httparchive/jobs/dataform-gcp-"
 protoPayload.serviceData.jobCompletedEvent.job.jobStatus.state="DONE"
 -protoPayload.serviceData.jobCompletedEvent.job.jobStatus.error.message:*
 
 --check for trigger config
 protoPayload.serviceData.jobCompletedEvent.job.jobConfiguration.query.query=~"/* {\"dataform_trigger\": "
 EOT
-  project     = local.project
+  project     = var.project
 }
 
 # Topic Subscription for dataform_export function
@@ -69,7 +84,7 @@ resource "google_pubsub_subscription" "dataform_export" {
   labels                       = {}
   message_retention_duration   = "3600s"
   name                         = google_cloudfunctions2_function.dataform_export.name
-  project                      = local.project
+  project                      = var.project
   retain_acked_messages        = false
   topic                        = google_pubsub_topic.bigquery_data_updated.name
   expiration_policy {
@@ -80,7 +95,7 @@ resource "google_pubsub_subscription" "dataform_export" {
     push_endpoint = google_cloudfunctions2_function.dataform_export.service_config[0].uri
     oidc_token {
       audience              = google_cloudfunctions2_function.dataform_export.service_config[0].uri
-      service_account_email = local.function_identity
+      service_account_email = var.function_identity
     }
   }
   retry_policy {

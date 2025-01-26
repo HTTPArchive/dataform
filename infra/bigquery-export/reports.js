@@ -10,8 +10,8 @@ export class ReportsExporter {
   }
 
   // Export timeseries reports
-  async exportTimeseries (exportData) {
-    const metric = exportData.name
+  async exportTimeseries (exportConfig) {
+    const metric = exportConfig.name
     const query = `
 SELECT
   FORMAT_DATE('%Y_%m_%d', date) AS date,
@@ -23,9 +23,9 @@ FROM reports.${metric}_timeseries
   }
 
   // Export monthly histogram report
-  async exportHistogram (exportData) {
-    const metric = exportData.name
-    const date = exportData.date
+  async exportHistogram (exportConfig) {
+    const metric = exportConfig.name
+    const date = exportConfig.date
 
     const query = `
 SELECT * EXCEPT(date)
@@ -36,20 +36,20 @@ WHERE date = '${date}'
     await this.storage.exportToJson(rows, `${this.storagePath}${date.replaceAll('-', '_')}/${metric}.json`)
   }
 
-  async export (exportData) {
-    if (exportData.dataform_trigger !== 'report_complete') {
+  async export (exportConfig) {
+    if (exportConfig.dataform_trigger !== 'report_complete') {
       console.error('Invalid dataform trigger')
       return
     }
 
-    if (exportData.lense && exportData.lense !== 'all') {
-      this.storagePath = this.storagePath + `${exportData.lense}/`
+    if (exportConfig.lense && exportConfig.lense !== 'all') {
+      this.storagePath = this.storagePath + `${exportConfig.lense}/`
     }
 
-    if (exportData.type === 'histogram') {
-      await this.exportHistogram(exportData)
-    } else if (exportData.type === 'timeseries') {
-      await this.exportTimeseries(exportData)
+    if (exportConfig.type === 'histogram') {
+      await this.exportHistogram(exportConfig)
+    } else if (exportConfig.type === 'timeseries') {
+      await this.exportTimeseries(exportConfig)
     } else {
       console.error('Invalid report type')
     }
@@ -61,30 +61,30 @@ export class TechReportsExporter {
     this.firestore = new FirestoreBatch()
   }
 
-  async export (exportData) {
-    if (exportData.dataform_trigger !== 'report_cwv_tech_complete') {
+  async export (exportConfig) {
+    if (exportConfig.dataform_trigger !== 'report_cwv_tech_complete') {
       console.error('Invalid dataform trigger')
       return
     }
 
     let query = ''
-    if (exportData.type === 'report') {
+    if (exportConfig.type === 'report') {
       query = `
 SELECT
   STRING(date) AS date,
   * EXCEPT(date)
-FROM httparchive.reports.cwv_tech_${exportData.name}
-WHERE date = '${exportData.date}'
+FROM httparchive.reports.cwv_tech_${exportConfig.name}
+WHERE date = '${exportConfig.date}'
 `
-    } else if (exportData.type === 'dict') {
+    } else if (exportConfig.type === 'dict') {
       query = `
 SELECT *
-FROM reports.cwv_tech_${exportData.name}
+FROM reports.cwv_tech_${exportConfig.name}
 `
     } else {
       console.error('Invalid export type')
     }
 
-    await this.firestore.export(exportData, query)
+    await this.firestore.export(exportConfig, query)
   }
 }
