@@ -6,7 +6,7 @@ publish('tech_report_adoption', {
   protected: true,
   bigquery: {
     partitionBy: 'date',
-    clusterBy: ['rank', 'geo', 'client']
+    clusterBy: ['rank', 'geo']
   },
   tags: ['tech_report']
 }).preOps(ctx => `
