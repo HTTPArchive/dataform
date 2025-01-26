@@ -145,7 +145,7 @@ export class FirestoreBatch {
     })
 
     // Delete all the documents before writing the new ones
-    if (exportConfig.write_mode === 'truncate') {
+    if (exportConfig.truncate !== 'false') {
       await this.batchDelete()
     }
 

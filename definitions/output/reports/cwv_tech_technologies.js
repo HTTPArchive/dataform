@@ -5,7 +5,7 @@ publish('cwv_tech_technologies', {
   type: 'table',
   tags: ['crux_ready', 'tech_report']
 }).query(ctx => `
-/* {"dataform_trigger": "report_cwv_tech_complete", "name": "technologies", "type": "dict", "write_mode": "truncate"} */
+/* {"dataform_trigger": "report_cwv_tech_complete", "name": "technologies", "type": "dict"} */
 WITH pages AS (
   SELECT DISTINCT
     client,
