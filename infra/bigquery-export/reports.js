@@ -6,7 +6,6 @@ export class ReportsExporter {
   constructor () {
     this.bigquery = new BigQueryExport()
     this.storage = new StorageExport()
-    this.storagePath = 'reports/dev/' // TODO change to prod
   }
 
   // Export timeseries reports
@@ -41,6 +40,8 @@ WHERE date = '${date}'
       console.error('Invalid dataform trigger')
       return
     }
+
+    this.storagePath = 'reports/' + exportConfig.environment !== 'prod' ? 'dev/' : ''
 
     if (exportConfig.lense && exportConfig.lense !== 'all') {
       this.storagePath = this.storagePath + `${exportConfig.lense}/`
