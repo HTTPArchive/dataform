@@ -139,13 +139,15 @@ export class FirestoreBatch {
     console.info(`Transfer to ${this.collectionName} complete. Total rows processed: ${totalRowsProcessed}. Time: ${duration} seconds`)
   }
 
-  async export (config, query) {
-    this.date = config.date
-    this.collectionName = config.name
-    this.collectionType = config.type
+  async export (exportConfig, query) {
+    this.date = exportConfig.date
+    this.collectionName = exportConfig.name
+    this.collectionType = exportConfig.type
 
-    // Delete documents before writing new ones
-    await this.batchDelete()
+    // Delete all the documents before writing the new ones
+    if (exportConfig.write_mode === 'truncate') {
+      await this.batchDelete()
+    }
 
     const rowStream = await this.bigquery.queryResultsStream(query)
     await this.streamFromBigQuery(rowStream)
