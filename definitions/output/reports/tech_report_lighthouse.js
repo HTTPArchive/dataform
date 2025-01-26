@@ -1,6 +1,6 @@
 const pastMonth = constants.fnPastMonth(constants.currentMonth)
 
-publish('cwv_tech_lighthouse', {
+publish('tech_report_lighthouse', {
   schema: 'reports',
   type: 'incremental',
   protected: true,
@@ -8,7 +8,7 @@ publish('cwv_tech_lighthouse', {
     partitionBy: 'date',
     clusterBy: ['rank', 'geo']
   },
-  tags: ['crux_ready']
+  tags: ['tech_report']
 }).preOps(ctx => `
 CREATE TEMPORARY FUNCTION GET_LIGHTHOUSE(
   records ARRAY<STRUCT<
@@ -54,12 +54,13 @@ return Object.values(lighthouse)
 DELETE FROM ${ctx.self()}
 WHERE date = '${pastMonth}';
 `).query(ctx => `
-/* {"dataform_trigger": "report_cwv_tech_complete", "date": "${pastMonth}", "name": "lighthouse", "type": "report"} */
+/* {"dataform_trigger": "tech_report_complete", "date": "${pastMonth}", "name": "lighthouse", "type": "report"} */
 SELECT
   date,
-  app AS technology,
-  rank,
   geo,
+  rank,
+  technology,
+  version,
   GET_LIGHTHOUSE(ARRAY_AGG(STRUCT(
     client,
     median_lighthouse_score_accessibility,
@@ -68,11 +69,12 @@ SELECT
     median_lighthouse_score_pwa,
     median_lighthouse_score_seo
   ))) AS lighthouse
-FROM ${ctx.ref('core_web_vitals', 'technologies')}
+FROM ${ctx.ref('reports', 'tech_crux')}
 WHERE date = '${pastMonth}'
 GROUP BY
   date,
-  app,
+  geo,
   rank,
-  geo
+  technology,
+  version
 `)

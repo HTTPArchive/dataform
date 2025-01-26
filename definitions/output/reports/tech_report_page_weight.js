@@ -1,6 +1,6 @@
 const pastMonth = constants.fnPastMonth(constants.currentMonth)
 
-publish('cwv_tech_page_weight', {
+publish('tech_report_page_weight', {
   schema: 'reports',
   type: 'incremental',
   protected: true,
@@ -8,7 +8,7 @@ publish('cwv_tech_page_weight', {
     partitionBy: 'date',
     clusterBy: ['rank', 'geo']
   },
-  tags: ['crux_ready']
+  tags: ['tech_report']
 }).preOps(ctx => `
 CREATE TEMPORARY FUNCTION GET_PAGE_WEIGHT(
   records ARRAY<STRUCT<
@@ -46,23 +46,25 @@ return Object.values(pageWeight)
 DELETE FROM ${ctx.self()}
 WHERE date = '${pastMonth}';
 `).query(ctx => `
-/* {"dataform_trigger": "report_cwv_tech_complete", "date": "${pastMonth}", "name": "page_weight", "type": "report"} */
+/* {"dataform_trigger": "tech_report_complete", "date": "${pastMonth}", "name": "page_weight", "type": "report"} */
 SELECT
   date,
-  app AS technology,
-  rank,
   geo,
+  rank,
+  technology,
+  version,
   GET_PAGE_WEIGHT(ARRAY_AGG(STRUCT(
     client,
     median_bytes_total,
     median_bytes_js,
     median_bytes_image
   ))) AS pageWeight
-FROM ${ctx.ref('core_web_vitals', 'technologies')}
+FROM ${ctx.ref('reports', 'tech_crux')}
 WHERE date = '${pastMonth}'
 GROUP BY
   date,
-  app,
+  geo,
   rank,
-  geo
+  technology,
+  version
 `)

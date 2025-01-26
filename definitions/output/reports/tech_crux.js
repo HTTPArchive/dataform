@@ -246,11 +246,10 @@ lab_data AS (
 SELECT
   DATE('${pastMonth}') AS date,
   geo,
-  rank,
-  ANY_VALUE(category) AS category,
-  technology AS app,
-  version,
   client,
+  rank,
+  technology,
+  version,
   COUNT(DISTINCT origin) AS origins,
 
   # CrUX data
@@ -290,9 +289,9 @@ FROM lab_data
 INNER JOIN crux
 USING (client, origin)
 GROUP BY
-  app,
-  version,
   geo,
+  client,
   rank,
-  client
+  technology,
+  version
 `)

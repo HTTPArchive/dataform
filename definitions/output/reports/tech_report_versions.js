@@ -5,7 +5,7 @@ publish('tech_report_versions', {
   type: 'table',
   tags: ['tech_report']
 }).query(ctx => `
-/* {"dataform_trigger": "report_cwv_tech_complete", "name": "versions", "type": "dict"} */
+/* {"dataform_trigger": "tech_report_complete", "name": "versions", "type": "dict"} */
 WITH pages AS (
   SELECT DISTINCT
     client,

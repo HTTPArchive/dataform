@@ -1,11 +1,11 @@
 const pastMonth = constants.fnPastMonth(constants.currentMonth)
 
-publish('cwv_tech_categories', {
+publish('tech_report_categories', {
   schema: 'reports',
   type: 'table',
-  tags: ['crux_ready']
+  tags: ['tech_report']
 }).query(ctx => `
-/* {"dataform_trigger": "report_cwv_tech_complete", "name": "categories", "type": "dict"} */
+/* {"dataform_trigger": "tech_report_complete", "name": "categories", "type": "dict"} */
 WITH pages AS (
   SELECT DISTINCT
     client,
@@ -37,8 +37,10 @@ category_stats AS (
       category,
       COUNT(DISTINCT root_page) AS origins
     FROM pages
-    LEFT JOIN pages.technologies AS tech
-    LEFT JOIN tech.categories AS category
+    INNER JOIN pages.technologies AS tech
+    INNER JOIN tech.categories AS category
+    WHERE
+      category IS NOT NULL
     GROUP BY
       client,
       category
@@ -51,7 +53,7 @@ technology_stats AS (
     technology,
     category_obj AS categories,
     SUM(origins) AS total_origins
-  FROM ${ctx.ref('reports', 'cwv_tech_technologies')}
+  FROM ${ctx.ref('reports', 'tech_report_technologies')}
   GROUP BY
     technology,
     categories
