@@ -15,9 +15,6 @@ export class FirestoreBatch {
   constructor () {
     this.firestore = new Firestore()
     this.bigquery = new BigQueryExport()
-    this.firestore.settings({
-      databaseId: 'tech-report-apis-prod'
-    })
     this.batchSize = 500
     this.maxConcurrentBatches = 200
   }
@@ -143,6 +140,9 @@ export class FirestoreBatch {
     this.date = exportConfig.date
     this.collectionName = exportConfig.name
     this.collectionType = exportConfig.type
+    this.firestore.settings({
+      databaseId: 'tech-report-apis-' + exportConfig.environment
+    })
 
     // Delete all the documents before writing the new ones
     if (exportConfig.write_mode === 'truncate') {
