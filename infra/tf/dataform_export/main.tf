@@ -47,12 +47,12 @@ resource "google_logging_project_sink" "dataform_export_triggers" {
   name        = "dataform-export-triggers"
   destination = "pubsub.googleapis.com/projects/${var.project}/topics/bigquery-data-updated"
   filter      = <<EOT
--- PROD dataform
+-- dataform
 protoPayload.authenticationInfo.principalEmail="service-226352634162@gcp-sa-dataform.iam.gserviceaccount.com"
-protoPayload.serviceData.jobCompletedEvent.job.jobConfiguration.labels.dataform_repository_id="crawl-data"
+protoPayload.serviceData.jobCompletedEvent.job.jobConfiguration.labels.dataform_repository_id=~"crawl-data"
+protoPayload.resourceName=~"projects/httparchive/jobs/dataform-gcp-"
 
 --successful query
-protoPayload.resourceName=~"projects/httparchive/jobs/dataform-gcp-"
 protoPayload.serviceData.jobCompletedEvent.job.jobStatus.state="DONE"
 -protoPayload.serviceData.jobCompletedEvent.job.jobStatus.error.message:*
 
