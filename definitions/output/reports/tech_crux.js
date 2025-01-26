@@ -6,7 +6,7 @@ publish('tech_crux', {
   protected: true,
   bigquery: {
     partitionBy: 'date',
-    clusterBy: ['geo', 'app', 'rank', 'client'],
+    clusterBy: ['geo', 'client', 'rank', 'technology'],
     requirePartitionFilter: true
   },
   tags: ['tech_report'],
