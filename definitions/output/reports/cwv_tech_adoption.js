@@ -8,7 +8,7 @@ publish('cwv_tech_adoption', {
     partitionBy: 'date',
     clusterBy: ['rank', 'geo']
   },
-  tags: ['crux_ready', 'tech_report']
+  tags: ['tech_report']
 }).preOps(ctx => `
 DELETE FROM ${ctx.self()}
 WHERE date = '${pastMonth}';

@@ -8,7 +8,7 @@ publish('cwv_tech_page_weight', {
     partitionBy: 'date',
     clusterBy: ['rank', 'geo']
   },
-  tags: ['crux_ready', 'tech_report']
+  tags: ['tech_report']
 }).preOps(ctx => `
 CREATE TEMPORARY FUNCTION GET_PAGE_WEIGHT(
   records ARRAY<STRUCT<
