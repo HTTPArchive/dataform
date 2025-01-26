@@ -10,14 +10,15 @@ WITH pages AS (
   SELECT DISTINCT
     client,
     root_page,
-    tech.technology
+    tech.technology,
     REGEXP_EXTRACT_ALL(version, r'(0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)')[SAFE_OFFSET(0)] AS version
-  FROM ${ctx.ref('crawl', 'pages')},
-    UNNEST(technologies) AS tech
+  FROM ${ctx.ref('crawl', 'pages')} AS pages
+  INNER JOIN pages.technologies AS tech
   LEFT JOIN tech.info AS version
   WHERE
     date = '${pastMonth}'
-    ${constants.devRankFilter}
+    ${constants.devRankFilter} AND
+    tech.technology IS NOT NULL
 ),
 
 version_origins AS (
@@ -30,7 +31,8 @@ version_origins AS (
   WHERE version IS NOT NULL
   GROUP BY
     client,
-    technology
+    technology,
+    version
 ),
 
 total_origins AS (
