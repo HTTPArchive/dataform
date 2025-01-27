@@ -35,7 +35,7 @@ WITH pages AS (
   SELECT
     client,
     page,
-    root_page AS origin,
+    root_page,
     technologies,
     summary,
     lighthouse
@@ -43,7 +43,9 @@ WITH pages AS (
   WHERE
     date = '${pastMonth}'
     ${constants.devRankFilter}
-), geo_summary AS (
+),
+
+geo_summary AS (
   SELECT
     \`chrome-ux-report\`.experimental.GET_COUNTRY(country_code) AS geo,
     rank,
@@ -204,7 +206,7 @@ lab_metrics AS (
   SELECT
     client,
     page,
-    origin,
+    root_page,
     SAFE.INT64(summary.bytesTotal) AS bytesTotal,
     SAFE.INT64(summary.bytesJS) AS bytesJS,
     SAFE.INT64(summary.bytesImg) AS bytesImg,
@@ -219,7 +221,7 @@ lab_metrics AS (
 lab_data AS (
   SELECT
     client,
-    origin,
+    root_page,
     technology,
     version,
     ANY_VALUE(category) AS category,
@@ -250,7 +252,7 @@ SELECT
   rank,
   technology,
   version,
-  COUNT(DISTINCT origin) AS origins,
+  COUNT(DISTINCT root_page) AS origins,
 
   # CrUX data
   COUNTIF(good_fid) AS origins_with_good_fid,
@@ -287,7 +289,7 @@ SELECT
 
 FROM lab_data
 INNER JOIN crux
-USING (client, origin)
+USING (client, root_page)
 GROUP BY
   geo,
   client,
