@@ -150,14 +150,14 @@ crux AS (
 technologies AS (
   SELECT
     tech.technology,
-    REGEXP_EXTRACT(version, r'(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?') AS version,
+    REGEXP_EXTRACT(version, r'(?:(?:0|[1-9])\\d*)(?:\\.(?:0|[1-9])\\d*)?') AS version,
     client,
     page
   FROM pages,
     UNNEST(technologies) AS tech,
     UNNEST(tech.info) AS version
   WHERE
-    REGEXP_EXTRACT(version, r'(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?') IS NOT NULL
+    REGEXP_EXTRACT(version, r'(?:(?:0|[1-9])\\d*)(?:\\.(?:0|[1-9])\\d*)?') IS NOT NULL
 
   UNION ALL
 
