@@ -116,7 +116,7 @@ crux AS (
       WHEN 10000 THEN 'Top 10k'
       WHEN 1000 THEN 'Top 1k'
     END AS rank,
-    CONCAT(origin, '/') AS origin,
+    CONCAT(origin, '/') AS root_page,
     IF(device = 'desktop', 'desktop', 'mobile') AS client,
 
     # CWV
@@ -240,7 +240,7 @@ lab_data AS (
   USING (technology)
   GROUP BY
     client,
-    origin,
+    root_page,
     technology,
     version
 )
