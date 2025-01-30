@@ -157,8 +157,6 @@ technologies AS (
     UNNEST(technologies) AS tech,
     UNNEST(tech.info) AS version
   WHERE
-    tech.technology IS NOT NULL AND
-    tech.technology != '' AND
     REGEXP_EXTRACT(version, r'(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?') IS NOT NULL
 
   UNION ALL
@@ -198,8 +196,6 @@ categories AS (
   FROM pages,
     UNNEST(technologies) AS tech,
     UNNEST(tech.categories) AS category
-  WHERE
-    client = 'mobile'
 ),
 
 lab_metrics AS (
