@@ -157,7 +157,7 @@ technologies AS (
     UNNEST(technologies) AS tech,
     UNNEST(tech.info) AS version
   WHERE
-    WHERE tech.technology IS NOT NULL AND
+    tech.technology IS NOT NULL AND
     REGEXP_EXTRACT(version, r'(?:(?:0|[1-9])\\d*)(?:\\.(?:0|[1-9])\\d*)?') IS NOT NULL
 
   UNION ALL
@@ -170,7 +170,7 @@ technologies AS (
   FROM pages,
     UNNEST(technologies) AS tech
   WHERE
-    WHERE tech.technology IS NOT NULL
+    tech.technology IS NOT NULL
 
 
   UNION ALL
