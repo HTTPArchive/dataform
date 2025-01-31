@@ -11,7 +11,7 @@ WITH pages AS (
     client,
     root_page,
     tech.technology,
-    REGEXP_EXTRACT_ALL(version, r'(0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)')[SAFE_OFFSET(0)] AS version
+    REGEXP_EXTRACT(version, r'(?:(?:0|[1-9])\\d*)(?:\\.(?:0|[1-9])\\d*)?') AS version
   FROM ${ctx.ref('crawl', 'pages')} AS pages
   INNER JOIN pages.technologies AS tech
   LEFT JOIN tech.info AS version
