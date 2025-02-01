@@ -35,8 +35,7 @@ technologies AS (
     name AS technology,
     description,
     STRING_AGG(DISTINCT category, ', ' ORDER BY category ASC) AS category,
-    categories AS category_obj,
-    NULL AS similar_technologies
+    categories AS category_obj
   FROM ${ctx.ref('wappalyzer', 'technologies')} AS technologies
   INNER JOIN technologies.categories AS category
   GROUP BY
@@ -59,7 +58,6 @@ SELECT
   description,
   category,
   category_obj,
-  similar_technologies,
   origins
 FROM tech_origins
 INNER JOIN technologies
@@ -73,7 +71,6 @@ SELECT
   NULL AS description,
   NULL AS category,
   NULL AS category_obj,
-  NULL AS similar_technologies,
   origins
 FROM total_pages
 `)
