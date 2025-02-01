@@ -21,13 +21,22 @@ WITH pages AS (
 
 tech_origins AS (
   SELECT
-    client,
     technology,
-    COUNT(DISTINCT root_page) AS origins
-  FROM pages
-  GROUP BY
-    client,
-    technology
+    STRUCT(
+      COALESCE(MAX(IF(client = 'desktop', origins, 0))) AS desktop,
+      COALESCE(MAX(IF(client = 'mobile', origins, 0))) AS mobile
+    ) AS origins
+  FROM (
+    SELECT
+      client,
+      technology,
+      COUNT(DISTINCT root_page) AS origins
+    FROM pages
+    GROUP BY
+      client,
+      technology
+  )
+  GROUP BY technology
 ),
 
 technologies AS (
@@ -54,7 +63,6 @@ total_pages AS (
 )
 
 SELECT
-  client,
   technology,
   description,
   category,
@@ -68,12 +76,14 @@ USING(technology)
 UNION ALL
 
 SELECT
-  client,
   'ALL' AS technology,
   NULL AS description,
   NULL AS category,
   NULL AS category_obj,
   NULL AS similar_technologies,
-  origins
+  STRUCT(
+    COALESCE(MAX(IF(client = 'desktop', origins, 0))) AS desktop,
+    COALESCE(MAX(IF(client = 'mobile', origins, 0))) AS mobile
+  ) AS origins
 FROM total_pages
 `)

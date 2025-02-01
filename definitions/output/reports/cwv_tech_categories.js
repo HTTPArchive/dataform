@@ -55,6 +55,14 @@ technology_stats AS (
   GROUP BY
     technology,
     categories
+),
+
+total_pages AS (
+  SELECT
+    client,
+    COUNT(DISTINCT root_page) AS origins
+  FROM pages
+  GROUP BY client
 )
 
 SELECT
@@ -82,11 +90,5 @@ SELECT
     COALESCE(MAX(IF(client = 'mobile', origins, 0))) AS mobile
   ) AS origins,
   NULL AS technologies
-FROM (
-  SELECT
-    client,
-    COUNT(DISTINCT root_page) AS origins
-  FROM pages
-  GROUP BY client
-)
+FROM total_pages
 `)
