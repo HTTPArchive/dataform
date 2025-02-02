@@ -300,7 +300,7 @@ audits_summary AS (
     ARRAY_AGG(STRUCT(
       audit_category AS category,
       audit_id AS id,
-      SAFE_DIVIDE(origins, origins_summary.origins) AS pass_rate
+      SAFE_DIVIDE(audits.origins, origins_summary.origins) AS pass_rate
     )) AS audits
   FROM (
     SELECT
@@ -323,7 +323,7 @@ audits_summary AS (
       version,
       audit_category,
       audit_id
-  )
+  ) AS audits
   LEFT JOIN origins_summary
   USING (geo, client, rank, technology, version)
   GROUP BY
@@ -396,8 +396,8 @@ SELECT
   # Metrics
   origins,
   crux,
-  lighthouse,
-  page_weight,
+  median_lighthouse_score,
+  median_page_weight_bytes,
   audits
 FROM origins_summary
 LEFT JOIN other_summary
