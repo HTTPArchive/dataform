@@ -23,8 +23,8 @@ tech_origins AS (
   SELECT
     technology,
     STRUCT(
-      COALESCE(MAX(IF(client = 'desktop', origins, 0))) AS desktop,
-      COALESCE(MAX(IF(client = 'mobile', origins, 0))) AS mobile
+      MAX(IF(client = 'desktop', origins, 0)) AS desktop,
+      MAX(IF(client = 'mobile', origins, 0)) AS mobile
     ) AS origins
   FROM (
     SELECT
@@ -82,8 +82,8 @@ SELECT
   NULL AS category_obj,
   NULL AS similar_technologies,
   STRUCT(
-    COALESCE(MAX(IF(client = 'desktop', origins, 0))) AS desktop,
-    COALESCE(MAX(IF(client = 'mobile', origins, 0))) AS mobile
+    MAX(IF(client = 'desktop', origins, 0)) AS desktop,
+    MAX(IF(client = 'mobile', origins, 0)) AS mobile
   ) AS origins
 FROM total_pages
 `)
