@@ -18,7 +18,8 @@ CREATE TEMPORARY FUNCTION GET_LIGHTHOUSE(
     median_lighthouse_score_performance NUMERIC,
     median_lighthouse_score_pwa NUMERIC,
     median_lighthouse_score_seo NUMERIC
->>)
+  >>
+)
 RETURNS ARRAY<STRUCT<
   name STRING,
   desktop STRUCT<
@@ -26,7 +27,8 @@ RETURNS ARRAY<STRUCT<
   >,
   mobile STRUCT<
     median_score FLOAT64
->>>
+  >
+>>
 LANGUAGE js AS '''
 const METRIC_MAP = {
   accessibility: 'median_lighthouse_score_accessibility',

@@ -30,6 +30,31 @@ CREATE TEMP FUNCTION IS_NON_ZERO(
 ) RETURNS BOOL AS (
   good + needs_improvement + poor > 0
 );
+
+CREATE TEMP FUNCTION get_passed_audits(lighthouse JSON)
+RETURNS ARRAY<STRUCT<
+  category STRING,
+  id STRING
+>>
+LANGUAGE js AS """
+const results = []
+
+for (const category of Object.keys(lighthouse?.categories ? lighthouse.categories : {})) {
+  for (const audit of lighthouse.categories[category].auditRefs) {
+    if (
+      lighthouse.audits[audit.id].score === 1 &&
+        !['metrics', 'hidden'].includes(audit.group)
+    ) {
+      results.push({
+        category,
+        id: audit.id
+      })
+    }
+  }
+}
+
+return results;
+""";
 `).query(ctx => `
 WITH pages AS (
   SELECT
@@ -172,7 +197,6 @@ technologies AS (
   WHERE
     tech.technology IS NOT NULL
 
-
   UNION ALL
 
   SELECT
@@ -183,26 +207,7 @@ technologies AS (
   FROM pages
 ),
 
-categories AS (
-  SELECT
-    tech.technology,
-    ARRAY_TO_STRING(ARRAY_AGG(DISTINCT category IGNORE NULLS ORDER BY category), ', ') AS category
-  FROM pages,
-    UNNEST(technologies) AS tech,
-    UNNEST(tech.categories) AS category
-  GROUP BY technology
-
-  UNION ALL
-
-  SELECT
-    'ALL' AS technology,
-    ARRAY_TO_STRING(ARRAY_AGG(DISTINCT category IGNORE NULLS ORDER BY category), ', ') AS category
-  FROM pages,
-    UNNEST(technologies) AS tech,
-    UNNEST(tech.categories) AS category
-),
-
-lab_metrics AS (
+lab_data AS (
   SELECT
     client,
     page,
@@ -218,13 +223,76 @@ lab_metrics AS (
   FROM pages
 ),
 
-lab_data AS (
+audits AS (
+  SELECT DISTINCT
+    client,
+    root_page,
+    technology,
+    version,
+    audit_category,
+    audit_id
+  FROM (
+    SELECT
+      client,
+      page,
+      root_page,
+      audits.category AS audit_category,
+      audits.id AS audit_id
+    FROM pages
+    INNER JOIN UNNEST(get_passed_audits(pages.lighthouse)) AS audits
+  ) AS audits_data
+  INNER JOIN technologies
+  USING (client, page)
+),
+
+audits_summary AS (
+  SELECT
+    geo,
+    client,
+    rank,
+    technology,
+    version,
+    ARRAY_AGG(STRUCT(
+      audit_category AS category,
+      audit_id AS id,
+      origins
+    )) AS audits
+  FROM (
+    SELECT
+      geo,
+      client,
+      rank,
+      technology,
+      version,
+      audit_category,
+      audit_id,
+      COUNT(DISTINCT root_page) AS origins
+    FROM audits
+    INNER JOIN crux
+    USING (client, root_page)
+    GROUP BY
+      geo,
+      client,
+      rank,
+      technology,
+      version,
+      audit_category,
+      audit_id
+  )
+  GROUP BY
+    geo,
+    client,
+    rank,
+    technology,
+    version
+),
+
+lab_metrics AS (
   SELECT
     client,
     root_page,
     technology,
     version,
-    ANY_VALUE(category) AS category,
     AVG(bytesTotal) AS bytesTotal,
     AVG(bytesJS) AS bytesJS,
     AVG(bytesImg) AS bytesImg,
@@ -233,14 +301,65 @@ lab_data AS (
     AVG(performance) AS performance,
     AVG(pwa) AS pwa,
     AVG(seo) AS seo
-  FROM lab_metrics
+  FROM lab_data
   INNER JOIN technologies
   USING (client, page)
-  INNER JOIN categories
-  USING (technology)
   GROUP BY
     client,
     root_page,
+    technology,
+    version
+),
+
+first_summary AS (
+  SELECT
+    geo,
+    client,
+    rank,
+    technology,
+    version,
+
+    COUNT(DISTINCT root_page) AS origins,
+
+    STRUCT(
+      COUNTIF(good_fid) AS origins_with_good_fid,
+      COUNTIF(good_cls) AS origins_with_good_cls,
+      COUNTIF(good_lcp) AS origins_with_good_lcp,
+      COUNTIF(good_fcp) AS origins_with_good_fcp,
+      COUNTIF(good_ttfb) AS origins_with_good_ttfb,
+      COUNTIF(good_inp) AS origins_with_good_inp,
+      COUNTIF(any_fid) AS origins_with_any_fid,
+      COUNTIF(any_cls) AS origins_with_any_cls,
+      COUNTIF(any_lcp) AS origins_with_any_lcp,
+      COUNTIF(any_fcp) AS origins_with_any_fcp,
+      COUNTIF(any_ttfb) AS origins_with_any_ttfb,
+      COUNTIF(any_inp) AS origins_with_any_inp,
+      COUNTIF(good_cwv) AS origins_with_good_cwv,
+      COUNTIF(any_lcp AND any_cls) AS origins_eligible_for_cwv,
+      SAFE_DIVIDE(COUNTIF(good_cwv), COUNTIF(any_lcp AND any_cls)) AS pct_eligible_origins_with_good_cwv
+    ) AS crux,
+
+    STRUCT(
+      SAFE_CAST(APPROX_QUANTILES(accessibility, 1000)[OFFSET(500)] AS NUMERIC) AS median_lighthouse_score_accessibility,
+      SAFE_CAST(APPROX_QUANTILES(best_practices, 1000)[OFFSET(500)] AS NUMERIC) AS median_lighthouse_score_best_practices,
+      SAFE_CAST(APPROX_QUANTILES(performance, 1000)[OFFSET(500)] AS NUMERIC) AS median_lighthouse_score_performance,
+      SAFE_CAST(APPROX_QUANTILES(pwa, 1000)[OFFSET(500)] AS NUMERIC) AS median_lighthouse_score_pwa,
+      SAFE_CAST(APPROX_QUANTILES(seo, 1000)[OFFSET(500)] AS NUMERIC) AS median_lighthouse_score_seo
+    ) AS lighthouse,
+
+    STRUCT(
+      SAFE_CAST(APPROX_QUANTILES(bytesTotal, 1000)[OFFSET(500)] AS INT64) AS median_bytes_total,
+      SAFE_CAST(APPROX_QUANTILES(bytesJS, 1000)[OFFSET(500)] AS INT64) AS median_bytes_js,
+      SAFE_CAST(APPROX_QUANTILES(bytesImg, 1000)[OFFSET(500)] AS INT64) AS median_bytes_image
+    ) AS page_weight
+
+  FROM lab_metrics
+  INNER JOIN crux
+  USING (client, root_page)
+  GROUP BY
+    geo,
+    client,
+    rank,
     technology,
     version
 )
@@ -252,44 +371,14 @@ SELECT
   rank,
   technology,
   version,
-  COUNT(DISTINCT root_page) AS origins,
 
-  # CrUX data
-  COUNTIF(good_fid) AS origins_with_good_fid,
-  COUNTIF(good_cls) AS origins_with_good_cls,
-  COUNTIF(good_lcp) AS origins_with_good_lcp,
-  COUNTIF(good_fcp) AS origins_with_good_fcp,
-  COUNTIF(good_ttfb) AS origins_with_good_ttfb,
-  COUNTIF(good_inp) AS origins_with_good_inp,
-  COUNTIF(any_fid) AS origins_with_any_fid,
-  COUNTIF(any_cls) AS origins_with_any_cls,
-  COUNTIF(any_lcp) AS origins_with_any_lcp,
-  COUNTIF(any_fcp) AS origins_with_any_fcp,
-  COUNTIF(any_ttfb) AS origins_with_any_ttfb,
-  COUNTIF(any_inp) AS origins_with_any_inp,
-  COUNTIF(good_cwv) AS origins_with_good_cwv,
-  COUNTIF(any_lcp AND any_cls) AS origins_eligible_for_cwv,
-  SAFE_DIVIDE(COUNTIF(good_cwv), COUNTIF(any_lcp AND any_cls)) AS pct_eligible_origins_with_good_cwv,
-
-  # Lighthouse data
-  SAFE_CAST(APPROX_QUANTILES(accessibility, 1000)[OFFSET(500)] AS NUMERIC) AS median_lighthouse_score_accessibility,
-  SAFE_CAST(APPROX_QUANTILES(best_practices, 1000)[OFFSET(500)] AS NUMERIC) AS median_lighthouse_score_best_practices,
-  SAFE_CAST(APPROX_QUANTILES(performance, 1000)[OFFSET(500)] AS NUMERIC) AS median_lighthouse_score_performance,
-  SAFE_CAST(APPROX_QUANTILES(pwa, 1000)[OFFSET(500)] AS NUMERIC) AS median_lighthouse_score_pwa,
-  SAFE_CAST(APPROX_QUANTILES(seo, 1000)[OFFSET(500)] AS NUMERIC) AS median_lighthouse_score_seo,
-
-  # Page weight stats
-  SAFE_CAST(APPROX_QUANTILES(bytesTotal, 1000)[OFFSET(500)] AS INT64) AS median_bytes_total,
-  SAFE_CAST(APPROX_QUANTILES(bytesJS, 1000)[OFFSET(500)] AS INT64) AS median_bytes_js,
-  SAFE_CAST(APPROX_QUANTILES(bytesImg, 1000)[OFFSET(500)] AS INT64) AS median_bytes_image
-
-FROM lab_data
-INNER JOIN crux
-USING (client, root_page)
-GROUP BY
-  geo,
-  client,
-  rank,
-  technology,
-  version
+  # Metrics
+  origins,
+  crux,
+  lighthouse,
+  page_weight,
+  audits
+FROM first_summary
+INNER JOIN audits_summary
+USING (geo, client, rank, technology, version)
 `)
