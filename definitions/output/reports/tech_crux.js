@@ -218,6 +218,15 @@ lab_metrics AS (
   FROM pages
 ),
 
+(
+  SELECT
+    client,
+    page,
+    root_page,
+    
+  FROM pages
+) AS performance_opportunities,
+
 lab_data AS (
   SELECT
     client,
