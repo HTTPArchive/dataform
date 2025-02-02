@@ -65,11 +65,11 @@ SELECT
   version,
   GET_LIGHTHOUSE(ARRAY_AGG(STRUCT(
     client,
-    median_lighthouse_score_accessibility,
-    median_lighthouse_score_best_practices,
-    median_lighthouse_score_performance,
-    median_lighthouse_score_pwa,
-    median_lighthouse_score_seo
+    median_lighthouse_score.accessibility,
+    median_lighthouse_score.best_practices,
+    median_lighthouse_score.performance,
+    median_lighthouse_score.pwa,
+    median_lighthouse_score.seo
   ))) AS lighthouse
 FROM ${ctx.ref('reports', 'tech_crux')}
 WHERE date = '${pastMonth}'

@@ -245,48 +245,6 @@ audits AS (
   USING (client, page)
 ),
 
-audits_summary AS (
-  SELECT
-    geo,
-    client,
-    rank,
-    technology,
-    version,
-    ARRAY_AGG(STRUCT(
-      audit_category AS category,
-      audit_id AS id,
-      origins
-    )) AS audits
-  FROM (
-    SELECT
-      geo,
-      client,
-      rank,
-      technology,
-      version,
-      audit_category,
-      audit_id,
-      COUNT(DISTINCT root_page) AS origins
-    FROM audits
-    INNER JOIN crux
-    USING (client, root_page)
-    GROUP BY
-      geo,
-      client,
-      rank,
-      technology,
-      version,
-      audit_category,
-      audit_id
-  )
-  GROUP BY
-    geo,
-    client,
-    rank,
-    technology,
-    version
-),
-
 lab_metrics AS (
   SELECT
     client,
@@ -311,15 +269,78 @@ lab_metrics AS (
     version
 ),
 
-first_summary AS (
+origins_summary AS (
   SELECT
     geo,
     client,
     rank,
     technology,
     version,
+    COUNT(DISTINCT root_page) AS origins
+  FROM lab_metrics
+  INNER JOIN crux
+  USING (client, root_page)
+  GROUP BY
+    geo,
+    client,
+    rank,
+    technology,
+    version
 
-    COUNT(DISTINCT root_page) AS origins,
+),
+
+
+audits_summary AS (
+  SELECT
+    geo,
+    client,
+    rank,
+    technology,
+    version,
+    ARRAY_AGG(STRUCT(
+      audit_category AS category,
+      audit_id AS id,
+      SAFE_DIVIDE(origins, origins_summary.origins) AS pass_rate
+    )) AS audits
+  FROM (
+    SELECT
+      geo,
+      client,
+      rank,
+      technology,
+      version,
+      audit_category,
+      audit_id,
+      COUNT(DISTINCT root_page) AS origins
+    FROM audits
+    INNER JOIN crux
+    USING (client, root_page)
+    GROUP BY
+      geo,
+      client,
+      rank,
+      technology,
+      version,
+      audit_category,
+      audit_id
+  )
+  LEFT JOIN origins_summary
+  USING (geo, client, rank, technology, version)
+  GROUP BY
+    geo,
+    client,
+    rank,
+    technology,
+    version
+),
+
+other_summary AS (
+  SELECT
+    geo,
+    client,
+    rank,
+    technology,
+    version,
 
     STRUCT(
       COUNTIF(good_fid) AS origins_with_good_fid,
@@ -340,18 +361,18 @@ first_summary AS (
     ) AS crux,
 
     STRUCT(
-      SAFE_CAST(APPROX_QUANTILES(accessibility, 1000)[OFFSET(500)] AS NUMERIC) AS median_lighthouse_score_accessibility,
-      SAFE_CAST(APPROX_QUANTILES(best_practices, 1000)[OFFSET(500)] AS NUMERIC) AS median_lighthouse_score_best_practices,
-      SAFE_CAST(APPROX_QUANTILES(performance, 1000)[OFFSET(500)] AS NUMERIC) AS median_lighthouse_score_performance,
-      SAFE_CAST(APPROX_QUANTILES(pwa, 1000)[OFFSET(500)] AS NUMERIC) AS median_lighthouse_score_pwa,
-      SAFE_CAST(APPROX_QUANTILES(seo, 1000)[OFFSET(500)] AS NUMERIC) AS median_lighthouse_score_seo
-    ) AS lighthouse,
+      SAFE_CAST(APPROX_QUANTILES(accessibility, 1000)[OFFSET(500)] AS NUMERIC) AS accessibility,
+      SAFE_CAST(APPROX_QUANTILES(best_practices, 1000)[OFFSET(500)] AS NUMERIC) AS practices,
+      SAFE_CAST(APPROX_QUANTILES(performance, 1000)[OFFSET(500)] AS NUMERIC) AS performance,
+      SAFE_CAST(APPROX_QUANTILES(pwa, 1000)[OFFSET(500)] AS NUMERIC) AS pwa,
+      SAFE_CAST(APPROX_QUANTILES(seo, 1000)[OFFSET(500)] AS NUMERIC) AS seo
+    ) AS median_lighthouse_score,
 
     STRUCT(
-      SAFE_CAST(APPROX_QUANTILES(bytesTotal, 1000)[OFFSET(500)] AS INT64) AS median_bytes_total,
-      SAFE_CAST(APPROX_QUANTILES(bytesJS, 1000)[OFFSET(500)] AS INT64) AS median_bytes_js,
-      SAFE_CAST(APPROX_QUANTILES(bytesImg, 1000)[OFFSET(500)] AS INT64) AS median_bytes_image
-    ) AS page_weight
+      SAFE_CAST(APPROX_QUANTILES(bytesTotal, 1000)[OFFSET(500)] AS INT64) AS total,
+      SAFE_CAST(APPROX_QUANTILES(bytesJS, 1000)[OFFSET(500)] AS INT64) AS js,
+      SAFE_CAST(APPROX_QUANTILES(bytesImg, 1000)[OFFSET(500)] AS INT64) AS images
+    ) AS median_page_weight_bytes
 
   FROM lab_metrics
   INNER JOIN crux
@@ -378,7 +399,9 @@ SELECT
   lighthouse,
   page_weight,
   audits
-FROM first_summary
-INNER JOIN audits_summary
+FROM origins_summary
+LEFT JOIN other_summary
+USING (geo, client, rank, technology, version)
+LEFT JOIN audits_summary
 USING (geo, client, rank, technology, version)
 `)

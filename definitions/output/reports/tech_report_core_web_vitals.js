@@ -77,20 +77,20 @@ SELECT
   version,
   GET_VITALS(ARRAY_AGG(STRUCT(
     client,
-    origins_with_good_fid,
-    origins_with_good_cls,
-    origins_with_good_lcp,
-    origins_with_good_fcp,
-    origins_with_good_ttfb,
-    origins_with_good_inp,
-    origins_with_any_fid,
-    origins_with_any_cls,
-    origins_with_any_lcp,
-    origins_with_any_fcp,
-    origins_with_any_ttfb,
-    origins_with_any_inp,
-    origins_with_good_cwv,
-    origins_eligible_for_cwv
+    crux.origins_with_good_fid,
+    crux.origins_with_good_cls,
+    crux.origins_with_good_lcp,
+    crux.origins_with_good_fcp,
+    crux.origins_with_good_ttfb,
+    crux.origins_with_good_inp,
+    crux.origins_with_any_fid,
+    crux.origins_with_any_cls,
+    crux.origins_with_any_lcp,
+    crux.origins_with_any_fcp,
+    crux.origins_with_any_ttfb,
+    crux.origins_with_any_inp,
+    crux.origins_with_good_cwv,
+    crux.origins_eligible_for_cwv
   ))) AS vitals
 FROM ${ctx.ref('reports', 'tech_crux')}
 WHERE date = '${pastMonth}'
