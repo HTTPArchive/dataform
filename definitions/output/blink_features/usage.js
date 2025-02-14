@@ -4,8 +4,7 @@ publish('usage', {
   protected: true,
   bigquery: {
     partitionBy: 'date',
-    clusterBy: ['client', 'rank', 'feature'],
-    requirePartitionFilter: true
+    clusterBy: ['client', 'rank', 'feature']
   },
   tags: ['crawl_complete', 'blink_report']
 }).preOps(ctx => `
