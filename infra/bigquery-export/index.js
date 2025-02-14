@@ -17,7 +17,7 @@ async function main (exportConfig) {
     console.log(exportConfig)
     const reports = new ReportsExporter()
     await reports.export(exportConfig)
-  } else if (eventName === 'report_cwv_tech_complete') {
+  } else if (eventName === 'tech_report_complete') {
     console.info('Tech Report export')
     console.log(exportConfig)
     const techReports = new TechReportsExporter()

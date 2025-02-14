@@ -1,15 +1,5 @@
 import { Firestore } from '@google-cloud/firestore'
 import { BigQueryExport } from './bigquery.js'
-import { technologyHashId } from './utils.js'
-
-const TECHNOLOGY_QUERY_ID_KEYS = {
-  adoption: ['date', 'technology', 'geo', 'rank'],
-  lighthouse: ['date', 'technology', 'geo', 'rank'],
-  core_web_vitals: ['date', 'technology', 'geo', 'rank'],
-  page_weight: ['date', 'technology', 'geo', 'rank'],
-  technologies: ['client', 'technology', 'category'],
-  categories: ['category']
-}
 
 export class FirestoreBatch {
   constructor () {
@@ -26,8 +16,7 @@ export class FirestoreBatch {
       if (operation === 'delete') {
         batch.delete(doc.ref)
       } else if (operation === 'set') {
-        const docId = technologyHashId(doc, this.collectionName, TECHNOLOGY_QUERY_ID_KEYS)
-        const docRef = this.firestore.collection(this.collectionName).doc(docId)
+        const docRef = this.firestore.collection(this.collectionName).doc()
         batch.set(docRef, doc)
       } else {
         throw new Error('Invalid operation')
@@ -144,10 +133,7 @@ export class FirestoreBatch {
       databaseId: 'tech-report-apis-' + exportConfig.environment
     })
 
-    // Delete all the documents before writing the new ones
-    if (exportConfig.truncate !== 'false') {
-      await this.batchDelete()
-    }
+    await this.batchDelete()
 
     const rowStream = await this.bigquery.queryResultsStream(query)
     await this.streamFromBigQuery(rowStream)
