@@ -29,9 +29,11 @@ LANGUAGE js AS '''
 const METRICS = ['total', 'js', 'images']
 
 // Initialize the page weight map.
-const pageWeight = Object.fromEntries(METRICS.map(metricName => {
-return [metricName, {name: metricName}]
-}))
+const pageWeight = Object.fromEntries(
+  METRICS.map(metricName => {
+    return [metricName, {name: metricName}]
+  })
+)
 
 // Populate each client record.
 records.forEach(record => {

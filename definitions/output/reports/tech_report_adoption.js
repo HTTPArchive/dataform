@@ -21,8 +21,8 @@ SELECT
   technology,
   version,
   STRUCT(
-    COALESCE(MAX(IF(client = 'desktop', origins, 0))) AS desktop,
-    COALESCE(MAX(IF(client = 'mobile', origins, 0))) AS mobile
+    MAX(IF(client = 'desktop', origins, 0)) AS desktop,
+    MAX(IF(client = 'mobile', origins, 0)) AS mobile
   ) AS adoption
 FROM ${ctx.ref('reports', 'tech_crux')}
 WHERE date = '${pastMonth}'
