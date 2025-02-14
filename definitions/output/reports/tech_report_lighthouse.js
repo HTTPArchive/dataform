@@ -16,7 +16,6 @@ CREATE TEMPORARY FUNCTION GET_LIGHTHOUSE(
     median_lighthouse_score_accessibility NUMERIC,
     median_lighthouse_score_best_practices NUMERIC,
     median_lighthouse_score_performance NUMERIC,
-    median_lighthouse_score_pwa NUMERIC,
     median_lighthouse_score_seo NUMERIC
   >>
 )
@@ -34,7 +33,6 @@ const METRIC_MAP = {
   accessibility: 'median_lighthouse_score_accessibility',
   best_practices: 'median_lighthouse_score_best_practices',
   performance: 'median_lighthouse_score_performance',
-  pwa: 'median_lighthouse_score_pwa',
   seo: 'median_lighthouse_score_seo',
 }
 
@@ -68,7 +66,6 @@ SELECT
     median_lighthouse_score.accessibility,
     median_lighthouse_score.best_practices,
     median_lighthouse_score.performance,
-    median_lighthouse_score.pwa,
     median_lighthouse_score.seo
   ))) AS lighthouse
 FROM ${ctx.ref('reports', 'tech_crux')}

@@ -218,7 +218,6 @@ lab_data AS (
     SAFE.FLOAT64(lighthouse.categories.accessibility.score) AS accessibility,
     SAFE.FLOAT64(lighthouse.categories['best-practices'].score) AS best_practices,
     SAFE.FLOAT64(lighthouse.categories.performance.score) AS performance,
-    SAFE.FLOAT64(lighthouse.categories.pwa.score) AS pwa,
     SAFE.FLOAT64(lighthouse.categories.seo.score) AS seo
   FROM pages
 ),
@@ -257,7 +256,6 @@ lab_metrics AS (
     AVG(accessibility) AS accessibility,
     AVG(best_practices) AS best_practices,
     AVG(performance) AS performance,
-    AVG(pwa) AS pwa,
     AVG(seo) AS seo
   FROM lab_data
   INNER JOIN technologies
@@ -364,7 +362,6 @@ other_summary AS (
       SAFE_CAST(APPROX_QUANTILES(accessibility, 1000)[OFFSET(500)] AS NUMERIC) AS accessibility,
       SAFE_CAST(APPROX_QUANTILES(best_practices, 1000)[OFFSET(500)] AS NUMERIC) AS practices,
       SAFE_CAST(APPROX_QUANTILES(performance, 1000)[OFFSET(500)] AS NUMERIC) AS performance,
-      SAFE_CAST(APPROX_QUANTILES(pwa, 1000)[OFFSET(500)] AS NUMERIC) AS pwa,
       SAFE_CAST(APPROX_QUANTILES(seo, 1000)[OFFSET(500)] AS NUMERIC) AS seo
     ) AS median_lighthouse_score,
 
