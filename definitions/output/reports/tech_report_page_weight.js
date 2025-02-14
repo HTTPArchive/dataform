@@ -57,10 +57,10 @@ SELECT
   version,
   GET_PAGE_WEIGHT(ARRAY_AGG(STRUCT(
     client,
-    median_bytes_total,
-    median_bytes_js,
-    median_bytes_image
-  ))) AS pageWeight
+    median_page_weight_bytes.total,
+    median_page_weight_bytes.js,
+    median_page_weight_bytes.images
+  ))) AS page_weight
 FROM ${ctx.ref('reports', 'tech_crux')}
 WHERE date = '${pastMonth}'
 GROUP BY
