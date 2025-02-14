@@ -1,6 +1,6 @@
 const pastMonth = constants.fnPastMonth(constants.currentMonth)
 
-publish('cwv_tech_core_web_vitals', {
+publish('tech_report_core_web_vitals', {
   schema: 'reports',
   type: 'incremental',
   protected: true,
@@ -68,12 +68,13 @@ return Object.values(vitals)
 DELETE FROM ${ctx.self()}
 WHERE date = '${pastMonth}';
 `).query(ctx => `
-/* {"dataform_trigger": "report_cwv_tech_complete", "date": "${pastMonth}", "name": "core_web_vitals", "type": "report"} */
+/* {"dataform_trigger": "tech_report_complete", "date": "${pastMonth}", "name": "core_web_vitals", "type": "report"} */
 SELECT
   date,
-  app AS technology,
-  rank,
   geo,
+  rank,
+  technology,
+  version,
   GET_VITALS(ARRAY_AGG(STRUCT(
     client,
     origins_with_good_fid,
@@ -91,11 +92,12 @@ SELECT
     origins_with_good_cwv,
     origins_eligible_for_cwv
   ))) AS vitals
-FROM ${ctx.ref('core_web_vitals', 'technologies')}
+FROM ${ctx.ref('reports', 'tech_crux')}
 WHERE date = '${pastMonth}'
 GROUP BY
   date,
-  app,
+  geo,
   rank,
-  geo
+  technology,
+  version
 `)
