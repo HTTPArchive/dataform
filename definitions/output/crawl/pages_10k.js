@@ -1,14 +1,14 @@
-publish('parsed_css_10k', {
+publish('pages_10k', {
   type: 'table',
-  schema: 'sample_data',
+  schema: 'crawl',
   bigquery: {
     partitionBy: 'date',
-    clusterBy: ['client', 'is_root_page', 'rank', 'page']
+    clusterBy: ['client', 'is_root_page', 'rank']
   },
   tags: ['crawl_complete']
 }).query(ctx => `
 SELECT *
-FROM ${ctx.ref('crawl', 'parsed_css')}
+FROM ${ctx.ref('crawl', 'pages')}
 WHERE date = '${constants.currentMonth}' AND
     rank <= 10000
 `)
