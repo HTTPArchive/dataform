@@ -63,7 +63,7 @@ export class TechReportsExporter {
   }
 
   async export (exportConfig) {
-    if (exportConfig.dataform_trigger !== 'report_cwv_tech_complete') {
+    if (exportConfig.dataform_trigger !== 'tech_report_complete') {
       console.error('Invalid dataform trigger')
       return
     }
@@ -74,13 +74,13 @@ export class TechReportsExporter {
 SELECT
   STRING(date) AS date,
   * EXCEPT(date)
-FROM httparchive.reports.cwv_tech_${exportConfig.name}
+FROM httparchive.reports.tech_report_${exportConfig.name}
 WHERE date = '${exportConfig.date}'
 `
     } else if (exportConfig.type === 'dict') {
       query = `
 SELECT *
-FROM reports.cwv_tech_${exportConfig.name}
+FROM reports.tech_report_${exportConfig.name}
 `
     } else {
       console.error('Invalid export type')

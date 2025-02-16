@@ -32,6 +32,7 @@ resource "google_cloud_run_v2_job" "bigquery_export" {
   deletion_protection = false
 
   template {
+    parallelism = 5
     template {
       containers {
         image = "${var.location}.gcr.io/${var.project}/cloud-run/${var.function_name}:latest"
@@ -48,6 +49,7 @@ resource "google_cloud_run_v2_job" "bigquery_export" {
       }
       timeout         = "3600s"
       service_account = var.function_identity
+      max_retries     = 1
     }
   }
 }

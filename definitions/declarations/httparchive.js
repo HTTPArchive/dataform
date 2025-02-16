@@ -40,3 +40,21 @@ ORDER BY cnt_pages DESC
     name: table
   })
 )
+
+operate('create_reservation_assignment')
+  .tags(['crawl_complete'])
+  .queries(ctx => `
+CREATE ASSIGNMENT
+\`httparchive.region-us.retrospective-reprocessing.pipeline\`
+OPTIONS (
+  assignee = 'projects/httparchive',
+  job_type = 'QUERY')
+`)
+
+operate('drop_reservation_assignment')
+  .dependencies(['requests_10k'])
+  .tags(['crawl_complete'])
+  .queries(ctx => `
+DROP ASSIGNMENT IF EXISTS
+\`httparchive.region-us.retrospective-reprocessing.pipeline\`
+`)

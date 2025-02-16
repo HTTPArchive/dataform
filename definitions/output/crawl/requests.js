@@ -36,7 +36,8 @@ publish('requests', {
     },
     response_body: 'Text-based response body'
   },
-  tags: ['crawl_complete']
+  tags: ['crawl_complete'],
+  dependencies: ['create_reservation_assignment']
 }).preOps(ctx => `
 FOR client_value IN (SELECT * FROM UNNEST(['desktop', 'mobile']) AS client) DO
   FOR is_root_page_value IN (SELECT * FROM UNNEST([TRUE, FALSE]) AS is_root_page) DO

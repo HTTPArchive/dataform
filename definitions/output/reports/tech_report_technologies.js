@@ -1,18 +1,18 @@
 const pastMonth = constants.fnPastMonth(constants.currentMonth)
 
-publish('cwv_tech_technologies', {
+publish('tech_report_technologies', {
   schema: 'reports',
   type: 'table',
-  tags: ['crux_ready']
+  tags: ['tech_report']
 }).query(ctx => `
-/* {"dataform_trigger": "report_cwv_tech_complete", "name": "technologies", "type": "dict"} */
+/* {"dataform_trigger": "tech_report_complete", "name": "technologies", "type": "dict"} */
 WITH pages AS (
   SELECT DISTINCT
     client,
     root_page,
     tech.technology
-  FROM ${ctx.ref('crawl', 'pages')},
-    UNNEST(technologies) AS tech
+  FROM ${ctx.ref('crawl', 'pages')} AS pages
+  INNER JOIN pages.technologies AS tech
   WHERE
     date = '${pastMonth}'
     ${constants.devRankFilter}
@@ -20,13 +20,22 @@ WITH pages AS (
 
 tech_origins AS (
   SELECT
-    client,
     technology,
-    COUNT(DISTINCT root_page) AS origins
-  FROM pages
-  GROUP BY
-    client,
-    technology
+    STRUCT(
+      MAX(IF(client = 'desktop', origins, 0)) AS desktop,
+      MAX(IF(client = 'mobile', origins, 0)) AS mobile
+    ) AS origins
+  FROM (
+    SELECT
+      client,
+      technology,
+      COUNT(DISTINCT root_page) AS origins
+    FROM pages
+    GROUP BY
+      client,
+      technology
+  )
+  GROUP BY technology
 ),
 
 technologies AS (
@@ -34,10 +43,9 @@ technologies AS (
     name AS technology,
     description,
     STRING_AGG(DISTINCT category, ', ' ORDER BY category ASC) AS category,
-    categories AS category_obj,
-    NULL AS similar_technologies
-  FROM ${ctx.ref('wappalyzer', 'technologies')},
-    UNNEST(categories) AS category
+    categories AS category_obj
+  FROM ${ctx.ref('wappalyzer', 'technologies')} AS technologies
+  INNER JOIN technologies.categories AS category
   GROUP BY
     technology,
     description,
@@ -53,12 +61,10 @@ total_pages AS (
 )
 
 SELECT
-  client,
   technology,
   description,
   category,
   category_obj,
-  similar_technologies,
   origins
 FROM tech_origins
 INNER JOIN technologies
@@ -67,12 +73,13 @@ USING(technology)
 UNION ALL
 
 SELECT
-  client,
   'ALL' AS technology,
   NULL AS description,
   NULL AS category,
   NULL AS category_obj,
-  NULL AS similar_technologies,
-  origins
+  STRUCT(
+    MAX(IF(client = 'desktop', origins, 0)) AS desktop,
+    MAX(IF(client = 'mobile', origins, 0)) AS mobile
+  ) AS origins
 FROM total_pages
 `)

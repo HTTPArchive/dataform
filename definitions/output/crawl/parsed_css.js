@@ -7,7 +7,8 @@ publish('parsed_css', {
     clusterBy: ['client', 'is_root_page', 'rank', 'page'],
     requirePartitionFilter: true
   },
-  tags: ['crawl_complete']
+  tags: ['crawl_complete'],
+  dependencies: ['create_reservation_assignment']
 }).preOps(ctx => `
 DELETE FROM ${ctx.self()}
 WHERE date = '${constants.currentMonth}'

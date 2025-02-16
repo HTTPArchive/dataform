@@ -1,6 +1,6 @@
 const pastMonth = constants.fnPastMonth(constants.currentMonth)
 
-publish('cwv_tech_adoption', {
+publish('tech_report_adoption', {
   schema: 'reports',
   type: 'incremental',
   protected: true,
@@ -8,26 +8,28 @@ publish('cwv_tech_adoption', {
     partitionBy: 'date',
     clusterBy: ['rank', 'geo']
   },
-  tags: ['crux_ready']
+  tags: ['tech_report']
 }).preOps(ctx => `
 DELETE FROM ${ctx.self()}
 WHERE date = '${pastMonth}';
 `).query(ctx => `
-/* {"dataform_trigger": "report_cwv_tech_complete", "date": "${pastMonth}", "name": "adoption", "type": "report"} */
+/* {"dataform_trigger": "tech_report_complete", "date": "${pastMonth}", "name": "adoption", "type": "report"} */
 SELECT
   date,
-  app AS technology,
-  rank,
   geo,
+  rank,
+  technology,
+  version,
   STRUCT(
-    COALESCE(MAX(IF(client = 'desktop', origins, 0))) AS desktop,
-    COALESCE(MAX(IF(client = 'mobile', origins, 0))) AS mobile
+    MAX(IF(client = 'desktop', origins, 0)) AS desktop,
+    MAX(IF(client = 'mobile', origins, 0)) AS mobile
   ) AS adoption
-FROM ${ctx.ref('core_web_vitals', 'technologies')}
+FROM ${ctx.ref('reports', 'tech_crux')}
 WHERE date = '${pastMonth}'
 GROUP BY
   date,
-  app,
+  geo,
   rank,
-  geo
+  technology,
+  version
 `)
