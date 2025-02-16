@@ -6,6 +6,7 @@ publish('usage', {
     partitionBy: 'date',
     clusterBy: ['client', 'rank', 'feature']
   },
+  description: 'Used in https://lookerstudio.google.com/u/0/reporting/1M8kXOqPkwYNKjJhtag_nvDNJCpvmw_ri/page/tc5b, embedded in https://chromestatus.com/metrics/feature/timeline/popularity/2203',
   tags: ['crawl_complete', 'blink_report']
 }).preOps(ctx => `
 DELETE FROM ${ctx.self()}
