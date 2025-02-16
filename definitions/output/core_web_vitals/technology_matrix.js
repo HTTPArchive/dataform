@@ -6,8 +6,7 @@ publish('technology_matrix', {
     clusterBy: ['client', 't1']
   },
   description: 'Used in: https://lookerstudio.google.com/u/2/reporting/0ad64c8f-644a-40f9-93e4-0ccd5f72b33d',
-  tags: ['crawl_complete'],
-  dependOnDependencyAssertions: true
+  tags: ['crawl_complete']
 }).query(ctx => `
 WITH a AS (
   SELECT
