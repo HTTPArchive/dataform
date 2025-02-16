@@ -15,8 +15,7 @@ WITH pages AS (
   INNER JOIN pages.technologies AS tech
   WHERE
     date = '${pastMonth}'
-    ${constants.devRankFilter} AND
-    tech.technology IS NOT NULL
+    ${constants.devRankFilter}
 ),
 
 tech_origins AS (
@@ -78,7 +77,6 @@ SELECT
   NULL AS description,
   NULL AS category,
   NULL AS category_obj,
-  NULL AS similar_technologies,
   STRUCT(
     MAX(IF(client = 'desktop', origins, 0)) AS desktop,
     MAX(IF(client = 'mobile', origins, 0)) AS mobile
