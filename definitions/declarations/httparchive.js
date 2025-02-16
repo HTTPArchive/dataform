@@ -51,9 +51,8 @@ OPTIONS (
   job_type = 'QUERY')
 `)
 
-operate('drop_reservation_assignment', {
-  dependencies: ['requests_10k']
-})
+operate('drop_reservation_assignment')
+  .dependencies(['requests_10k'])
   .tags(['crawl_complete'])
   .queries(ctx => `
 DROP ASSIGNMENT IF EXISTS
