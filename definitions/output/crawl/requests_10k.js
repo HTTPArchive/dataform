@@ -1,6 +1,6 @@
 publish('requests_10k', {
   type: 'table',
-  schema: 'sample_data',
+  schema: 'crawl',
   bigquery: {
     partitionBy: 'date',
     clusterBy: ['client', 'is_root_page', 'is_main_document', 'type']
