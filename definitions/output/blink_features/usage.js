@@ -2,14 +2,36 @@ publish('usage', {
   schema: 'blink_features',
   type: 'incremental',
   protected: true,
+  bigquery: {
+    partitionBy: 'date',
+    clusterBy: ['client', 'rank', 'feature']
+  },
+  description: 'Used in https://lookerstudio.google.com/u/0/reporting/1M8kXOqPkwYNKjJhtag_nvDNJCpvmw_ri/page/tc5b, embedded in https://chromestatus.com/metrics/feature/timeline/popularity/2203',
   tags: ['crawl_complete', 'blink_report']
 }).preOps(ctx => `
 DELETE FROM ${ctx.self()}
-WHERE yyyymmdd = REPLACE('${constants.currentMonth}', '-', '');
+WHERE date = '${constants.currentMonth}';
 `).query(ctx => `
+WITH pages AS (
 SELECT
-  REPLACE(CAST(date AS STRING), '-', '') AS yyyymmdd,
+  date,
   client,
+  rank,
+  page,
+  features
+FROM ${ctx.ref('crawl', 'pages')}
+WHERE
+  date = '${constants.currentMonth}' AND
+  is_root_page = TRUE
+  ${constants.devRankFilter}
+), ranks AS (
+  SELECT DISTINCT rank FROM pages
+)
+
+SELECT
+  date,
+  client,
+  rank,
   id,
   feature,
   type,
@@ -19,20 +41,22 @@ SELECT
   sample_urls
 FROM (
   SELECT
-    yyyymmdd AS date,
+    date,
     client,
-    id,
-    feature,
-    type,
-    COUNT(DISTINCT url) AS num_urls,
-    ARRAY_AGG(url ORDER BY rank, url LIMIT 100) AS sample_urls
-  FROM ${ctx.ref('blink_features', 'features')}
-  WHERE
-    yyyymmdd = '${constants.currentMonth}'
-    ${constants.devRankFilter}
+    ranks.rank,
+    feature.id,
+    feature.feature,
+    feature.type,
+    COUNT(DISTINCT page) AS num_urls,
+    ARRAY_AGG(page ORDER BY pages.rank, page LIMIT 100) AS sample_urls
+  FROM pages
+  CROSS JOIN UNNEST(features) AS feature
+  FULL OUTER JOIN ranks
+  ON pages.rank <= ranks.rank
   GROUP BY
-    yyyymmdd,
+    date,
     client,
+    ranks.rank,
     id,
     feature,
     type
@@ -41,15 +65,15 @@ JOIN (
   SELECT
     date,
     client,
+    ranks.rank,
     COUNT(DISTINCT page) AS total_urls
-  FROM ${ctx.ref('crawl', 'pages')}
-  WHERE
-    date = '${constants.currentMonth}' AND
-    is_root_page = TRUE
-    ${constants.devRankFilter}
+  FROM pages
+  FULL OUTER JOIN ranks
+  ON pages.rank <= ranks.rank
   GROUP BY
     date,
-    client
+    client,
+    ranks.rank
 )
-USING (date, client)
+USING (date, client, rank)
 `)
