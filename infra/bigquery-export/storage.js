@@ -7,7 +7,6 @@ const storage = new Storage()
 export class StorageExport {
   constructor (bucket = 'httparchive') {
     this.bucket = bucket
-    this.storagePath = 'reports/dev/' // TODO change to prod
     this.stream = new Readable({
       objectMode: true,
       read () {}
@@ -15,8 +14,6 @@ export class StorageExport {
   }
 
   async exportToJson (data, fileName) {
-    fileName = this.storagePath + fileName + '.json'
-
     const bucket = storage.bucket(this.bucket)
     const file = bucket.file(fileName)
 

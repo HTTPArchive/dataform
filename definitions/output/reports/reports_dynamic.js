@@ -1,47 +1,66 @@
 const configs = new reports.HTTPArchiveReports()
 const metrics = configs.listMetrics()
 
+// Adjust start and end dates to update reports retrospectively
+const startDate = '2024-12-01' // constants.currentMonth;
+const endDate = '2024-12-01' // constants.currentMonth;
+
+const lenses = {
+  all: '',
+  top1k: 'AND rank <= 1000',
+  top10k: 'AND rank <= 10000',
+  top100k: 'AND rank <= 100000',
+  top1m: 'AND rank <= 1000000',
+  drupal: 'AND \'Drupal\' IN UNNEST(technologies.technology)',
+  magento: 'AND \'Magento\' IN UNNEST(technologies.technology)',
+  wordpress: 'AND \'WordPress\' IN UNNEST(technologies.technology)'
+}
+
 const iterations = []
+// dates
 for (
-  let month = constants.currentMonth; month >= constants.currentMonth; month = constants.fnPastMonth(month)) {
-  iterations.push({
-    date: month,
-    devRankFilter: constants.devRankFilter
+  let date = endDate;
+  date >= startDate;
+  date = constants.fnPastMonth(date)
+) {
+  // metrics
+  metrics.forEach(metric => {
+    // timeseries and histograms
+    metric.SQL.forEach(sql => {
+      // lenses
+      for (const [key, value] of Object.entries(lenses)) {
+        iterations.push({
+          date,
+          metric,
+          sql,
+          lens: { name: key, sql: value },
+          devRankFilter: constants.devRankFilter
+        })
+      }
+    })
   })
 }
 
-if (iterations.length === 1) {
-  const params = iterations[0]
-  metrics.forEach(metric => {
-    metric.SQL.forEach(sql => {
-      publish(metric.id + '_' + sql.type, {
-        type: 'incremental',
-        protected: true,
-        bigquery: sql.type === 'histogram' ? { partitionBy: 'date', clusterBy: ['client'] } : {},
-        schema: 'reports',
-        tags: ['crawl_complete', 'http_reports']
-      }).preOps(ctx => `
---DELETE FROM ${ctx.self()}
---WHERE date = '${params.date}';
-  `).query(ctx => `
-/* {"dataform_trigger": "report_complete", "date": "${params.date}", "name": "${metric.id}", "type": "${sql.type}"} */` +
-sql.query(ctx, params))
-    })
-  })
-} else {
-  iterations.forEach((params, i) => {
-    metrics.forEach(metric => {
-      metric.SQL.forEach(sql => {
-        operate(metric.id + '_' + sql.type + '_' + params.date, {
-          tags: ['crawl_complete']
-        }).queries(ctx => `
-DELETE FROM reports.${metric.id}_${sql.type}
+iterations.forEach((params, i) => {
+  operate(
+    params.metric.id + '_' + params.sql.type + '_' + params.lens.name + '_' + params.date)
+    .tags(['crawl_complete', 'reports'])
+    .queries(ctx => `
+CREATE TABLE IF NOT EXISTS reports.${params.sql.type} (
+  date DATE,
+  lens STRING,
+  metric STRING,
+  client STRING,
+  data JSON
+)
+PARTITION BY date
+CLUSTER BY client, lens;
+
+DELETE FROM reports.${params.sql.type}
 WHERE date = '${params.date}';
 
-/* {"dataform_trigger": "report_complete", "date": "${params.date}", "name": "${metric.id}", "type": "${sql.type}"} */
-INSERT INTO reports.${metric.id}_${sql.type}` +
-        sql.query(ctx, params))
-      })
-    })
-  })
-}
+/* {"dataform_trigger": "report_complete", "date": "${params.date}", "name": "${params.metric.id}", "type": "${params.sql.type}", "lense": "${params.lens.name}"} */
+INSERT INTO reports.${params.sql.type}` +
+params.sql.query(ctx, params)
+    )
+})

@@ -18,7 +18,7 @@ SELECT
 FROM reports.${metric}_timeseries
 `
     const rows = await this.bigquery.queryResults(query)
-    await this.storage.exportToJson(rows, metric)
+    await this.storage.exportToJson(rows, `${this.storagePath}${metric}.json`)
   }
 
   // Export monthly histogram report
@@ -39,6 +39,12 @@ WHERE date = '${date}'
     if (exportConfig.dataform_trigger !== 'report_complete') {
       console.error('Invalid dataform trigger')
       return
+    }
+
+    this.storagePath = 'reports/' + exportConfig.environment !== 'prod' ? 'dev/' : ''
+
+    if (exportConfig.lense && exportConfig.lense !== 'all') {
+      this.storagePath = this.storagePath + `${exportConfig.lense}/`
     }
 
     if (exportConfig.type === 'histogram') {
