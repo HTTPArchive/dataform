@@ -19,16 +19,6 @@ locals {
     // Reports
     "core_web_vitals",
     "reports",
-
-    // Legacy
-    "all",
-    "lighthouse",
-    "pages",
-    "requests",
-    "response_bodies",
-    "summary_pages",
-    "summary_requests",
-    "technologies",
   ]
 
   dataform_service_account_roles = [
