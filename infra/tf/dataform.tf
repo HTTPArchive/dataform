@@ -17,8 +17,11 @@ locals {
     "blink_features",
 
     // Reports
-    "core_web_vitals",
+    "core_web_vitals",  // TODO: Remove after tech report migration
     "reports",
+
+    // Service
+    "dataform_assertions",
   ]
 
   dataform_service_account_roles = [
