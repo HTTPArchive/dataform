@@ -19,10 +19,10 @@ resource "google_bigquery_dataset_iam_member" "cloud_function_dataset_reader_rol
 }
 
 resource "google_bigquery_connection" "procedures" {
-   connection_id = "procedures"
-   location      = "US"
-   spark {
-   }
+  connection_id = "procedures"
+  location      = "US"
+  spark {
+  }
 }
 
 resource "google_project_iam_member" "bigquery-functions-connector" {
