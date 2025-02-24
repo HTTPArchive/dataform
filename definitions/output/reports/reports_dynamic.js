@@ -23,9 +23,20 @@ if (iterations.length === 1) {
       }).preOps(ctx => `
 --DELETE FROM ${ctx.self()}
 --WHERE date = '${params.date}';
-  `).query(ctx => `
-/* {"dataform_trigger": "report_complete", "date": "${params.date}", "name": "${metric.id}", "type": "${sql.type}"} */` +
-sql.query(ctx, params))
+      `).query(
+        ctx => sql.query(ctx, params)
+      ).postOps(ctx => `
+SELECT
+  reports.run_export_job(
+    JSON '''{
+      "dataform_trigger": "report_complete",
+      "date": "${params.date}",
+      "name": "${metric.id}",
+      "type": "${sql.type}",
+      "environment": "${constants.environment}"
+    }'''
+  );
+      `)
     })
   })
 } else {
@@ -38,9 +49,19 @@ sql.query(ctx, params))
 DELETE FROM reports.${metric.id}_${sql.type}
 WHERE date = '${params.date}';
 
-/* {"dataform_trigger": "report_complete", "date": "${params.date}", "name": "${metric.id}", "type": "${sql.type}"} */
-INSERT INTO reports.${metric.id}_${sql.type}` +
-        sql.query(ctx, params))
+INSERT INTO reports.${metric.id}_${sql.type}` + sql.query(ctx, params)
+        ).postOps(ctx => `
+SELECT
+  reports.run_export_job(
+    JSON '''{
+      "dataform_trigger": "report_complete",
+      "date": "${params.date}",
+      "name": "${metric.id}",
+      "type": "${sql.type}",
+      "environment": "${constants.environment}"
+    }'''
+  );
+        `)
       })
     })
   })

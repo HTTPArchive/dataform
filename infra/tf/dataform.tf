@@ -17,7 +17,7 @@ locals {
     "blink_features",
 
     // Reports
-    "core_web_vitals",  // TODO: Remove after tech report migration
+    "core_web_vitals", // TODO: Remove after tech report migration
     "reports",
 
     // Service
