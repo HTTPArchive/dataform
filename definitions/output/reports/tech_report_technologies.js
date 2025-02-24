@@ -42,6 +42,7 @@ technologies AS (
   SELECT
     name AS technology,
     description,
+    icon,
     STRING_AGG(DISTINCT category, ', ' ORDER BY category ASC) AS category,
     categories AS category_obj
   FROM ${ctx.ref('wappalyzer', 'technologies')} AS technologies
@@ -49,7 +50,8 @@ technologies AS (
   GROUP BY
     technology,
     description,
-    categories
+    categories,
+    icon
 ),
 
 total_pages AS (
@@ -63,6 +65,7 @@ total_pages AS (
 SELECT
   technology,
   description,
+  icon,
   category,
   category_obj,
   origins
@@ -75,6 +78,7 @@ UNION ALL
 SELECT
   'ALL' AS technology,
   NULL AS description,
+  NULL AS icon,
   NULL AS category,
   NULL AS category_obj,
   STRUCT(
