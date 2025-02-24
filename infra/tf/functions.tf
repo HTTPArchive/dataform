@@ -25,7 +25,7 @@ resource "google_bigquery_connection" "procedures" {
    }
 }
 
-resource "google_project_iam_member" "bigquery-functions-identity" {
+resource "google_project_iam_member" "bigquery-functions-connector" {
   project = local.project
   role    = "roles/run.invoker"
   member  = "serviceAccount:bqcx-226352634162-1s4t@gcp-sa-bigquery-condel.iam.gserviceaccount.com"
