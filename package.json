@@ -2,7 +2,7 @@
   "name": "crawl-data",
   "author": "@max-ostapenko",
   "dependencies": {
-    "@dataform/core": "3.0.13"
+    "@dataform/core": "3.0.14"
   },
   "scripts": {
     "format": "npx standard --fix; npx markdownlint --ignore-path .gitignore --config package.json --configPointer /markdownlint . --fix; terraform -chdir=infra/tf fmt",
