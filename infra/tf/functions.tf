@@ -17,3 +17,16 @@ resource "google_bigquery_dataset_iam_member" "cloud_function_dataset_reader_rol
   role       = "roles/bigquery.dataViewer"
   member     = "serviceAccount:${local.function_identity}"
 }
+
+resource "google_bigquery_connection" "procedures" {
+  connection_id = "procedures"
+  location      = "US"
+  spark {
+  }
+}
+
+resource "google_project_iam_member" "bigquery-functions-connector" {
+  project = local.project
+  role    = "roles/run.invoker"
+  member  = "serviceAccount:bqcx-226352634162-1s4t@gcp-sa-bigquery-condel.iam.gserviceaccount.com"
+}
