@@ -29,12 +29,9 @@ async function callRunJob (payload = {}) {
 }
 
 function hasRequiredKeys (obj) {
-  const requiredKeys = ['dataform_trigger', 'name', 'type', 'environment']
-  if (obj.type === 'report') {
-    requiredKeys.push('date')
-  }
-
-  return requiredKeys.every(key => Object.hasOwn(obj, key))
+  const baseRequiredKeys = ['dataform_trigger', 'name', 'type', 'environment']
+  const requiredKeys = obj.type === 'report' ? [...baseRequiredKeys, 'date'] : baseRequiredKeys
+  return requiredKeys.every(key => key in obj)
 }
 
 /**
@@ -50,21 +47,22 @@ functions.http('dataform-export', async (req, res) => {
     if (!payload) {
       res.status(400).json({
         replies: [400],
-        errorMessage: 'Bad Request: no payload received'
+        errorMessage: 'Bad Request: no payload received, expected JSON object'
       })
     }
 
     if (!hasRequiredKeys(payload)) {
       res.status(400).json({
         replies: [400],
-        errorMessage: 'Bad Request: unexpected payload structure'
+        errorMessage: 'Bad Request: unexpected payload structure, required keys: dataform_trigger, name, type, environment, (optional)date'
       })
     }
 
     await callRunJob(payload)
 
     res.status(200).json({
-      replies: [200]
+      replies: [200],
+      message: 'Export job initialized'
     })
   } catch (error) {
     res.status(400).json({
