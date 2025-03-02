@@ -4,25 +4,13 @@ terraform {
   required_providers {
     archive = {
       source  = "hashicorp/archive"
-      version = "2.6.0"
+      version = ">= 2.6.0"
     }
     google = {
       source  = "hashicorp/google"
       version = ">= 6.13.0"
     }
   }
-}
-
-data "archive_file" "zip" {
-  type        = "zip"
-  source_dir  = "../${var.function_name}/"
-  output_path = "./tmp/${var.function_name}.zip"
-}
-
-resource "google_storage_bucket_object" "zource" {
-  bucket = "gcf-v2-uploads-${var.project_number}-${var.region}"
-  name   = "${var.function_name}_${data.archive_file.zip.id}.zip"
-  source = data.archive_file.zip.output_path
 }
 
 resource "google_cloud_run_v2_job" "bigquery_export" {

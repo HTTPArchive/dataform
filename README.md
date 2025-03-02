@@ -77,6 +77,7 @@ In order to unify the workflow triggering mechanism, we use [a Cloud Run functio
 ## Development Setup
 
 1. Install dependencies:
+
    ```bash
    npm install
    ```
@@ -88,6 +89,7 @@ In order to unify the workflow triggering mechanism, we use [a Cloud Run functio
 ## Code Quality
 
 This repository uses:
+
 - Standard.js for JavaScript code style
 - Markdownlint for markdown file formatting
 - Dataform's built-in compiler for SQL validation
