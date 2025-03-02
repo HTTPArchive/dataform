@@ -49,11 +49,11 @@ resource "google_cloudfunctions2_function" "dataform_export" {
 }
 
 resource "google_bigquery_routine" "run_export_job" {
-  dataset_id = "reports"
-  routine_id = "run_export_job"
-  routine_type = "SCALAR_FUNCTION"
+  dataset_id      = "reports"
+  routine_id      = "run_export_job"
+  routine_type    = "SCALAR_FUNCTION"
   definition_body = ""
-  description = <<EOT
+  description     = <<EOT
   Export data from Google BigQuery.
   Example payload JSON: {"dataform_trigger": "tech_report_complete", "date": "2025-01-01", "name": "adoption", "type": "report"}
   EOT

@@ -5,7 +5,7 @@
     "@dataform/core": "3.0.14"
   },
   "scripts": {
-    "format": "npx standard --fix; npx markdownlint --ignore-path .gitignore --config package.json --configPointer /markdownlint . --fix; terraform -chdir=infra/tf fmt",
+    "format": "npx standard --fix; npx markdownlint --ignore-path .gitignore --config package.json --configPointer /markdownlint . --fix; terraform -chdir=infra/tf fmt -recursive",
     "lint": "npx standard; npx markdownlint --ignore-path .gitignore --config package.json --configPointer /markdownlint .; dataform compile"
   },
   "standard": {

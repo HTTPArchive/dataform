@@ -7,7 +7,9 @@ FROM debian:12-slim
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Install utilities required by Spark scripts.
-RUN apt-get update && apt-get install -y procps tini libjemalloc2
+RUN apt-get update && apt-get install -y procps=\* tini=\* libjemalloc2=\* \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/*
 
 # Enable jemalloc2 as default memory allocator
 ENV LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libjemalloc.so.2
@@ -23,10 +25,10 @@ RUN bash Miniforge3-Linux-x86_64.sh -b -p /opt/miniforge3 \
   && ${CONDA_HOME}/bin/conda config --system --set channel_priority strict
 
 WORKDIR /app
-COPY . .
+COPY requirements.txt .
 
 # Install pip packages.
-RUN ${PYSPARK_PYTHON} -m pip install --no-cache-dir -r app/requirements.txt
+RUN ${PYSPARK_PYTHON} -m pip install --no-cache-dir -r requirements.txt
 
 # Create the 'spark' group/user.
 # The GID and UID must be 1099. Home directory is required.
