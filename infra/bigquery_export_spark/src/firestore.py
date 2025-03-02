@@ -1,6 +1,7 @@
 """This module processes Firestore documents from BigQuery using Spark."""
 
 import json
+
 from google.cloud import bigquery, firestore  # type: ignore
 from pyspark.sql import SparkSession  # type: ignore
 
@@ -19,11 +20,7 @@ class FirestoreBatch:
         self.spark = SparkSession.builder.appName(
             "FirestoreBatchProcessor"
         ).getOrCreate()
-        self.config = {
-            "date": "",
-            "collection_name": "",
-            "collection_type": ""
-        }
+        self.config = {"date": "", "collection_name": "", "collection_type": ""}
 
     def queue_batch(self, operation):
         """Queue a batch commit operation for Firestore."""
@@ -33,7 +30,9 @@ class FirestoreBatch:
             if operation == "delete":
                 batch.delete(doc.reference)
             elif operation == "set":
-                doc_ref = self.firestore.collection(self.config["collection_name"]).document()
+                doc_ref = self.firestore.collection(
+                    self.config["collection_name"]
+                ).document()
                 batch.set(doc_ref, doc)
             else:
                 raise ValueError("Invalid operation")
@@ -78,9 +77,7 @@ class FirestoreBatch:
             )
             query = collection_ref.where("date", "==", self.config["date"])
         elif self.config["collection_type"] == "dict":
-            print(
-                f"Deleting documents from {self.config['collection_name']}"
-            )
+            print(f"Deleting documents from {self.config['collection_name']}")
             query = collection_ref
         else:
             raise ValueError("Invalid collection type")
