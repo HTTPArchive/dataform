@@ -53,7 +53,10 @@ resource "google_bigquery_routine" "run_export_job" {
   routine_id = "run_export_job"
   routine_type = "SCALAR_FUNCTION"
   definition_body = ""
-  description = "Export data from Google BigQuery.\nExample payload JSON: {\"dataform_trigger\": \"tech_report_complete\", \"date\": \"${pastMonth}\", \"name\": \"adoption\", \"type\": \"report\"}"
+  description = <<EOT
+  Export data from Google BigQuery.
+  Example payload JSON: {"dataform_trigger": "tech_report_complete", "date": "2025-01-01", "name": "adoption", "type": "report"}
+  EOT
 
   arguments {
     name      = "payload"
@@ -62,8 +65,8 @@ resource "google_bigquery_routine" "run_export_job" {
   return_type = "{\"typeKind\" :  \"INT64\"}"
 
   remote_function_options {
-    endpoint          = google_cloudfunctions2_function.dataform_export.https_trigger_url
-    connection        = "${var.region}.remote-functions"
+    endpoint          = google_cloudfunctions2_function.dataform_export.service_config[0].uri
+    connection        = var.remote_functions_connection
     max_batching_rows = "1"
   }
 }
