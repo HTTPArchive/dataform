@@ -14,3 +14,6 @@ tf_apply:
 
 bigquery_export_deploy:
 	cd infra/bigquery-export && npm run buildpack
+
+bigquery_export_spark_deploy:
+	cd infra/bigquery_export_spark && gcloud builds submit --region=global --tag us-docker.pkg.dev/httparchive/bigquery-spark-procedures/firestore_export:latest
