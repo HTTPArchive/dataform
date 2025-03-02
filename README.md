@@ -78,18 +78,19 @@ In order to unify the workflow triggering mechanism, we use [a Cloud Run functio
 
 1. Install dependencies:
 
-   ```bash
-   npm install
-   ```
+    ```bash
+    npm install
+    ```
 
 2. Available Scripts:
-   - `npm run format` - Format code using Standard.js, fix markdown issues, and format Terraform files
-   - `npm run lint` - Run linting checks on JavaScript, markdown files, and compile Dataform configs
+
+    - `npm run format` - Format code using Standard.js, fix Markdown issues, and format Terraform files
+    - `npm run lint` - Run linting checks on JavaScript, Markdown files, and compile Dataform configs
 
 ## Code Quality
 
 This repository uses:
 
 - Standard.js for JavaScript code style
-- Markdownlint for markdown file formatting
+- Markdownlint for Markdown file formatting
 - Dataform's built-in compiler for SQL validation

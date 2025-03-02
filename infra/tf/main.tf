@@ -27,10 +27,8 @@ provider "google" {
 module "dataform_export" {
   source = "./dataform_export"
 
-  project           = local.project
   project_number    = local.project_number
   region            = local.region
-  location          = local.location
   function_identity = "cloud-function@httparchive.iam.gserviceaccount.com"
   function_name     = "dataform-export"
   remote_functions_connection  = google_bigquery_connection.remote-functions.id
@@ -50,7 +48,6 @@ module "bigquery_export" {
   source = "./bigquery_export"
 
   project           = local.project
-  project_number    = local.project_number
   region            = local.region
   location          = local.location
   function_identity = "cloud-function@httparchive.iam.gserviceaccount.com"
