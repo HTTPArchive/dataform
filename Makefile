@@ -11,3 +11,6 @@ tf_plan:
 
 tf_apply:
 	terraform -chdir=infra/tf init && terraform -chdir=infra/tf apply -auto-approve
+
+bigquery_export_deploy:
+	cd infra/bigquery-export && npm run buildpack

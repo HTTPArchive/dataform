@@ -35,3 +35,9 @@ resource "google_project_iam_member" "bigquery-remote-functions-connector" {
   role    = "roles/run.invoker"
   member  = "serviceAccount:${google_bigquery_connection.remote-functions.cloud_resource[0].service_account_id}"
 }
+
+resource "google_project_iam_member" "spark-procedures-connector" {
+  project = local.project
+  role    = "roles/artifactregistry.reader"
+  member  = "serviceAccount:${google_bigquery_connection.spark-procedures.spark[0].service_account_id}"
+}
