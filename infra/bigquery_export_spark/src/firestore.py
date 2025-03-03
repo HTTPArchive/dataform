@@ -1,18 +1,29 @@
 """This module processes Firestore documents from BigQuery using Spark."""
 
 import json
+import os
 
-from google.cloud import bigquery, firestore  # type: ignore
+from google.cloud import firestore  # type: ignore
 from pyspark.sql import SparkSession  # type: ignore
 
 
+PROJECT = "httparchive"
+
+
+# pylint: disable=too-many-instance-attributes
 class FirestoreBatch:
     """Handles Firestore data batching from BigQuery using Spark."""
 
-    def __init__(self):
+    def __init__(self, export_config):
         """Initialize FirestoreBatch with default settings."""
-        self.firestore = firestore.Client()
-        self.bigquery = bigquery.Client()
+        self.config = {
+            "collection_name": export_config["name"],
+            "date": getattr(export_config, "date", ""),
+            "collection_type": export_config["type"],
+        }
+        self.firestore = firestore.Client(
+            project=PROJECT, database=export_config["database"]
+        )
         self.batch_size = 500
         self.max_concurrent_batches = 200
         self.current_batch = []
@@ -20,7 +31,6 @@ class FirestoreBatch:
         self.spark = SparkSession.builder.appName(
             "FirestoreBatchProcessor"
         ).getOrCreate()
-        self.config = {"date": "", "collection_name": "", "collection_type": ""}
 
     def queue_batch(self, operation):
         """Queue a batch commit operation for Firestore."""
@@ -36,7 +46,6 @@ class FirestoreBatch:
                 batch.set(doc_ref, doc)
             else:
                 raise ValueError("Invalid operation")
-
         self.batch_promises.append(batch.commit())
         self.current_batch = []
 
@@ -75,16 +84,17 @@ class FirestoreBatch:
                 f"Deleting documents from {self.config['collection_name']} "
                 f"for date {self.config['date']}"
             )
-            query = collection_ref.where("date", "==", self.config["date"])
+            collection_query = collection_ref.where("date", "==", self.config["date"])
         elif self.config["collection_type"] == "dict":
             print(f"Deleting documents from {self.config['collection_name']}")
-            query = collection_ref
+            collection_query = collection_ref
         else:
             raise ValueError("Invalid collection type")
-
         while True:
             docs = list(
-                query.limit(self.batch_size * self.max_concurrent_batches).stream()
+                collection_query.limit(
+                    self.batch_size * self.max_concurrent_batches
+                ).stream()
             )
             if not docs:
                 break
@@ -105,13 +115,13 @@ class FirestoreBatch:
             f"Time: {duration} seconds"
         )
 
-    def stream_from_bigquery(self, query):
+    def stream_from_bigquery(self, query_str):
         """Stream data from BigQuery to Firestore."""
         print("Starting BigQuery to Firestore transfer...")
         start_time = self.spark.sparkContext.startTime
         total_rows_processed = 0
 
-        df = self.spark.read.format("bigquery").option("query", query).load()
+        df = self.spark.read.format("bigquery").option("query", query_str).load()
 
         for row in df.collect():
             self.current_batch.append(row.asDict())
@@ -132,21 +142,19 @@ class FirestoreBatch:
             f"seconds"
         )
 
-    def export(self):
+    def export(self, query_str):
         """Export data from BigQuery to Firestore."""
-        export_config = json.loads(
-            '{"name": "technologies", "type": "dict", "environment": "dev"}'
-        )
-        query = str(json.loads("SELECT * FROM report.tech_report_technologies"))
-
-        self.config["date"] = getattr(export_config, "date", "")
-        self.config["collection_name"] = export_config["name"]
-        self.config["collection_type"] = export_config["type"]
 
         self.batch_delete()
-        self.stream_from_bigquery(query)
+        self.stream_from_bigquery(query_str)
 
 
 if __name__ == "__main__":
-    processor = FirestoreBatch()
-    processor.export()
+    # config_data = json.loads('{"name": "technologies", "type": "dict", "environment": "dev"}')
+    # QUERY_STR = str(json.loads("SELECT * FROM report.tech_report_technologies"))
+
+    config_data = json.loads(os.environ["BIGQUERY_PROC_PARAM.export_config"])
+    QUERY_STR = str(json.loads(os.environ["BIGQUERY_PROC_PARAM.query"]))
+
+    processor = FirestoreBatch(config_data)
+    processor.export(QUERY_STR)

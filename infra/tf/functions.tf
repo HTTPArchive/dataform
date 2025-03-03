@@ -3,7 +3,7 @@ locals {
 }
 
 resource "google_project_iam_member" "project" {
-  for_each = toset(["roles/bigquery.jobUser", "roles/dataform.serviceAgent", "roles/run.invoker", "roles/run.jobsExecutorWithOverrides"])
+  for_each = toset(["roles/bigquery.user", "roles/dataform.serviceAgent", "roles/run.invoker", "roles/run.jobsExecutorWithOverrides", "roles/datastore.user", "roles/storage.objectAdmin"])
 
   project = local.project
   role    = each.value
@@ -37,7 +37,9 @@ resource "google_project_iam_member" "bigquery-remote-functions-connector" {
 }
 
 resource "google_project_iam_member" "spark-procedures-connector" {
+  for_each = toset(["roles/datastore.user", "roles/artifactregistry.reader", "roles/bigquery.user"])
+
   project = local.project
-  role    = "roles/artifactregistry.reader"
+  role    = each.value
   member  = "serviceAccount:${google_bigquery_connection.spark-procedures.spark[0].service_account_id}"
 }
