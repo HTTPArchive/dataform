@@ -47,7 +47,7 @@ Consumers:
 
 ### Triggering workflows
 
-In order to unify the workflow triggering mechanism, we use [a Cloud Run function](./src/README.md) that can be invoked in a number of ways (e.g. listen to PubSub messages), do intermediate checks and trigger the particular Dataform workflow execution configuration.
+In order to unify the workflow triggering mechanism, we use [a Cloud Run function](./infra/README.md) that can be invoked in a number of ways (e.g. listen to PubSub messages), do intermediate checks and trigger the particular Dataform workflow execution configuration.
 
 ## Contributing
 
@@ -59,5 +59,38 @@ In order to unify the workflow triggering mechanism, we use [a Cloud Run functio
 
 #### Workspace hints
 
-1. In `workflow_settings.yaml` set `env_name: dev` to process sampled data.
-2. In `includes/constants.js` set `today` or other variables to a custome value.
+1. In `workflow_settings.yaml` set `environment: dev` to process sampled data.
+2. For development and testing, you can modify variables in `includes/constants.js`, but note that these are programmatically generated.
+
+## Repository Structure
+
+- `definitions/` - Contains the core Dataform SQL definitions and declarations
+  - `output/` - Contains the main pipeline transformation logic
+  - `declarations/` - Contains referenced tables/views declarations and other resources definitions
+- `includes/` - Contains shared JavaScript utilities and constants
+- `infra/` - Infrastructure code and deployment configurations
+  - `dataform-trigger/` - Cloud Run function for workflow automation
+  - `tf/` - Terraform configurations
+  - `bigquery-export/` - BigQuery export configurations
+- `docs/` - Additional documentation
+
+## Development Setup
+
+1. Install dependencies:
+
+    ```bash
+    npm install
+    ```
+
+2. Available Scripts:
+
+    - `npm run format` - Format code using Standard.js, fix Markdown issues, and format Terraform files
+    - `npm run lint` - Run linting checks on JavaScript, Markdown files, and compile Dataform configs
+
+## Code Quality
+
+This repository uses:
+
+- Standard.js for JavaScript code style
+- Markdownlint for Markdown file formatting
+- Dataform's built-in compiler for SQL validation
