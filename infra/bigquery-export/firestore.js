@@ -126,12 +126,12 @@ export class FirestoreBatch {
   }
 
   async export (exportConfig, query) {
-    this.date = exportConfig.date
-    this.collectionName = exportConfig.name
-    this.collectionType = exportConfig.type
     this.firestore.settings({
-      databaseId: 'tech-report-apis-' + exportConfig.environment
+      databaseId: exportConfig.database
     })
+    this.collectionName = exportConfig.collection
+    this.collectionType = exportConfig.type
+    this.date = exportConfig.date
 
     await this.batchDelete()
 
