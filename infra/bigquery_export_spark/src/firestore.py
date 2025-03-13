@@ -21,9 +21,7 @@ class FirestoreBatch:
             "date": getattr(export_config, "date", ""),
             "collection_type": export_config["type"],
         }
-        self.firestore = firestore.Client(
-            project=PROJECT, database=DATABASE
-        )
+        self.firestore = firestore.Client(project=PROJECT, database=DATABASE)
         self.batch_size = 500
         self.max_concurrent_batches = 200
         self.current_batch = []
