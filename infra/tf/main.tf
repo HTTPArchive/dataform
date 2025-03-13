@@ -58,7 +58,7 @@ module "masthead" {
   source = "./masthead"
 
   project = local.project
-  # source = "./masthead-deployment/app"
+  # source = "https://github.com/Masthead-Data/masthead-deployment"
   # project_id = local.project
   # project_number = local.project_number
 }

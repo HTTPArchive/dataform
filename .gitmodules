@@ -1,3 +1,0 @@
-[submodule "infra/tf/masthead-deployment"]
-    path = infra/tf/masthead-deployment
-    url = https://github.com/Masthead-Data/masthead-deployment.git
