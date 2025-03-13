@@ -5,7 +5,6 @@ publish('tech_report_categories', {
   type: 'table',
   tags: ['tech_report']
 }).query(ctx => `
-/* {"dataform_trigger": "tech_report_complete", "name": "categories", "type": "dict"} */
 WITH pages AS (
   SELECT DISTINCT
     client,
@@ -91,4 +90,14 @@ FROM (
   FROM pages
   GROUP BY client
 )
+`).postOps(ctx => `
+  SELECT
+    reports.run_export_job(
+      JSON '''{
+        "dataform_trigger": "tech_report_complete",
+        "name": "categories",
+        "type": "dict",
+        "environment": "${constants.environment}"
+      }'''
+    );
 `)
