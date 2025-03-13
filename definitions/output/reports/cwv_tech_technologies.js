@@ -11,8 +11,8 @@ WITH pages AS (
     client,
     root_page,
     tech.technology
-  FROM ${ctx.ref('crawl', 'pages')},
-    UNNEST(technologies) AS tech
+  FROM ${ctx.ref('crawl', 'pages')} AS pages
+  INNER JOIN pages.technologies AS tech
   WHERE
     date = '${pastMonth}'
     ${constants.devRankFilter}
@@ -20,28 +20,38 @@ WITH pages AS (
 
 tech_origins AS (
   SELECT
-    client,
     technology,
-    COUNT(DISTINCT root_page) AS origins
-  FROM pages
-  GROUP BY
-    client,
-    technology
+    STRUCT(
+      MAX(IF(client = 'desktop', origins, 0)) AS desktop,
+      MAX(IF(client = 'mobile', origins, 0)) AS mobile
+    ) AS origins
+  FROM (
+    SELECT
+      client,
+      technology,
+      COUNT(DISTINCT root_page) AS origins
+    FROM pages
+    GROUP BY
+      client,
+      technology
+  )
+  GROUP BY technology
 ),
 
 technologies AS (
   SELECT
     name AS technology,
     description,
+    icon,
     STRING_AGG(DISTINCT category, ', ' ORDER BY category ASC) AS category,
-    categories AS category_obj,
-    NULL AS similar_technologies
-  FROM ${ctx.ref('wappalyzer', 'technologies')},
-    UNNEST(categories) AS category
+    categories AS category_obj
+  FROM ${ctx.ref('wappalyzer', 'technologies')} AS technologies
+  INNER JOIN technologies.categories AS category
   GROUP BY
     technology,
     description,
-    categories
+    categories,
+    icon
 ),
 
 total_pages AS (
@@ -53,12 +63,11 @@ total_pages AS (
 )
 
 SELECT
-  client,
   technology,
   description,
+  icon,
   category,
   category_obj,
-  similar_technologies,
   origins
 FROM tech_origins
 INNER JOIN technologies
@@ -67,12 +76,14 @@ USING(technology)
 UNION ALL
 
 SELECT
-  client,
   'ALL' AS technology,
   NULL AS description,
+  NULL AS icon,
   NULL AS category,
   NULL AS category_obj,
-  NULL AS similar_technologies,
-  origins
+  STRUCT(
+    MAX(IF(client = 'desktop', origins, 0)) AS desktop,
+    MAX(IF(client = 'mobile', origins, 0)) AS mobile
+  ) AS origins
 FROM total_pages
 `)
