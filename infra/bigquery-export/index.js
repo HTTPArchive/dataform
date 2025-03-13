@@ -1,34 +1,32 @@
-import { ReportsExporter, TechReportsExporter } from './reports.js'
+import { StorageUpload } from './storage.js'
+import { FirestoreBatch } from './firestore.js'
 
-const exportConfig = process.env.EXPORT_CONFIG && JSON.parse(process.env.EXPORT_CONFIG)
-
-async function main (exportConfig) {
-  if (!exportConfig) {
-    throw new Error('No config received')
+async function main () {
+  const { query, destination, config } = process.env.EXPORT_CONFIG && JSON.parse(process.env.EXPORT_CONFIG)
+  if (!destination) {
+    throw new Error('No destination found')
   }
 
-  const eventName = exportConfig.dataform_trigger
-  if (!eventName) {
-    throw new Error('No trigger name found')
-  }
+  if (destination === 'cloud_storage') {
+    console.info('Cloud Storage export')
+    console.log(query, config)
 
-  if (eventName === 'report_complete') {
-    console.info('Report export')
-    console.log(exportConfig)
-    const reports = new ReportsExporter()
-    await reports.export(exportConfig)
-  } else if (eventName === 'tech_report_complete') {
-    console.info('Tech Report export')
-    console.log(exportConfig)
-    const techReports = new TechReportsExporter()
-    await techReports.export(exportConfig)
+    const storage = new StorageUpload(config.bucket)
+    await storage.exportToJson(query, config.name)
+  } else if (destination === 'firestore') {
+    console.info('Firestore export')
+    console.log(query, config)
+
+    const firestore = new FirestoreBatch()
+    await firestore.export(config, query)
   } else {
-    throw new Error('Bad Request: unknown trigger name')
+    throw new Error('Bad Request: destination unknown')
   }
+  console.info('Export finished successfully')
   return 'OK'
 }
 
-await main(exportConfig).catch((error) => {
+await main().catch((error) => {
   console.error(error)
   process.exit(1)
 })
