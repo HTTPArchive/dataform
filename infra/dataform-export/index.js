@@ -29,8 +29,7 @@ async function callRunJob (payload = {}) {
 }
 
 function hasRequiredKeys (obj) {
-  const baseRequiredKeys = ['dataform_trigger', 'name', 'type', 'environment']
-  const requiredKeys = obj.type === 'report' ? [...baseRequiredKeys, 'date'] : baseRequiredKeys
+  const requiredKeys = ['destination', 'config', 'query']
   return requiredKeys.every(key => key in obj)
 }
 

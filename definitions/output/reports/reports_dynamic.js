@@ -29,11 +29,12 @@ if (iterations.length === 1) {
 SELECT
   reports.run_export_job(
     JSON '''{
-      "dataform_trigger": "report_complete",
-      "date": "${params.date}",
-      "name": "${metric.id}",
-      "type": "${sql.type}",
-      "environment": "${constants.environment}"
+      "destination": "cloud_storage",
+      "config": {
+        "bucket": "httparchive",
+        "name": "reports/${constants.environment}/${metric.id}_${sql.type}_${params.date}.json"
+      },
+      "query": "SELECT FORMAT_DATE('%Y_%m_%d', date) AS date, * EXCEPT(date) FROM ${ctx.self()}"
     }'''
   );
       `)
@@ -66,3 +67,6 @@ SELECT
     })
   })
 }
+
+// --"query": "SELECT * EXCEPT(date) FROM ${ctx.self()} WHERE date = '${params.date}'"
+// `${this.storagePath}${date.replaceAll('-', '_')}/${metric}.json`

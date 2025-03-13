@@ -89,10 +89,13 @@ FROM total_pages
   SELECT
     reports.run_export_job(
       JSON '''{
-        "dataform_trigger": "tech_report_complete",
-        "name": "technologies",
-        "type": "dict",
-        "environment": "${constants.environment}"
+        "destination": "firestore",
+        "config": {
+          "database": "tech-report-api-${constants.environment}"
+          "collection": "technologies",
+          "type": "dict"
+        },
+        "query": "SELECT * FROM ${ctx.self()}"
       }'''
     );
 `)
