@@ -51,7 +51,7 @@ technology_stats AS (
   SELECT
     technology,
     category_obj AS categories,
-    SUM(origins) AS total_origins
+    SUM(origins.mobile + origins.desktop) AS total_origins
   FROM ${ctx.ref('reports', 'tech_report_technologies')}
   GROUP BY
     technology,
