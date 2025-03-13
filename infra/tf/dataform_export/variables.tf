@@ -1,7 +1,3 @@
-variable "project" {
-  type = string
-}
-
 variable "project_number" {
   type = string
 }
@@ -15,5 +11,9 @@ variable "function_identity" {
 }
 
 variable "function_name" {
+  type = string
+}
+
+variable "remote_functions_connection" {
   type = string
 }
