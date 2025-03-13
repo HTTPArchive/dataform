@@ -23,9 +23,21 @@ if (iterations.length === 1) {
       }).preOps(ctx => `
 --DELETE FROM ${ctx.self()}
 --WHERE date = '${params.date}';
-  `).query(ctx => `
-/* {"dataform_trigger": "report_complete", "date": "${params.date}", "name": "${metric.id}", "type": "${sql.type}"} */` +
-sql.query(ctx, params))
+      `).query(
+        ctx => sql.query(ctx, params)
+      ).postOps(ctx => `
+SELECT
+  reports.run_export_job(
+    JSON '''{
+      "destination": "cloud_storage",
+      "config": {
+        "bucket": "httparchive",
+        "name": "reports/${constants.environment}/${metric.id}_${sql.type}_${params.date}.json"
+      },
+      "query": "SELECT FORMAT_DATE('%Y_%m_%d', date) AS date, * EXCEPT(date) FROM ${ctx.self()}"
+    }'''
+  );
+      `)
     })
   })
 } else {
@@ -38,10 +50,23 @@ sql.query(ctx, params))
 DELETE FROM reports.${metric.id}_${sql.type}
 WHERE date = '${params.date}';
 
-/* {"dataform_trigger": "report_complete", "date": "${params.date}", "name": "${metric.id}", "type": "${sql.type}"} */
-INSERT INTO reports.${metric.id}_${sql.type}` +
-        sql.query(ctx, params))
+INSERT INTO reports.${metric.id}_${sql.type}` + sql.query(ctx, params)
+        ).postOps(ctx => `
+SELECT
+  reports.run_export_job(
+    JSON '''{
+      "dataform_trigger": "report_complete",
+      "date": "${params.date}",
+      "name": "${metric.id}",
+      "type": "${sql.type}",
+      "environment": "${constants.environment}"
+    }'''
+  );
+        `)
       })
     })
   })
 }
+
+// --"query": "SELECT * EXCEPT(date) FROM ${ctx.self()} WHERE date = '${params.date}'"
+// `${this.storagePath}${date.replaceAll('-', '_')}/${metric}.json`
