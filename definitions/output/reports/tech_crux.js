@@ -360,7 +360,7 @@ other_summary AS (
 
     STRUCT(
       SAFE_CAST(APPROX_QUANTILES(accessibility, 1000)[OFFSET(500)] AS NUMERIC) AS accessibility,
-      SAFE_CAST(APPROX_QUANTILES(best_practices, 1000)[OFFSET(500)] AS NUMERIC) AS practices,
+      SAFE_CAST(APPROX_QUANTILES(best_practices, 1000)[OFFSET(500)] AS NUMERIC) AS best_practices,
       SAFE_CAST(APPROX_QUANTILES(performance, 1000)[OFFSET(500)] AS NUMERIC) AS performance,
       SAFE_CAST(APPROX_QUANTILES(seo, 1000)[OFFSET(500)] AS NUMERIC) AS seo
     ) AS median_lighthouse_score,

@@ -19,7 +19,7 @@ data "archive_file" "zip" {
   output_path = "./tmp/${var.function_name}.zip"
 }
 
-resource "google_storage_bucket_object" "zource" {
+resource "google_storage_bucket_object" "source" {
   bucket = "gcf-v2-uploads-${var.project_number}-${var.region}"
   name   = "${var.function_name}_${data.archive_file.zip.id}.zip"
   source = data.archive_file.zip.output_path

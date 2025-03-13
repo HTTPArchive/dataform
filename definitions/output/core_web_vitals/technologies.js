@@ -9,7 +9,7 @@ publish('technologies', {
     clusterBy: ['geo', 'app', 'rank', 'client'],
     requirePartitionFilter: true
   },
-  tags: ['crux_ready', 'tech_report'],
+  tags: ['crux_ready'],
   dependOnDependencyAssertions: true
 }).preOps(ctx => `
 DELETE FROM ${ctx.self()}

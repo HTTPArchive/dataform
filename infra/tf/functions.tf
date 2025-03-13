@@ -3,7 +3,7 @@ locals {
 }
 
 resource "google_project_iam_member" "project" {
-  for_each = toset(["roles/bigquery.jobUser", "roles/dataform.serviceAgent", "roles/run.invoker", "roles/run.jobsExecutorWithOverrides"])
+  for_each = toset(["roles/bigquery.jobUser", "roles/dataform.serviceAgent", "roles/run.invoker", "roles/run.jobsExecutorWithOverrides", "roles/datastore.user", "roles/storage.objectUser"])
 
   project = local.project
   role    = each.value
