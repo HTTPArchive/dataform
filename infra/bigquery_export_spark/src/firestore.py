@@ -6,8 +6,8 @@ import os
 from google.cloud import firestore  # type: ignore
 from pyspark.sql import SparkSession  # type: ignore
 
-
 PROJECT = "httparchive"
+DATABASE = "tech-report-api"
 
 
 # pylint: disable=too-many-instance-attributes
@@ -22,7 +22,7 @@ class FirestoreBatch:
             "collection_type": export_config["type"],
         }
         self.firestore = firestore.Client(
-            project=PROJECT, database=export_config["database"]
+            project=PROJECT, database=DATABASE
         )
         self.batch_size = 500
         self.max_concurrent_batches = 200
