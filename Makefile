@@ -11,4 +11,9 @@ tf_plan:
 
 tf_apply:
 	terraform -chdir=infra/tf init && terraform -chdir=infra/tf apply -auto-approve
-	cd infra/bigquery-export/ && npm install && npm run buildpack
+
+bigquery_export_deploy:
+	cd infra/bigquery-export && npm install && npm run buildpack
+
+bigquery_export_spark_deploy:
+	cd infra/bigquery_export_spark && gcloud builds submit --region=global --tag us-docker.pkg.dev/httparchive/bigquery-spark-procedures/firestore_export:latest

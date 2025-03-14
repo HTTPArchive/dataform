@@ -3,4 +3,4 @@ defaultLocation: US
 defaultAssertionDataset: dataform_assertions
 
 vars:
-  env_name: prod # MUST be equal 'prod' in main branch, enables processing sampled data
+  environment: prod # MUST be equal 'prod' in main branch, enables processing sampled data
