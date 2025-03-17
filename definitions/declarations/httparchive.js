@@ -30,6 +30,7 @@ GROUP BY
   date,
   client,
   tech
+HAVING cnt_pages > 20
 ORDER BY cnt_pages DESC
 `);
 
