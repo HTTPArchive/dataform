@@ -27,11 +27,11 @@ provider "google" {
 module "dataform_export" {
   source = "./dataform_export"
 
-  project           = local.project
-  project_number    = local.project_number
-  region            = local.region
-  function_identity = "cloud-function@httparchive.iam.gserviceaccount.com"
-  function_name     = "dataform-export"
+  project_number              = local.project_number
+  region                      = local.region
+  function_identity           = "cloud-function@httparchive.iam.gserviceaccount.com"
+  function_name               = "dataform-export"
+  remote_functions_connection = google_bigquery_connection.remote-functions.id
 }
 
 module "dataform_trigger" {
@@ -48,7 +48,6 @@ module "bigquery_export" {
   source = "./bigquery_export"
 
   project           = local.project
-  project_number    = local.project_number
   region            = local.region
   location          = local.location
   function_identity = "cloud-function@httparchive.iam.gserviceaccount.com"
@@ -59,4 +58,7 @@ module "masthead" {
   source = "./masthead"
 
   project = local.project
+  # source = "https://github.com/Masthead-Data/masthead-deployment"
+  # project_id = local.project
+  # project_number = local.project_number
 }
