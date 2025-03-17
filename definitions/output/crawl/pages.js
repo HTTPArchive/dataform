@@ -74,7 +74,8 @@ publish('pages', {
     technologies: 'Technologies detected at runtime (see https://www.wappalyzer.com/)',
     metadata: 'Additional metadata about the test'
   },
-  tags: ['crawl_complete']
+  tags: ['crawl_complete'],
+  dependOnDependencyAssertions: true
 }).preOps(ctx => `
 DELETE FROM ${ctx.self()}
 WHERE date = '${constants.currentMonth}' AND
