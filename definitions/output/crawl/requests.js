@@ -38,23 +38,27 @@ publish('requests', {
   },
   tags: ['crawl_complete']
 }).preOps(ctx => `
-FOR client_value IN (SELECT * FROM UNNEST(['desktop', 'mobile']) AS client) DO
-  FOR is_root_page_value IN (SELECT * FROM UNNEST([TRUE, FALSE]) AS is_root_page) DO
+FOR client_var IN (SELECT * FROM UNNEST(['desktop', 'mobile']) AS value) DO
+  FOR is_root_page_var IN (SELECT * FROM UNNEST([TRUE, FALSE]) AS value) DO
+    FOR rank_lt_50M_var IN (SELECT * FROM UNNEST([TRUE, FALSE]) AS value) DO
 
-    -- Delete old entries
-    DELETE FROM ${ctx.self()}
-    WHERE date = '${constants.currentMonth}'
-      AND client = client_value.client
-      AND is_root_page = is_root_page_value.is_root_page;
+      -- Delete old entries
+      DELETE FROM ${ctx.self()}
+      WHERE date = '${constants.currentMonth}' AND
+        client = client_var.value AND
+        is_root_page = is_root_page_var.value AND
+        (rank < 50000000) = rank_lt_50M_var.value;
 
-    -- Insert new entries
-    INSERT INTO ${ctx.self()}
-    SELECT *
-    FROM ${ctx.ref('crawl_staging', 'requests')}
-    WHERE date = '${constants.currentMonth}' AND
-      client = client_value.client AND
-      is_root_page = is_root_page_value.is_root_page ${constants.devRankFilter};
+      -- Insert new entries
+      INSERT INTO ${ctx.self()}
+      SELECT *
+      FROM ${ctx.ref('crawl_staging', 'requests')}
+      WHERE date = '${constants.currentMonth}' AND
+        client = client_var.value AND
+        is_root_page = is_root_page_var.value AND
+        (rank < 50000000) = rank_lt_50M_var.value ${constants.devRankFilter};
 
+    END FOR;
   END FOR;
 END FOR;
 `).query(ctx => `
