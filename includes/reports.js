@@ -7,6 +7,18 @@ const config = {
         {
           type: 'histogram',
           query: DataformTemplateBuilder.create((ctx, params) => `
+WITH pages AS (
+  SELECT
+    date,
+    client,
+    CAST(FLOOR(INT64(summary.bytesTotal) / 1024 / 100) * 100 AS INT64) AS bin
+  FROM crawl.pages
+  WHERE
+    date = '${params.date}' ${params.lens.sql} AND
+    is_root_page AND
+    INT64(summary.bytesTotal) > 0
+)
+
 SELECT
   *,
   SUM(pdf) OVER (PARTITION BY client ORDER BY bin) AS cdf
@@ -16,13 +28,9 @@ FROM (
     volume / SUM(volume) OVER (PARTITION BY client) AS pdf
   FROM (
     SELECT
-      date,
-      client,
-      CAST(FLOOR(INT64(summary.bytesTotal) / 1024 / 100) * 100 AS INT64) AS bin,
+      *,
       COUNT(0) AS volume
-    FROM ${ctx.ref('crawl', 'pages')}
-    WHERE
-      date = '${params.date}' ${params.devRankFilter}
+    FROM pages
     GROUP BY
       date,
       client,
@@ -30,11 +38,27 @@ FROM (
     HAVING bin IS NOT NULL
   )
 )
+ORDER BY
+  date,
+  bin,
+  client
 `)
         },
         {
           type: 'timeseries',
           query: DataformTemplateBuilder.create((ctx, params) => `
+WITH pages AS (
+  SELECT
+    date,
+    client,
+    INT64(summary.bytesTotal) AS bytesTotal
+  FROM crawl.pages
+  WHERE
+    date = '${params.date}' $ ${params.lens.sql} AND
+    is_root_page AND
+    INT64(summary.bytesTotal) > 0
+)
+
 SELECT
   date,
   client,
@@ -44,16 +68,7 @@ SELECT
   ROUND(APPROX_QUANTILES(bytesTotal, 1001)[OFFSET(501)] / 1024, 2) AS p50,
   ROUND(APPROX_QUANTILES(bytesTotal, 1001)[OFFSET(751)] / 1024, 2) AS p75,
   ROUND(APPROX_QUANTILES(bytesTotal, 1001)[OFFSET(901)] / 1024, 2) AS p90
-FROM (
-  SELECT
-    date,
-    client,
-    INT64(summary.bytesTotal) AS bytesTotal
-  FROM ${ctx.ref('crawl', 'pages')}
-  WHERE
-    date = '${params.date}' ${params.devRankFilter} AND
-    INT64(summary.bytesTotal) > 0
-)
+FROM pages
 GROUP BY
   date,
   client,
