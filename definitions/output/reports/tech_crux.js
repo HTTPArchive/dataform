@@ -96,8 +96,7 @@ geo_summary AS (
     large_cls
   FROM ${ctx.ref('chrome-ux-report', 'materialized', 'country_summary')}
   WHERE
-    yyyymm = CAST(FORMAT_DATE('%Y%m', '${pastMonth}') AS INT64) AND
-    device IN ('desktop', 'phone')
+    yyyymm = CAST(FORMAT_DATE('%Y%m', '${pastMonth}') AS INT64)
 
   UNION ALL
 
@@ -126,8 +125,7 @@ geo_summary AS (
     large_cls
   FROM ${ctx.ref('chrome-ux-report', 'materialized', 'device_summary')}
   WHERE
-    date = '${pastMonth}' AND
-    device IN ('desktop', 'phone')
+    date = '${pastMonth}'
 ),
 
 crux AS (
@@ -142,7 +140,7 @@ crux AS (
       WHEN 1000 THEN 'Top 1k'
     END AS rank,
     CONCAT(origin, '/') AS root_page,
-    IF(device = 'desktop', 'desktop', 'mobile') AS client,
+    IF(device != 'desktop', 'mobile', device) AS client,
 
     # CWV
     IS_NON_ZERO(fast_fid, avg_fid, slow_fid) AS any_fid,
@@ -270,14 +268,14 @@ lab_metrics AS (
 origins_summary AS (
   SELECT
     geo,
-    client,
+    l.client,
     rank,
     technology,
     version,
-    COUNT(DISTINCT root_page) AS origins
-  FROM lab_metrics
-  INNER JOIN crux
-  USING (client, root_page)
+    COUNT(DISTINCT l.root_page) AS origins
+  FROM lab_metrics l
+  INNER JOIN crux c
+  ON (l.client = IFNULL(c.client, l.client) AND l.root_page = c.root_page)
   GROUP BY
     geo,
     client,
@@ -303,16 +301,16 @@ audits_summary AS (
   FROM (
     SELECT
       geo,
-      client,
+      a.client,
       rank,
       technology,
       version,
       audit_category,
       audit_id,
-      COUNT(DISTINCT root_page) AS origins
-    FROM audits
-    INNER JOIN crux
-    USING (client, root_page)
+      COUNT(DISTINCT a.root_page) AS origins
+    FROM audits a
+    INNER JOIN crux c
+    ON (a.client = IFNULL(c.client, a.client) AND a.root_page = c.root_page)
     GROUP BY
       geo,
       client,
@@ -335,7 +333,7 @@ audits_summary AS (
 other_summary AS (
   SELECT
     geo,
-    client,
+    l.client,
     rank,
     technology,
     version,
@@ -371,9 +369,9 @@ other_summary AS (
       SAFE_CAST(APPROX_QUANTILES(bytesImg, 1000)[OFFSET(500)] AS INT64) AS images
     ) AS median_page_weight_bytes
 
-  FROM lab_metrics
-  INNER JOIN crux
-  USING (client, root_page)
+  FROM lab_metrics l
+  INNER JOIN crux c
+  ON (l.client = IFNULL(c.client, l.client) AND l.root_page = c.root_page)
   GROUP BY
     geo,
     client,
