@@ -1,3 +1,30 @@
+// See https://github.com/HTTPArchive/dataform/issues/43
+assert('corrupted_technology_values')
+  .tags(['crawl_complete'])
+  .query(ctx => `
+SELECT
+  date,
+  client,
+  tech,
+  COUNT(DISTINCT page) AS cnt_pages,
+  ARRAY_AGG(DISTINCT page LIMIT 3) AS sample_pages
+FROM ${ctx.ref('crawl_staging', 'pages')} AS pages
+LEFT JOIN pages.technologies AS tech
+LEFT JOIN tech.categories AS category
+WHERE
+  date = '${constants.currentMonth}' AND
+  (
+    tech.technology NOT IN (SELECT DISTINCT name FROM wappalyzer.technologies)
+    OR category NOT IN (SELECT DISTINCT name FROM wappalyzer.categories)
+    OR ARRAY_LENGTH(tech.categories) = 0
+  )
+GROUP BY
+  date,
+  client,
+  tech
+ORDER BY cnt_pages DESC
+  `)
+
 publish('pages', {
   type: 'incremental',
   protected: true,
@@ -47,7 +74,8 @@ publish('pages', {
     technologies: 'Technologies detected at runtime (see https://www.wappalyzer.com/)',
     metadata: 'Additional metadata about the test'
   },
-  tags: ['crawl_complete']
+  tags: ['crawl_complete'],
+  dependOnDependencyAssertions: true
 }).preOps(ctx => `
 DELETE FROM ${ctx.self()}
 WHERE date = '${constants.currentMonth}' AND
