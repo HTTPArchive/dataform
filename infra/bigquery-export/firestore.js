@@ -125,7 +125,7 @@ export class FirestoreBatch {
     console.info(`Transfer to ${this.collectionName} complete. Total rows processed: ${totalRowsProcessed}. Time: ${duration} seconds`)
   }
 
-  async export (exportConfig, query) {
+  async export (query, exportConfig) {
     this.firestore.settings({
       databaseId: exportConfig.database
     })

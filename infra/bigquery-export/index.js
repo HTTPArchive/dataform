@@ -18,7 +18,7 @@ async function main () {
     console.log(query, config)
 
     const firestore = new FirestoreBatch()
-    await firestore.export(config, query)
+    await firestore.export(query, config)
   } else {
     throw new Error('Bad Request: destination unknown')
   }
