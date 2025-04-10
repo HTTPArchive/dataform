@@ -13,7 +13,6 @@ publish('tech_report_adoption', {
 DELETE FROM ${ctx.self()}
 WHERE date = '${pastMonth}';
 `).query(ctx => `
-/* {"dataform_trigger": "tech_report_complete", "date": "${pastMonth}", "name": "adoption", "type": "report"} */
 SELECT
   date,
   geo,
@@ -32,4 +31,15 @@ GROUP BY
   rank,
   technology,
   version
+`).postOps(ctx => `
+  SELECT
+    reports.run_export_job(
+      JSON '''{
+        "dataform_trigger": "tech_report_complete",
+        "date": "${pastMonth}",
+        "name": "adoption",
+        "type": "report",
+        "environment": "${constants.environment}"
+      }'''
+    );
 `)

@@ -52,22 +52,18 @@ resource "google_project_iam_member" "masthead_pubsub_publisherer_member" {
 resource "google_project_iam_custom_role" "masthead_bq_meta_reader" {
   project     = var.project
   description = "Masthead BigQuery assets metadata reader"
-  permissions = ["bigquery.datasets.get", "bigquery.tables.get", "bigquery.tables.list"]
+  permissions = ["bigquery.datasets.get", "bigquery.tables.get", "bigquery.tables.list", "bigquery.routines.get", "bigquery.routines.list"]
   role_id     = "masthead_bq_meta_reader"
   stage       = "GA"
   title       = "masthead_bq_meta_reader"
 }
 
-resource "google_project_iam_binding" "masthead_bq_meta_reader_binding" {
-  role    = google_project_iam_custom_role.masthead_bq_meta_reader.id
-  members = ["serviceAccount:masthead-data@masthead-prod.iam.gserviceaccount.com"]
-  project = var.project
-}
-
 resource "google_project_iam_member" "masthead_pubsub_subscriber_member" {
-  role    = "roles/pubsub.subscriber"
-  member  = "serviceAccount:masthead-data@masthead-prod.iam.gserviceaccount.com"
+  for_each = toset(["roles/bigquery.metadataViewer", "roles/bigquery.resourceViewer", "roles/pubsub.subscriber"])
+
   project = var.project
+  role    = each.value
+  member  = "serviceAccount:masthead-data@masthead-prod.iam.gserviceaccount.com"
 }
 
 # 4. Grant Masthead Service Account to quickly onboard from retrospective data

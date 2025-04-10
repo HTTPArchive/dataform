@@ -1,21 +1,22 @@
 import { Storage } from '@google-cloud/storage'
+import { BigQueryExport } from './bigquery.js'
 import { Readable } from 'stream'
 import zlib from 'zlib'
 
+const bigquery = new BigQueryExport()
 const storage = new Storage()
 
-export class StorageExport {
-  constructor (bucket = 'httparchive') {
+export class StorageUpload {
+  constructor (bucket) {
     this.bucket = bucket
-    this.storagePath = 'reports/dev/' // TODO change to prod
     this.stream = new Readable({
       objectMode: true,
       read () {}
     })
   }
 
-  async exportToJson (data, fileName) {
-    fileName = this.storagePath + fileName + '.json'
+  async exportToJson (query, fileName) {
+    const data = await bigquery.queryResults(query)
 
     const bucket = storage.bucket(this.bucket)
     const file = bucket.file(fileName)
