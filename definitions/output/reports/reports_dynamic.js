@@ -1,12 +1,43 @@
 const configs = new reports.HTTPArchiveReports()
 const metrics = configs.listMetrics()
 
+const bucket = 'httparchive'
+const storagePath = '/reports/'
+
+function generateExportQuery(metric, sql, params, ctx) {
+  if (sql.type === 'histogram') {
+    return `
+SELECT
+  * EXCEPT(date)
+FROM ${ctx.self()}
+WHERE date = '${params.date}'
+`
+  } else if (sql.type === 'timeseries') {
+    return `
+SELECT
+  FORMAT_DATE('%Y_%m_%d', date) AS date,
+  * EXCEPT(date)
+FROM reports.${metric}_timeseries
+  `} else {
+    throw new Error('Unknown SQL type')
+  }
+}
+
+function generateExportPath(metric, sql, params) {
+  if (sql.type === 'histogram') {
+    return `${storagePath}${params.date.replaceAll('-', '_')}/${metric}.json`
+  } else if (sql.type === 'timeseries') {
+    return `${storagePath}${metric}.json`
+  } else {
+    throw new Error('Unknown SQL type')
+  }
+}
+
 const iterations = []
 for (
-  let month = constants.currentMonth; month >= constants.currentMonth; month = constants.fnPastMonth(month)) {
+  let date = constants.currentMonth; month >= constants.currentMonth; month = constants.fnPastMonth(month)) {
   iterations.push({
-    date: month,
-    devRankFilter: constants.devRankFilter
+    date: date
   })
 }
 
@@ -31,10 +62,10 @@ SELECT
     JSON '''{
       "destination": "cloud_storage",
       "config": {
-        "bucket": "httparchive",
-        "name": "reports/${constants.environment}/${metric.id}_${sql.type}_${params.date}.json"
+        "bucket": "${bucket}",
+        "name": "${generateExportPath(metric, sql, params)}"
       },
-      "query": "SELECT FORMAT_DATE('%Y_%m_%d', date) AS date, * EXCEPT(date) FROM ${ctx.self()}"
+      "query": "${generateExportQuery(metric, sql, params, ctx)}"}
     }'''
   );
       `)
@@ -57,10 +88,10 @@ INSERT INTO reports.${metric.id}_${sql.type}` + sql.query(ctx, params)
     JSON '''{
       "destination": "cloud_storage",
       "config": {
-        "bucket": "httparchive",
-        "name": "reports/${constants.environment}/${metric.id}_${sql.type}_${params.date}.json"
+        "bucket": "${bucket}",
+        "name": "${generateExportPath(metric, sql, params)}"
       },
-      "query": "SELECT FORMAT_DATE('%Y_%m_%d', date) AS date, * EXCEPT(date) FROM ${ctx.self()}"
+      "query": "${generateExportQuery(metric, sql, params, ctx)}"}
     }'''
   );
         `)
@@ -68,6 +99,3 @@ INSERT INTO reports.${metric.id}_${sql.type}` + sql.query(ctx, params)
     })
   })
 }
-
-// --"query": "SELECT * EXCEPT(date) FROM ${ctx.self()} WHERE date = '${params.date}'"
-// `${this.storagePath}${date.replaceAll('-', '_')}/${metric}.json`
