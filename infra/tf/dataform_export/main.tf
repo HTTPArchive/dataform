@@ -54,9 +54,19 @@ resource "google_bigquery_routine" "run_export_job" {
   routine_type    = "SCALAR_FUNCTION"
   definition_body = ""
   description     = <<EOT
-  Export data from Google BigQuery.
-  Example payload JSON: {"dataform_trigger": "tech_report_complete", "date": "2025-01-01", "name": "adoption", "type": "report"}
-  EOT
+Export data from Google BigQuery.
+Example payload JSON:
+  {
+    "destination": "firestore",
+    "config": {
+      "databaseId": "tech-report-api-dev",
+      "collectionName": "adoption",
+      "collectionType": "report",
+      "date": "2025-01-01"
+    },
+    "query": "SELECT STRING(date) AS date, * EXCEPT(date) FROM reports.tech_report_adoption WHERE date = '2025-01-01'"
+  }
+EOT
 
   arguments {
     name      = "payload"
