@@ -19,7 +19,7 @@ if (iterations.length === 1) {
         protected: true,
         bigquery: sql.type === 'histogram' ? { partitionBy: 'date', clusterBy: ['client'] } : {},
         schema: 'reports',
-        tags: ['crawl_complete', 'http_reports']
+        //tags: ['crawl_complete', 'http_reports']
       }).preOps(ctx => `
 --DELETE FROM ${ctx.self()}
 --WHERE date = '${params.date}';
@@ -45,21 +45,22 @@ SELECT
     metrics.forEach(metric => {
       metric.SQL.forEach(sql => {
         operate(metric.id + '_' + sql.type + '_' + params.date, {
-          tags: ['crawl_complete']
+          //tags: ['crawl_complete']
         }).queries(ctx => `
 DELETE FROM reports.${metric.id}_${sql.type}
 WHERE date = '${params.date}';
 
 INSERT INTO reports.${metric.id}_${sql.type}` + sql.query(ctx, params)
         ).postOps(ctx => `
-SELECT
+  SELECT
   reports.run_export_job(
     JSON '''{
-      "dataform_trigger": "report_complete",
-      "date": "${params.date}",
-      "name": "${metric.id}",
-      "type": "${sql.type}",
-      "environment": "${constants.environment}"
+      "destination": "cloud_storage",
+      "config": {
+        "bucket": "httparchive",
+        "name": "reports/${constants.environment}/${metric.id}_${sql.type}_${params.date}.json"
+      },
+      "query": "SELECT FORMAT_DATE('%Y_%m_%d', date) AS date, * EXCEPT(date) FROM ${ctx.self()}"
     }'''
   );
         `)
