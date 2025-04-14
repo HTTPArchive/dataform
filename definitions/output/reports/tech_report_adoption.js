@@ -32,14 +32,17 @@ GROUP BY
   technology,
   version
 `).postOps(ctx => `
-  SELECT
-    reports.run_export_job(
-      JSON '''{
-        "dataform_trigger": "tech_report_complete",
-        "date": "${pastMonth}",
-        "name": "adoption",
-        "type": "report",
-        "environment": "${constants.environment}"
-      }'''
-    );
+SELECT
+  reports.run_export_job(
+    JSON '''{
+      "destination": "firestore",
+      "config": {
+        "databaseId": "tech-report-api-{constants.environment}",
+        "collectionName": "adoption",
+        "collectionType": "report",
+        "date": "${pastMonth}"
+      },
+      "query": "SELECT STRING(date) AS date, * EXCEPT(date) FROM ${ctx.self()} WHERE date = '${pastMonth}'"
+    }'''
+  );
 `)

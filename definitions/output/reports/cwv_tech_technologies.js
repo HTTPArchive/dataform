@@ -5,7 +5,6 @@ publish('cwv_tech_technologies', {
   type: 'table',
   tags: ['crux_ready']
 }).query(ctx => `
-/* {"dataform_trigger": "report_cwv_tech_complete", "name": "technologies", "type": "dict"} */
 WITH pages AS (
   SELECT DISTINCT
     client,
@@ -86,4 +85,17 @@ SELECT
     MAX(IF(client = 'mobile', origins, 0)) AS mobile
   ) AS origins
 FROM total_pages
-`)
+`).postOps(ctx => `
+  SELECT
+    reports.run_export_job(
+      JSON '''{
+        "destination": "firestore",
+        "config": {
+          "databaseId": "tech-report-apis-{constants.environment}",
+          "collectionName": "technologies",
+          "collectionType": "dict"
+        },
+        "query": "SELECT * FROM ${ctx.self()}"
+      }'''
+    );
+  `)

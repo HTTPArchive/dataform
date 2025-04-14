@@ -94,10 +94,13 @@ FROM (
   SELECT
     reports.run_export_job(
       JSON '''{
-        "dataform_trigger": "tech_report_complete",
-        "name": "categories",
-        "type": "dict",
-        "environment": "${constants.environment}"
+        "destination": "firestore",
+        "config": {
+          "databaseId": "tech-report-api-{constants.environment}",
+          "collectionName": "categories",
+          "collectionType": "dict"
+        },
+        "query": "SELECT * FROM ${ctx.self()}"
       }'''
     );
-`)
+  `)

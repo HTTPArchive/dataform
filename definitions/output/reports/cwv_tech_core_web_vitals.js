@@ -68,7 +68,6 @@ return Object.values(vitals)
 DELETE FROM ${ctx.self()}
 WHERE date = '${pastMonth}';
 `).query(ctx => `
-/* {"dataform_trigger": "report_cwv_tech_complete", "date": "${pastMonth}", "name": "core_web_vitals", "type": "report"} */
 SELECT
   date,
   app AS technology,
@@ -98,4 +97,18 @@ GROUP BY
   app,
   rank,
   geo
-`)
+`).postOps(ctx => `
+  SELECT
+    reports.run_export_job(
+      JSON '''{
+        "destination": "firestore",
+        "config": {
+          "databaseId": "tech-report-apis-{constants.environment}",
+          "collectionName": "core_web_vitals",
+          "collectionType": "report",
+          "date": "${pastMonth}"
+        },
+        "query": "SELECT STRING(date) AS date, * EXCEPT(date) FROM ${ctx.self()} WHERE date = '${pastMonth}'"
+      }'''
+    );
+  `)

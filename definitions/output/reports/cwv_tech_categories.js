@@ -5,7 +5,6 @@ publish('cwv_tech_categories', {
   type: 'table',
   tags: ['crux_ready']
 }).query(ctx => `
-/* {"dataform_trigger": "report_cwv_tech_complete", "name": "categories", "type": "dict"} */
 WITH pages AS (
   SELECT DISTINCT
     client,
@@ -91,4 +90,18 @@ SELECT
   ) AS origins,
   NULL AS technologies
 FROM total_pages
-`)
+`).postOps(ctx => `
+  SELECT
+    reports.run_export_job(
+      JSON '''{
+        "destination": "firestore",
+        "config": {
+          "databaseId": "tech-report-apis-{constants.environment}",
+          "collectionName": "categories",
+          "collectionType": "dict"
+        },
+        "query": "SELECT * FROM ${ctx.self()}"
+      }'''
+    );
+  `)
+

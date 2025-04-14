@@ -64,10 +64,13 @@ FROM total_origins
   SELECT
     reports.run_export_job(
       JSON '''{
-        "dataform_trigger": "tech_report_complete",
-        "name": "versions",
-        "type": "dict",
-        "environment": "${constants.environment}"
+        "destination": "firestore",
+        "config": {
+          "databaseId": "tech-report-api-{constants.environment}",
+          "collectionName": "versions",
+          "collectionType": "dict"
+        },
+        "query": "SELECT * FROM ${ctx.self()}"
       }'''
     );
-`)
+  `)

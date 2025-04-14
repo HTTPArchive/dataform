@@ -103,11 +103,14 @@ GROUP BY
   SELECT
     reports.run_export_job(
       JSON '''{
-        "dataform_trigger": "tech_report_complete",
-        "date": "${pastMonth}",
-        "name": "core_web_vitals",
-        "type": "report",
-        "environment": "${constants.environment}"
+        "destination": "firestore",
+        "config": {
+          "databaseId": "tech-report-api-{constants.environment}",
+          "collectionName": "core_web_vitals",
+          "collectionType": "report",
+          "date": "${pastMonth}"
+        },
+        "query": "SELECT STRING(date) AS date, * EXCEPT(date) FROM ${ctx.self()} WHERE date = '${pastMonth}'"
       }'''
     );
-`)
+  `)
