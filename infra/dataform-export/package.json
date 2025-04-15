@@ -6,7 +6,7 @@
   "type": "module",
   "dependencies": {
     "@google-cloud/functions-framework": "3.5.1",
-    "@google-cloud/run": "1.5.0"
+    "@google-cloud/run": "2.0.1"
   },
   "scripts": {
     "start": "npx functions-framework --target=dataform-export --signature-type=http --debug"
