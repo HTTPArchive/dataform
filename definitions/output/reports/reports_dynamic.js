@@ -12,17 +12,19 @@ SELECT
   * EXCEPT(date)
 FROM ${ctx.self()}
 WHERE date = '${params.date}'
-`} else if (sql.type === 'timeseries') {
+`
+  } else if (sql.type === 'timeseries') {
     query = `
 SELECT
   FORMAT_DATE('%Y_%m_%d', date) AS date,
   * EXCEPT(date)
 FROM ${ctx.self()}
-`} else {
+`
+  } else {
     throw new Error('Unknown SQL type')
   }
 
-  const queryOutput = query.replace(/[\r\n]+/g, ' ');
+  const queryOutput = query.replace(/[\r\n]+/g, ' ')
   return queryOutput
 }
 
