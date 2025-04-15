@@ -91,9 +91,9 @@ FROM total_pages
       JSON '''{
         "destination": "firestore",
         "config": {
-          "databaseId": "tech-report-api-${constants.environment}",
-          "collectionName": "technologies",
-          "collectionType": "dict"
+          "database": "tech-report-api-${constants.environment}",
+          "collection": "technologies",
+          "type": "dict"
         },
         "query": "SELECT * FROM ${ctx.self()}"
       }'''

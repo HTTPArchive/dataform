@@ -66,9 +66,9 @@ FROM total_origins
       JSON '''{
         "destination": "firestore",
         "config": {
-          "databaseId": "tech-report-api-${constants.environment}",
-          "collectionName": "versions",
-          "collectionType": "dict"
+          "database": "tech-report-api-${constants.environment}",
+          "collection": "versions",
+          "type": "dict"
         },
         "query": "SELECT * FROM ${ctx.self()}"
       }'''

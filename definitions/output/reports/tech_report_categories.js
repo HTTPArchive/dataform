@@ -96,9 +96,9 @@ FROM (
       JSON '''{
         "destination": "firestore",
         "config": {
-          "databaseId": "tech-report-api-${constants.environment}",
-          "collectionName": "categories",
-          "collectionType": "dict"
+          "database": "tech-report-api-${constants.environment}",
+          "collection": "categories",
+          "type": "dict"
         },
         "query": "SELECT * FROM ${ctx.self()}"
       }'''

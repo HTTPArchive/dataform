@@ -81,9 +81,9 @@ GROUP BY
       JSON '''{
         "destination": "firestore",
         "config": {
-          "databaseId": "tech-report-api-${constants.environment}",
-          "collectionName": "lighthouse",
-          "collectionType": "report",
+          "database": "tech-report-api-${constants.environment}",
+          "collection": "lighthouse",
+          "type": "report",
           "date": "${pastMonth}"
         },
         "query": "SELECT STRING(date) AS date, * EXCEPT(date) FROM ${ctx.self()} WHERE date = '${pastMonth}'"

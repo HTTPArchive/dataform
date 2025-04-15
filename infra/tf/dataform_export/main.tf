@@ -59,9 +59,9 @@ Example payload JSON:
   {
     "destination": "firestore",
     "config": {
-      "databaseId": "tech-report-api-dev",
-      "collectionName": "adoption",
-      "collectionType": "report",
+      "database": "tech-report-api-dev",
+      "collection": "adoption",
+      "type": "report",
       "date": "2025-01-01"
     },
     "query": "SELECT STRING(date) AS date, * EXCEPT(date) FROM reports.tech_report_adoption WHERE date = '2025-01-01'"
