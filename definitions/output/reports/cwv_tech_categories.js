@@ -104,4 +104,3 @@ FROM total_pages
       }'''
     );
   `)
-

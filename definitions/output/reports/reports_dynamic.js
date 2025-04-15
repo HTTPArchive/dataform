@@ -4,7 +4,7 @@ const metrics = configs.listMetrics()
 const bucket = 'httparchive'
 const storagePath = '/reports/'
 
-function generateExportQuery(metric, sql, params, ctx) {
+function generateExportQuery (metric, sql, params, ctx) {
   if (sql.type === 'histogram') {
     return `
 SELECT
@@ -18,12 +18,13 @@ SELECT
   FORMAT_DATE('%Y_%m_%d', date) AS date,
   * EXCEPT(date)
 FROM reports.${metric}_timeseries
-  `} else {
+  `
+  } else {
     throw new Error('Unknown SQL type')
   }
 }
 
-function generateExportPath(metric, sql, params) {
+function generateExportPath (metric, sql, params) {
   if (sql.type === 'histogram') {
     return `${storagePath}${params.date.replaceAll('-', '_')}/${metric}.json`
   } else if (sql.type === 'timeseries') {
@@ -35,9 +36,9 @@ function generateExportPath(metric, sql, params) {
 
 const iterations = []
 for (
-  let date = constants.currentMonth; month >= constants.currentMonth; month = constants.fnPastMonth(month)) {
+  let date = constants.currentMonth; date >= constants.currentMonth; date = constants.fnPastMonth(date)) {
   iterations.push({
-    date: date
+    date
   })
 }
 
@@ -49,8 +50,8 @@ if (iterations.length === 1) {
         type: 'incremental',
         protected: true,
         bigquery: sql.type === 'histogram' ? { partitionBy: 'date', clusterBy: ['client'] } : {},
-        schema: 'reports',
-        //tags: ['crawl_complete', 'http_reports']
+        schema: 'reports'
+        // tags: ['crawl_complete', 'http_reports']
       }).preOps(ctx => `
 --DELETE FROM ${ctx.self()}
 --WHERE date = '${params.date}';
@@ -76,7 +77,7 @@ SELECT
     metrics.forEach(metric => {
       metric.SQL.forEach(sql => {
         operate(metric.id + '_' + sql.type + '_' + params.date, {
-          //tags: ['crawl_complete']
+          // tags: ['crawl_complete']
         }).queries(ctx => `
 DELETE FROM reports.${metric.id}_${sql.type}
 WHERE date = '${params.date}';
