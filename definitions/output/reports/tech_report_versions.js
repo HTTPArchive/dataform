@@ -66,7 +66,7 @@ FROM total_origins
       JSON '''{
         "destination": "firestore",
         "config": {
-          "databaseId": "tech-report-api-{constants.environment}",
+          "databaseId": "tech-report-api-${constants.environment}",
           "collectionName": "versions",
           "collectionType": "dict"
         },

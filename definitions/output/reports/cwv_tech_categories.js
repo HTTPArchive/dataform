@@ -96,7 +96,7 @@ FROM total_pages
       JSON '''{
         "destination": "firestore",
         "config": {
-          "databaseId": "tech-report-apis-{constants.environment}",
+          "databaseId": "tech-report-apis-${constants.environment}",
           "collectionName": "categories",
           "collectionType": "dict"
         },

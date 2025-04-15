@@ -35,7 +35,7 @@ GROUP BY
       JSON '''{
         "destination": "firestore",
         "config": {
-          "databaseId": "tech-report-apis-{constants.environment}",
+          "databaseId": "tech-report-apis-${constants.environment}",
           "collectionName": "adoption",
           "collectionType": "report",
           "date": "${pastMonth}"

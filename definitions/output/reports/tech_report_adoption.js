@@ -37,7 +37,7 @@ SELECT
     JSON '''{
       "destination": "firestore",
       "config": {
-        "databaseId": "tech-report-api-{constants.environment}",
+        "databaseId": "tech-report-api-${constants.environment}",
         "collectionName": "adoption",
         "collectionType": "report",
         "date": "${pastMonth}"
