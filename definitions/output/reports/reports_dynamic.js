@@ -1,11 +1,48 @@
 const configs = new reports.HTTPArchiveReports()
 const metrics = configs.listMetrics()
 
+const bucket = 'httparchive'
+const storagePath = '/reports/'
+
+function generateExportQuery (metric, sql, params, ctx) {
+  let query = ''
+  if (sql.type === 'histogram') {
+    query = `
+SELECT
+  * EXCEPT(date)
+FROM ${ctx.self()}
+WHERE date = '${params.date}'
+`
+  } else if (sql.type === 'timeseries') {
+    query = `
+SELECT
+  FORMAT_DATE('%Y_%m_%d', date) AS date,
+  * EXCEPT(date)
+FROM ${ctx.self()}
+`
+  } else {
+    throw new Error('Unknown SQL type')
+  }
+
+  const queryOutput = query.replace(/[\r\n]+/g, ' ')
+  return queryOutput
+}
+
+function generateExportPath (metric, sql, params) {
+  if (sql.type === 'histogram') {
+    return `${storagePath}${params.date.replaceAll('-', '_')}/${metric.id}.json`
+  } else if (sql.type === 'timeseries') {
+    return `${storagePath}${metric.id}.json`
+  } else {
+    throw new Error('Unknown SQL type')
+  }
+}
+
 const iterations = []
 for (
-  let month = constants.currentMonth; month >= constants.currentMonth; month = constants.fnPastMonth(month)) {
+  let date = constants.currentMonth; date >= constants.currentMonth; date = constants.fnPastMonth(date)) {
   iterations.push({
-    date: month,
+    date,
     devRankFilter: constants.devRankFilter
   })
 }
@@ -18,14 +55,26 @@ if (iterations.length === 1) {
         type: 'incremental',
         protected: true,
         bigquery: sql.type === 'histogram' ? { partitionBy: 'date', clusterBy: ['client'] } : {},
-        schema: 'reports',
-        tags: ['crawl_complete', 'http_reports']
+        schema: 'reports'
+        // tags: ['crawl_complete', 'http_reports']
       }).preOps(ctx => `
 --DELETE FROM ${ctx.self()}
 --WHERE date = '${params.date}';
-  `).query(ctx => `
-/* {"dataform_trigger": "report_complete", "date": "${params.date}", "name": "${metric.id}", "type": "${sql.type}"} */` +
-sql.query(ctx, params))
+      `).query(
+        ctx => sql.query(ctx, params)
+      ).postOps(ctx => `
+SELECT
+  reports.run_export_job(
+    JSON '''{
+      "destination": "cloud_storage",
+      "config": {
+        "bucket": "${bucket}",
+        "name": "${generateExportPath(metric, sql, params)}"
+      },
+      "query": "${generateExportQuery(metric, sql, params, ctx)}"
+    }'''
+  );
+      `)
     })
   })
 } else {
@@ -33,14 +82,25 @@ sql.query(ctx, params))
     metrics.forEach(metric => {
       metric.SQL.forEach(sql => {
         operate(metric.id + '_' + sql.type + '_' + params.date, {
-          tags: ['crawl_complete']
+          // tags: ['crawl_complete']
         }).queries(ctx => `
 DELETE FROM reports.${metric.id}_${sql.type}
 WHERE date = '${params.date}';
 
-/* {"dataform_trigger": "report_complete", "date": "${params.date}", "name": "${metric.id}", "type": "${sql.type}"} */
-INSERT INTO reports.${metric.id}_${sql.type}` +
-        sql.query(ctx, params))
+INSERT INTO reports.${metric.id}_${sql.type}` + sql.query(ctx, params)
+        ).postOps(ctx => `
+  SELECT
+  reports.run_export_job(
+    JSON '''{
+      "destination": "cloud_storage",
+      "config": {
+        "bucket": "${bucket}",
+        "name": "${generateExportPath(metric, sql, params)}"
+      },
+      "query": "${generateExportQuery(metric, sql, params, ctx)}"
+    }'''
+  );
+        `)
       })
     })
   })

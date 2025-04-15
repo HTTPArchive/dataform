@@ -10,6 +10,18 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "npm"
-    directory: "/src"
+    directory: "/infra/bigquery-export"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "npm"
+    directory: "infra/dataform-export"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "npm"
+    directory: "infra/dataform-trigger"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "terraform"
+    directory: "infra/tf/"
     schedule:
       interval: "weekly"

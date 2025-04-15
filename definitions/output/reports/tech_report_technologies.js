@@ -5,7 +5,6 @@ publish('tech_report_technologies', {
   type: 'table',
   tags: ['tech_report']
 }).query(ctx => `
-/* {"dataform_trigger": "tech_report_complete", "name": "technologies", "type": "dict"} */
 WITH pages AS (
   SELECT DISTINCT
     client,
@@ -86,4 +85,17 @@ SELECT
     MAX(IF(client = 'mobile', origins, 0)) AS mobile
   ) AS origins
 FROM total_pages
-`)
+`).postOps(ctx => `
+  SELECT
+    reports.run_export_job(
+      JSON '''{
+        "destination": "firestore",
+        "config": {
+          "database": "tech-report-api-${constants.environment}",
+          "collection": "technologies",
+          "type": "dict"
+        },
+        "query": "SELECT * FROM ${ctx.self()}"
+      }'''
+    );
+  `)

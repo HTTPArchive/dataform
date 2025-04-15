@@ -4,7 +4,7 @@ terraform {
   required_providers {
     archive = {
       source  = "hashicorp/archive"
-      version = "2.6.0"
+      version = ">= 2.6.0"
     }
     google = {
       source  = "hashicorp/google"
@@ -48,58 +48,35 @@ resource "google_cloudfunctions2_function" "dataform_export" {
   }
 }
 
-# Pub/Sub Topic to trigger Crawl Data Dataform workflow
-resource "google_pubsub_topic" "bigquery_data_updated" {
-  #checkov:skip=CKV_GCP_83:Ensure PubSub Topics are encrypted with Customer Supplied Encryption Keys (CSEK)
-  name    = "bigquery-data-updated"
-  project = var.project
-}
-
-# Logs sink for Dataform triggers
-resource "google_logging_project_sink" "dataform_export_triggers" {
-  name        = "dataform-export-triggers"
-  destination = "pubsub.googleapis.com/projects/${var.project}/topics/bigquery-data-updated"
-  filter      = <<EOT
--- dataform
-protoPayload.authenticationInfo.principalEmail="service-226352634162@gcp-sa-dataform.iam.gserviceaccount.com"
-protoPayload.serviceData.jobCompletedEvent.job.jobConfiguration.labels.dataform_repository_id=~"crawl-data"
-protoPayload.resourceName=~"projects/httparchive/jobs/dataform-gcp-"
-
---successful query
-protoPayload.serviceData.jobCompletedEvent.job.jobStatus.state="DONE"
--protoPayload.serviceData.jobCompletedEvent.job.jobStatus.error.message:*
-
---check for trigger config
-protoPayload.serviceData.jobCompletedEvent.job.jobConfiguration.query.query=~"/* {\"dataform_trigger\": "
+resource "google_bigquery_routine" "run_export_job" {
+  dataset_id      = "reports"
+  routine_id      = "run_export_job"
+  routine_type    = "SCALAR_FUNCTION"
+  definition_body = ""
+  description     = <<EOT
+Export data from Google BigQuery.
+Example payload JSON:
+  {
+    "destination": "firestore",
+    "config": {
+      "database": "tech-report-api-dev",
+      "collection": "adoption",
+      "type": "report",
+      "date": "2025-01-01"
+    },
+    "query": "SELECT STRING(date) AS date, * EXCEPT(date) FROM reports.tech_report_adoption WHERE date = '2025-01-01'"
+  }
 EOT
-  project     = var.project
-}
 
-# Topic Subscription for dataform_export function
-resource "google_pubsub_subscription" "dataform_export" {
-  ack_deadline_seconds         = 60
-  enable_exactly_once_delivery = false
-  enable_message_ordering      = false
-  filter                       = null
-  labels                       = {}
-  message_retention_duration   = "3600s"
-  name                         = google_cloudfunctions2_function.dataform_export.name
-  project                      = var.project
-  retain_acked_messages        = false
-  topic                        = google_pubsub_topic.bigquery_data_updated.name
-  expiration_policy {
-    ttl = ""
+  arguments {
+    name      = "payload"
+    data_type = "{\"typeKind\" :  \"JSON\"}"
   }
-  push_config {
-    attributes    = {}
-    push_endpoint = google_cloudfunctions2_function.dataform_export.service_config[0].uri
-    oidc_token {
-      audience              = google_cloudfunctions2_function.dataform_export.service_config[0].uri
-      service_account_email = var.function_identity
-    }
-  }
-  retry_policy {
-    maximum_backoff = "60s"
-    minimum_backoff = "10s"
+  return_type = "{\"typeKind\" :  \"INT64\"}"
+
+  remote_function_options {
+    endpoint          = google_cloudfunctions2_function.dataform_export.service_config[0].uri
+    connection        = var.remote_functions_connection
+    max_batching_rows = "1"
   }
 }

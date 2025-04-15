@@ -5,7 +5,6 @@ publish('tech_report_versions', {
   type: 'table',
   tags: ['tech_report']
 }).query(ctx => `
-/* {"dataform_trigger": "tech_report_complete", "name": "versions", "type": "dict"} */
 WITH pages AS (
   SELECT DISTINCT
     client,
@@ -61,4 +60,17 @@ SELECT
   'ALL' AS version,
   origins
 FROM total_origins
-`)
+`).postOps(ctx => `
+  SELECT
+    reports.run_export_job(
+      JSON '''{
+        "destination": "firestore",
+        "config": {
+          "database": "tech-report-api-${constants.environment}",
+          "collection": "versions",
+          "type": "dict"
+        },
+        "query": "SELECT * FROM ${ctx.self()}"
+      }'''
+    );
+  `)

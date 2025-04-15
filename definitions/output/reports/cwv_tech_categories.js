@@ -5,7 +5,6 @@ publish('cwv_tech_categories', {
   type: 'table',
   tags: ['crux_ready']
 }).query(ctx => `
-/* {"dataform_trigger": "report_cwv_tech_complete", "name": "categories", "type": "dict"} */
 WITH pages AS (
   SELECT DISTINCT
     client,
@@ -50,7 +49,7 @@ technology_stats AS (
   SELECT
     technology,
     category_obj AS categories,
-    SUM(origins.dektop + origins.mobile) AS total_origins
+    SUM(origins.desktop + origins.mobile) AS total_origins
   FROM ${ctx.ref('reports', 'cwv_tech_technologies')}
   GROUP BY
     technology,
@@ -91,4 +90,17 @@ SELECT
   ) AS origins,
   NULL AS technologies
 FROM total_pages
-`)
+`).postOps(ctx => `
+  SELECT
+    reports.run_export_job(
+      JSON '''{
+        "destination": "firestore",
+        "config": {
+          "database": "tech-report-apis-${constants.environment}",
+          "collection": "categories",
+          "type": "dict"
+        },
+        "query": "SELECT * FROM ${ctx.self()}"
+      }'''
+    );
+  `)
