@@ -3,11 +3,13 @@ assert('corrupted_technology_values')
   .tags(['crawl_complete'])
   .query(ctx => `
 SELECT
-  date,
-  client,
-  tech,
-  COUNT(DISTINCT page) AS cnt_pages,
-  ARRAY_AGG(DISTINCT page LIMIT 3) AS sample_pages
+  /*
+    date,
+    client,
+    tech,
+    ARRAY_AGG(DISTINCT page LIMIT 3) AS sample_pages,
+  */
+  COUNT(DISTINCT page) AS cnt_pages
 FROM ${ctx.ref('crawl_staging', 'pages')} AS pages
 LEFT JOIN pages.technologies AS tech
 LEFT JOIN tech.categories AS category
@@ -18,11 +20,14 @@ WHERE
     OR category NOT IN (SELECT DISTINCT name FROM wappalyzer.categories)
     OR ARRAY_LENGTH(tech.categories) = 0
   )
+/*
 GROUP BY
   date,
   client,
   tech
 ORDER BY cnt_pages DESC
+*/
+HAVING cnt_pages > 200
   `)
 
 publish('pages', {
