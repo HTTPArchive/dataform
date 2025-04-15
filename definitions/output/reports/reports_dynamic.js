@@ -5,30 +5,32 @@ const bucket = 'httparchive'
 const storagePath = '/reports/'
 
 function generateExportQuery (metric, sql, params, ctx) {
+  let query = ''
   if (sql.type === 'histogram') {
-    return `
+    query = `
 SELECT
   * EXCEPT(date)
 FROM ${ctx.self()}
 WHERE date = '${params.date}'
-`
-  } else if (sql.type === 'timeseries') {
-    return `
+`} else if (sql.type === 'timeseries') {
+    query = `
 SELECT
   FORMAT_DATE('%Y_%m_%d', date) AS date,
   * EXCEPT(date)
-FROM reports.${metric}_timeseries
-  `
-  } else {
+FROM ${ctx.self()}
+`} else {
     throw new Error('Unknown SQL type')
   }
+
+  const queryOutput = query.replace(/[\r\n]+/g, ' ');
+  return queryOutput
 }
 
 function generateExportPath (metric, sql, params) {
   if (sql.type === 'histogram') {
-    return `${storagePath}${params.date.replaceAll('-', '_')}/${metric}.json`
+    return `${storagePath}${params.date.replaceAll('-', '_')}/${metric.id}.json`
   } else if (sql.type === 'timeseries') {
-    return `${storagePath}${metric}.json`
+    return `${storagePath}${metric.id}.json`
   } else {
     throw new Error('Unknown SQL type')
   }
@@ -38,7 +40,8 @@ const iterations = []
 for (
   let date = constants.currentMonth; date >= constants.currentMonth; date = constants.fnPastMonth(date)) {
   iterations.push({
-    date
+    date,
+    devRankFilter: constants.devRankFilter
   })
 }
 
@@ -66,7 +69,7 @@ SELECT
         "bucket": "${bucket}",
         "name": "${generateExportPath(metric, sql, params)}"
       },
-      "query": "${generateExportQuery(metric, sql, params, ctx)}"}
+      "query": "${generateExportQuery(metric, sql, params, ctx)}"
     }'''
   );
       `)
@@ -92,7 +95,7 @@ INSERT INTO reports.${metric.id}_${sql.type}` + sql.query(ctx, params)
         "bucket": "${bucket}",
         "name": "${generateExportPath(metric, sql, params)}"
       },
-      "query": "${generateExportQuery(metric, sql, params, ctx)}"}
+      "query": "${generateExportQuery(metric, sql, params, ctx)}"
     }'''
   );
         `)
