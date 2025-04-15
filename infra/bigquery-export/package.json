@@ -8,8 +8,8 @@
   },
   "type": "module",
   "dependencies": {
-    "@google-cloud/bigquery": "7.9.1",
-    "@google-cloud/firestore": "7.10.0",
+    "@google-cloud/bigquery": "7.9.4",
+    "@google-cloud/firestore": "7.11.0",
     "@google-cloud/storage": "7.16.0"
   },
   "author": "@max-ostapenko"
