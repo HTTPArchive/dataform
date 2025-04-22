@@ -13,7 +13,6 @@ WITH pages AS (
   FROM ${ctx.ref('crawl', 'pages')}
   WHERE
     date = '${pastMonth}'
-    AND technologies IS NOT NULL
     ${constants.devRankFilter}
 ),
 
