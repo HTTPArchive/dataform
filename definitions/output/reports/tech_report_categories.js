@@ -23,6 +23,26 @@ category_descriptions AS (
   FROM ${ctx.ref('wappalyzer', 'categories')}
 ),
 
+crux AS (
+  SELECT
+    IF(device = 'desktop', 'desktop', 'mobile') AS client,
+    CONCAT(origin, '/') AS root_page
+  FROM ${ctx.ref('chrome-ux-report', 'materialized', 'device_summary')}
+  WHERE
+    date = '${pastMonth}'
+    AND device IN ('desktop', 'phone')
+),
+
+merged_pages AS (
+  SELECT DISTINCT
+    client,
+    technologies,
+    root_page
+  FROM pages
+  INNER JOIN crux
+  USING (client, root_page)
+),
+
 category_stats AS (
   SELECT
     category,
@@ -35,8 +55,8 @@ category_stats AS (
       client,
       category,
       COUNT(DISTINCT root_page) AS origins
-    FROM pages
-    INNER JOIN pages.technologies AS tech
+    FROM merged_pages
+    INNER JOIN merged_pages.technologies AS tech
     INNER JOIN tech.categories AS category
     WHERE
       category IS NOT NULL
@@ -87,7 +107,7 @@ FROM (
   SELECT
     client,
     COUNT(DISTINCT root_page) AS origins
-  FROM pages
+  FROM merged_pages
   GROUP BY client
 )
 `).postOps(ctx => `
