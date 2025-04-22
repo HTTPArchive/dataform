@@ -8,9 +8,9 @@ publish('tech_report_categories', {
 WITH pages AS (
   SELECT DISTINCT
     client,
-    technologies,
-    root_page
-  FROM ${ctx.ref('crawl', 'pages')} AS pages
+    root_page,
+    technologies
+  FROM ${ctx.ref('crawl', 'pages')}
   WHERE
     date = '${pastMonth}'
     AND technologies IS NOT NULL
