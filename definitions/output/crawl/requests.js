@@ -38,6 +38,8 @@ publish('requests', {
   },
   tags: ['crawl_complete']
 }).preOps(ctx => `
+SET @@RESERVATION='projects/httparchive/locations/US/reservations/enterprise';
+
 FOR client_var IN (SELECT * FROM UNNEST(['desktop', 'mobile']) AS value) DO
   FOR is_root_page_var IN (SELECT * FROM UNNEST([TRUE, FALSE]) AS value) DO
     FOR rank_lt_50M_var IN (SELECT * FROM UNNEST([TRUE, FALSE]) AS value) DO
@@ -47,7 +49,7 @@ FOR client_var IN (SELECT * FROM UNNEST(['desktop', 'mobile']) AS value) DO
       WHERE date = '${constants.currentMonth}' AND
         client = client_var.value AND
         is_root_page = is_root_page_var.value AND
-        (rank < 50000000) = rank_lt_50M_var.value;
+        (rank < 50000000) = rank_lt_50M_var.value;      
 
       -- Insert new entries
       INSERT INTO ${ctx.self()}

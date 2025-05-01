@@ -82,6 +82,8 @@ publish('pages', {
   tags: ['crawl_complete'],
   dependOnDependencyAssertions: true
 }).preOps(ctx => `
+SET @@RESERVATION='projects/httparchive/locations/US/reservations/enterprise';
+
 DELETE FROM ${ctx.self()}
 WHERE date = '${constants.currentMonth}' AND
   client = 'desktop';
@@ -105,6 +107,8 @@ WHERE date = '${constants.currentMonth}' AND
   client = 'mobile'
   ${constants.devRankFilter}
 `).postOps(ctx => `
+SET @@RESERVATION='none';
+
 CREATE TEMP TABLE technologies_cleaned AS (
   WITH technologies AS (
     SELECT DISTINCT
