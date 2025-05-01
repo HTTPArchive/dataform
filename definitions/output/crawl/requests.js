@@ -49,7 +49,7 @@ FOR client_var IN (SELECT * FROM UNNEST(['desktop', 'mobile']) AS value) DO
       WHERE date = '${constants.currentMonth}' AND
         client = client_var.value AND
         is_root_page = is_root_page_var.value AND
-        (rank < 50000000) = rank_lt_50M_var.value;      
+        (rank < 50000000) = rank_lt_50M_var.value;
 
       -- Insert new entries
       INSERT INTO ${ctx.self()}
