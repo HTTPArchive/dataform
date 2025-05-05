@@ -6,7 +6,7 @@
   "dependencies": {
     "@google-cloud/bigquery": "8.0.0",
     "@google-cloud/dataform": "2.0.1",
-    "@google-cloud/functions-framework": "3.5.1"
+    "@google-cloud/functions-framework": "4.0.0"
   },
   "scripts": {
     "start": "npx functions-framework --target=dataform-trigger --signature-type=http --port=8080 --debug"
