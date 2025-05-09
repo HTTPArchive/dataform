@@ -3,7 +3,7 @@ publish('pages_10k', {
   schema: 'sample_data',
   bigquery: {
     partitionBy: 'date',
-    clusterBy: ['client', 'is_root_page', 'rank']
+    clusterBy: ['client', 'is_root_page', 'rank', 'page']
   },
   tags: ['crawl_complete']
 }).query(ctx => `
