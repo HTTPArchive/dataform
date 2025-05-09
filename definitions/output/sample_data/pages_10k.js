@@ -9,6 +9,7 @@ publish('pages_10k', {
 }).query(ctx => `
 SELECT *
 FROM ${ctx.ref('crawl', 'pages')}
-WHERE date = '${constants.currentMonth}' AND
-    rank <= 10000
+WHERE
+  date = '${constants.currentMonth}' AND
+  rank <= 10000
 `)

@@ -4,7 +4,7 @@ publish('pages_latest', {
   description: 'The latest date from the crawl.pages table',
   bigquery: {
     partitionBy: 'date',
-    clusterBy: ['client', 'is_root_page', 'rank', 'page'],
+    clusterBy: ['client', 'is_root_page', 'rank', 'page']
   },
   tags: ['crawl_complete']
 }).preOps(ctx => `
