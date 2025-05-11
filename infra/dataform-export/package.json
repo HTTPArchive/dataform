@@ -5,7 +5,7 @@
   "main": "index.js",
   "type": "module",
   "dependencies": {
-    "@google-cloud/functions-framework": "3.5.1",
+    "@google-cloud/functions-framework": "4.0.0",
     "@google-cloud/run": "2.0.1"
   },
   "scripts": {
