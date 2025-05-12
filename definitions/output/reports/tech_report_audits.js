@@ -8,7 +8,7 @@ publish('tech_report_audits', {
     partitionBy: 'date',
     clusterBy: ['rank', 'geo']
   },
-  tags: ['tech_report']
+  tags: ['crux_ready']
 }).preOps(ctx => `
 CREATE TEMP FUNCTION GET_AUDITS(
   records ARRAY<STRUCT<
