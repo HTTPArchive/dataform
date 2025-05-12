@@ -49,15 +49,6 @@ resource "google_project_iam_member" "masthead_pubsub_publisherer_member" {
 }
 
 # 3. Grant Masthead Service Account roles
-resource "google_project_iam_custom_role" "masthead_bq_meta_reader" {
-  project     = var.project
-  description = "Masthead BigQuery assets metadata reader"
-  permissions = ["bigquery.datasets.get", "bigquery.tables.get", "bigquery.tables.list", "bigquery.routines.get", "bigquery.routines.list"]
-  role_id     = "masthead_bq_meta_reader"
-  stage       = "GA"
-  title       = "masthead_bq_meta_reader"
-}
-
 resource "google_project_iam_member" "masthead_pubsub_subscriber_member" {
   for_each = toset(["roles/bigquery.metadataViewer", "roles/bigquery.resourceViewer", "roles/pubsub.subscriber"])
 
