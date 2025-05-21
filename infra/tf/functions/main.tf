@@ -1,3 +1,14 @@
+terraform {
+  required_version = ">= 1.9.7"
+
+  required_providers {
+    google = {
+      source  = "hashicorp/google"
+      version = ">= 6.13.0"
+    }
+  }
+}
+
 resource "google_project_iam_member" "project" {
   for_each = toset(["roles/bigquery.jobUser", "roles/dataform.serviceAgent", "roles/run.invoker", "roles/run.jobsExecutorWithOverrides", "roles/datastore.user", "roles/storage.objectUser"])
 
@@ -24,8 +35,4 @@ resource "google_project_iam_member" "bigquery-remote-functions-connector" {
   project = var.project
   role    = "roles/run.invoker"
   member  = "serviceAccount:${google_bigquery_connection.remote-functions.cloud_resource[0].service_account_id}"
-}
-
-data "google_project" "project" {
-  project_id = var.project
 }

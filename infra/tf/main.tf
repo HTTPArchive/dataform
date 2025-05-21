@@ -69,7 +69,6 @@ module "masthead" {
 
 module "functions" {
   source = "./functions"
-
   project           = local.project
   location          = local.location
   function_identity = local.function_identity

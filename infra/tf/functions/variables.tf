@@ -10,11 +10,7 @@ variable "location" {
   type = string
 }
 
-variable "region" {
-  type = string
-}
-
 variable "edit_datasets" {
-  type = list(string)
+  type    = list(string)
   default = []
 }
