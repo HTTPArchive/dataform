@@ -1,9 +1,3 @@
-/*import {
-  provider = google-beta
-  id       = "projects/${local.project}/locations/${local.region}/repositories/crawl-data"
-  to       = google_dataform_repository.production
-}*/
-
 # BigQuery IAM roles for Dataform
 locals {
   dataform_service_account_email = "service-226352634162@gcp-sa-dataform.iam.gserviceaccount.com"
