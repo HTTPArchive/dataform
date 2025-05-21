@@ -31,7 +31,7 @@ FROM crux, report;
     action: 'runDataformRepo',
     actionArgs: {
       repoName: 'crawl-data',
-      tags: ['tech_report']
+      tags: ['crux_ready']
     }
   },
   crawl_complete: {

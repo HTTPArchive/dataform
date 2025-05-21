@@ -20,12 +20,15 @@ locals {
     "core_web_vitals", // TODO: Remove after tech report migration
     "reports",
 
+    // Flattened tables for F1
+    "f1",
+
     // Service
     "dataform_assertions",
   ]
 
   dataform_service_account_roles = [
-    "roles/bigquery.jobUser",
+    "roles/bigquery.user",
     "roles/bigquery.connectionUser",
     "roles/dataform.serviceAgent",
   ]

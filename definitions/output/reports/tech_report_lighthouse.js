@@ -8,7 +8,7 @@ publish('tech_report_lighthouse', {
     partitionBy: 'date',
     clusterBy: ['rank', 'geo']
   },
-  tags: ['tech_report']
+  tags: ['crux_ready']
 }).preOps(ctx => `
 CREATE TEMPORARY FUNCTION GET_LIGHTHOUSE(
   records ARRAY<STRUCT<

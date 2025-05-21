@@ -110,7 +110,7 @@ resource "google_cloud_scheduler_job" "bq-poller-crux-ready" {
   paused           = false
   project          = var.project
   region           = var.region
-  schedule         = "0 */8 8-14 * *"
+  schedule         = "0 8,12,16 8-14 * *"
   time_zone        = "Etc/UTC"
   http_target {
     body = base64encode(local.crux_ready_scheduler_body)

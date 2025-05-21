@@ -8,7 +8,7 @@ publish('tech_report_adoption', {
     partitionBy: 'date',
     clusterBy: ['rank', 'geo']
   },
-  tags: ['tech_report']
+  tags: ['crux_ready']
 }).preOps(ctx => `
 DELETE FROM ${ctx.self()}
 WHERE date = '${pastMonth}';

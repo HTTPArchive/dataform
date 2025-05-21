@@ -9,8 +9,8 @@ publish('tech_crux', {
     clusterBy: ['geo', 'client', 'rank', 'technology'],
     requirePartitionFilter: true
   },
-  tags: ['tech_report'],
-  dependOnDependencyAssertions: true
+  dependOnDependencyAssertions: true,
+  tags: ['crux_ready']
 }).preOps(ctx => `
 DELETE FROM ${ctx.self()}
 WHERE date = '${pastMonth}';
