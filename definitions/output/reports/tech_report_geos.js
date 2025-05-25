@@ -7,7 +7,7 @@ publish('tech_report_geos', {
 }).query(ctx => `
 SELECT
   geo,
-  adoption AS origins
+  adoption.mobile AS mobile_origins
 FROM ${ctx.ref('reports', 'tech_report_adoption')}
 WHERE
   date = '${pastMonth}'
