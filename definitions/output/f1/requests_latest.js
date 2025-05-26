@@ -52,4 +52,3 @@ FROM ${ctx.ref('crawl', 'requests')}
 WHERE date = '${constants.currentMonth}' AND
   client = 'desktop'
 `)
-
