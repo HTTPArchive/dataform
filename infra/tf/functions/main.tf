@@ -9,7 +9,7 @@ terraform {
   }
 }
 
-resource "google_project_iam_member" "project" {
+resource "google_project_iam_member" "function_identity" {
   for_each = toset(["roles/bigquery.jobUser", "roles/dataform.serviceAgent", "roles/run.invoker", "roles/run.jobsExecutorWithOverrides", "roles/datastore.user", "roles/storage.objectUser"])
 
   project = var.project
@@ -31,8 +31,10 @@ resource "google_bigquery_connection" "remote-functions" {
   cloud_resource {}
 }
 
-resource "google_project_iam_member" "bigquery-remote-functions-connector" {
+resource "google_project_iam_member" "bigquery-connection-remote-functions" {
+  for_each = toset(["roles/run.invoker"])
+
   project = var.project
-  role    = "roles/run.invoker"
+  role    = each.value
   member  = "serviceAccount:${google_bigquery_connection.remote-functions.cloud_resource[0].service_account_id}"
 }

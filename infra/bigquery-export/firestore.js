@@ -3,10 +3,23 @@ import { BigQueryExport } from './bigquery.js'
 
 export class FirestoreBatch {
   constructor () {
-    this.firestore = new Firestore()
+    this.firestore = new Firestore({
+      // Increase timeout to 10 minutes for large batch operations
+      gaxOptions: {
+        grpc: {
+          max_receive_message_length: 100 * 1024 * 1024, // 100MB
+          max_send_message_length: 100 * 1024 * 1024, // 100MB
+          'grpc.max_connection_idle_ms': 5 * 60 * 1000, // 5 minutes
+          'grpc.keepalive_time_ms': 30 * 1000, // 30 seconds
+          'grpc.keepalive_timeout_ms': 60 * 1000, // 1 minute
+          'grpc.keepalive_permit_without_calls': true
+        }
+      }
+    })
     this.bigquery = new BigQueryExport()
-    this.batchSize = 500
-    this.maxConcurrentBatches = 200
+    this.batchSizeDelete = 500
+    this.batchSizeWrite = 400 // Reduced batch size for better performance
+    this.maxConcurrentBatches = 100 // Reduced concurrent batches to avoid overwhelming
   }
 
   queueBatch (operation) {
@@ -28,14 +41,34 @@ export class FirestoreBatch {
 
   async commitBatches () {
     console.log(`Committing ${this.batchPromises.length} batches to ${this.collectionName}`)
+
     await Promise.all(
-      this.batchPromises.map(async (batchPromise) => await batchPromise.commit()
-        .catch((error) => {
-          console.error('Error committing batch:', error)
-          throw error
-        })
-      )
+      this.batchPromises.map(async (batchPromise, index) => {
+        const retryCount = 3
+        let lastError
+
+        for (let attempt = 1; attempt <= retryCount; attempt++) {
+          try {
+            await batchPromise.commit()
+            return
+          } catch (error) {
+            lastError = error
+            console.warn(`Batch ${index} attempt ${attempt} failed:`, error.message)
+
+            if (attempt < retryCount) {
+              // Exponential backoff: 2^attempt seconds
+              const delayMs = Math.pow(2, attempt) * 1000
+              console.log(`Retrying batch ${index} in ${delayMs}ms...`)
+              await new Promise(resolve => setTimeout(resolve, delayMs))
+            }
+          }
+        }
+
+        console.error(`Batch ${index} failed after ${retryCount} attempts:`, lastError)
+        throw lastError
+      })
     )
+
     this.batchPromises = []
   }
 
@@ -71,7 +104,7 @@ export class FirestoreBatch {
     }
 
     while (true) {
-      const snapshot = await collectionQuery.limit(this.batchSize * this.maxConcurrentBatches).get()
+      const snapshot = await collectionQuery.limit(this.batchSizeDelete * this.maxConcurrentBatches).get()
       if (snapshot.empty) {
         break
       }
@@ -127,7 +160,8 @@ export class FirestoreBatch {
 
   async export (query, exportConfig) {
     this.firestore.settings({
-      databaseId: exportConfig.database
+      databaseId: exportConfig.database,
+      timeout: 10 * 60 * 1000 // 10 minutes timeout
     })
     this.collectionName = exportConfig.collection
     this.collectionType = exportConfig.type
