@@ -28,16 +28,6 @@ locals {
   function_identity = "cloud-function@httparchive.iam.gserviceaccount.com"
 }
 
-module "dataform_export" {
-  source = "./dataform_export"
-
-  project_number              = local.project_number
-  region                      = local.region
-  function_identity           = local.function_identity
-  function_name               = "dataform-export"
-  remote_functions_connection = google_bigquery_connection.remote-functions.id
-}
-
 module "dataform_trigger" {
   source = "./dataform_trigger"
 
@@ -73,4 +63,15 @@ module "functions" {
   location          = local.location
   function_identity = local.function_identity
   edit_datasets     = local.edit_datasets
+}
+
+module "dataform_export" {
+  source = "./dataform_export"
+
+  project_number              = local.project_number
+  region                      = local.region
+  function_identity           = local.function_identity
+  function_name               = "dataform-export"
+  remote_functions_connection = module.functions.google_bigquery_connection-remote_functions-id
+  depends_on                  = [module.functions]
 }

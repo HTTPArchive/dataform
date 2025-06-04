@@ -35,7 +35,7 @@ resource "google_cloud_run_v2_job" "bigquery_export" {
           value = ""
         }
       }
-      timeout         = "3600s"
+      timeout         = "7200s"
       service_account = var.function_identity
       max_retries     = 1
     }
