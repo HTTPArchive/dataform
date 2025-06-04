@@ -71,7 +71,7 @@ technology_stats AS (
   SELECT
     technology,
     category_obj AS categories,
-    SUM(origins.mobile + origins.desktop) AS total_origins
+    origins.mobile AS mobile_origins
   FROM ${ctx.ref('reports', 'tech_report_technologies')}
   GROUP BY
     technology,
@@ -82,7 +82,7 @@ SELECT
   category,
   description,
   origins,
-  ARRAY_AGG(technology IGNORE NULLS ORDER BY technology_stats.total_origins DESC) AS technologies
+  ARRAY_AGG(technology IGNORE NULLS ORDER BY technology_stats.mobile_origins DESC) AS technologies
 FROM category_stats
 INNER JOIN technology_stats
 ON category_stats.category IN UNNEST(technology_stats.categories)
