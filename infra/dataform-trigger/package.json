@@ -4,7 +4,7 @@
   "author": "@max-ostapenko",
   "main": "index.js",
   "dependencies": {
-    "@google-cloud/bigquery": "8.0.0",
+    "@google-cloud/bigquery": "8.1.0",
     "@google-cloud/dataform": "2.1.0",
     "@google-cloud/functions-framework": "4.0.0"
   },
