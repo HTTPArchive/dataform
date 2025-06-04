@@ -73,9 +73,6 @@ technology_stats AS (
     category_obj AS categories,
     origins.mobile AS mobile_origins
   FROM ${ctx.ref('reports', 'tech_report_technologies')}
-  GROUP BY
-    technology,
-    categories
 )
 
 SELECT
