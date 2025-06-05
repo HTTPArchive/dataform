@@ -24,14 +24,8 @@ provider "google" {
   billing_project       = local.project
 }
 
-module "dataform_export" {
-  source = "./dataform_export"
-
-  project_number              = local.project_number
-  region                      = local.region
-  function_identity           = "cloud-function@httparchive.iam.gserviceaccount.com"
-  function_name               = "dataform-export"
-  remote_functions_connection = google_bigquery_connection.remote-functions.id
+locals {
+  function_identity = "cloud-function@httparchive.iam.gserviceaccount.com"
 }
 
 module "dataform_trigger" {
@@ -40,7 +34,7 @@ module "dataform_trigger" {
   project           = local.project
   project_number    = local.project_number
   region            = local.region
-  function_identity = "cloud-function@httparchive.iam.gserviceaccount.com"
+  function_identity = local.function_identity
   function_name     = "dataform-trigger"
 }
 
@@ -50,7 +44,7 @@ module "bigquery_export" {
   project           = local.project
   region            = local.region
   location          = local.location
-  function_identity = "cloud-function@httparchive.iam.gserviceaccount.com"
+  function_identity = local.function_identity
   function_name     = "bigquery-export"
 }
 
@@ -61,4 +55,23 @@ module "masthead" {
   # source = "https://github.com/Masthead-Data/masthead-deployment"
   # project_id = local.project
   # project_number = local.project_number
+}
+
+module "functions" {
+  source            = "./functions"
+  project           = local.project
+  location          = local.location
+  function_identity = local.function_identity
+  edit_datasets     = local.edit_datasets
+}
+
+module "dataform_export" {
+  source = "./dataform_export"
+
+  project_number              = local.project_number
+  region                      = local.region
+  function_identity           = local.function_identity
+  function_name               = "dataform-export"
+  remote_functions_connection = module.functions.google_bigquery_connection-remote_functions-id
+  depends_on                  = [module.functions]
 }
