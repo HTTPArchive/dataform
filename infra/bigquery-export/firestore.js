@@ -19,97 +19,45 @@ export class FirestoreBatch {
 
     // Configuration constants
     this.config = {
-      batchSize: {
-        delete: 500,
-        write: 400
-      },
-      maxConcurrentBatches: 200,
-      retryCount: 5,
-      timeout: 10 * 60 * 1000 // 10 minutes
+      timeout: 10 * 60 * 1000, // 10 minutes
+      progressReportInterval: 200000, // Report progress every N operations
+      flushThreshold: 200000 // Flush BulkWriter every N operations
     }
 
     this.reset()
   }
 
   reset () {
-    this.currentBatch = []
-    this.batchPromises = []
+    this.processedDocs = 0
+    this.totalDocs = 0
+    this.bulkWriter = null
   }
 
-  getCurrentBatchSize (operation) {
-    return this.config.batchSize[operation === 'delete' ? 'delete' : 'write']
-  }
+  createBulkWriter (operation) {
+    const bulkWriter = this.firestore.bulkWriter()
 
-  async commitWithRetry (batch, index) {
-    let lastError
+    // Configure error handling with progress info
+    bulkWriter.onWriteError((error) => {
+      const progressInfo = this.totalDocs > 0 ? ` (${this.processedDocs}/${this.totalDocs})` : ''
+      console.warn(`${operation} operation failed${progressInfo}:`, error.message)
 
-    for (let attempt = 1; attempt <= this.config.retryCount; attempt++) {
-      try {
-        await batch.commit()
-        return
-      } catch (error) {
-        lastError = error
-        console.warn(`Batch ${index} attempt ${attempt} failed:`, error.message)
+      // Retry on transient errors, fail on permanent ones
+      const retryableErrors = ['deadline-exceeded', 'unavailable', 'resource-exhausted']
+      return retryableErrors.includes(error.code)
+    })
 
-        if (attempt < this.config.retryCount) {
-          const delayMs = Math.pow(2, attempt) * 500
-          console.log(`Retrying batch ${index} in ${delayMs}ms...`)
-          await new Promise(resolve => setTimeout(resolve, delayMs))
-        }
-      }
-    }
+    // Track progress on successful writes
+    bulkWriter.onWriteResult(() => {
+      this.processedDocs++
 
-    console.error(`Batch ${index} failed after ${this.config.retryCount} attempts:`, lastError)
-    throw lastError
-  }
-
-  createBatch (operation) {
-    const batch = this.firestore.batch()
-
-    this.currentBatch.forEach((doc) => {
-      if (operation === 'delete') {
-        batch.delete(doc.ref)
-      } else if (operation === 'set') {
-        const docRef = this.firestore.collection(this.collectionName).doc()
-        batch.set(docRef, doc)
-      } else {
-        throw new Error(`Invalid operation: ${operation}`)
+      // Report progress periodically
+      if (this.processedDocs % this.config.progressReportInterval === 0) {
+        const progressInfo = this.totalDocs > 0 ? ` (${this.processedDocs}/${this.totalDocs})` : ` (${this.processedDocs} processed)`
+        console.log(`Progress${progressInfo} - ${operation}ing documents in ${this.collectionName}`)
       }
     })
 
-    return batch
-  }
-
-  queueBatch (operation) {
-    const batch = this.createBatch(operation)
-    this.batchPromises.push(batch)
-    this.currentBatch = []
-  }
-
-  async commitBatches () {
-    if (this.batchPromises.length === 0) return
-
-    console.log(`Committing ${this.batchPromises.length} batches to ${this.collectionName}`)
-
-    await Promise.all(
-      this.batchPromises.map((batch, index) =>
-        this.commitWithRetry(batch, index)
-      )
-    )
-
-    this.batchPromises = []
-  }
-
-  async processInBatches (operation, shouldFlush = false) {
-    const batchSize = this.getCurrentBatchSize(operation)
-
-    if (this.currentBatch.length >= batchSize || shouldFlush) {
-      this.queueBatch(operation)
-    }
-
-    if (this.batchPromises.length >= this.config.maxConcurrentBatches || shouldFlush) {
-      await this.commitBatches()
-    }
+    return bulkWriter
   }
 
   buildQuery (collectionRef) {
@@ -132,52 +80,93 @@ export class FirestoreBatch {
     return queryBuilder()
   }
 
+  async getDocumentCount (query) {
+    try {
+      const countSnapshot = await query.count().get()
+      return countSnapshot.data().count
+    } catch (error) {
+      console.warn('Could not get document count for progress tracking:', error.message)
+      return 0
+    }
+  }
+
   async batchDelete () {
     console.info('Starting batch deletion...')
     const startTime = Date.now()
     this.reset()
 
-    let totalDocsDeleted = 0
     const collectionRef = this.firestore.collection(this.collectionName)
     const collectionQuery = this.buildQuery(collectionRef)
-    const batchSize = this.getCurrentBatchSize('delete')
 
-    while (true) {
-      const snapshot = await collectionQuery.limit(batchSize * this.config.maxConcurrentBatches).get()
-      if (snapshot.empty) break
-
-      for (const doc of snapshot.docs) {
-        this.currentBatch.push(doc)
-        await this.processInBatches('delete')
-        totalDocsDeleted++
-      }
+    // Get total count for progress tracking
+    this.totalDocs = await this.getDocumentCount(collectionQuery)
+    if (this.totalDocs > 0) {
+      console.info(`Total documents to delete: ${this.totalDocs}`)
     }
 
-    // Final flush
-    await this.processInBatches('delete', true)
+    // Create BulkWriter for delete operations
+    this.bulkWriter = this.createBulkWriter('delet')
+
+    let deletedCount = 0
+    const batchSize = this.config.flushThreshold // Process documents in chunks
+
+    while (deletedCount < this.totalDocs || this.totalDocs === 0) {
+      const snapshot = await collectionQuery.limit(batchSize).get()
+      if (snapshot.empty) break
+
+      // Add all delete operations to BulkWriter
+      snapshot.docs.forEach(doc => {
+        this.bulkWriter.delete(doc.ref)
+        deletedCount++
+      })
+
+      // Periodically flush to manage memory
+      // if (deletedCount % this.config.flushThreshold === 0) {
+      console.log(`Flushing BulkWriter at ${deletedCount} operations...`)
+      await this.bulkWriter.flush()
+      // }
+    }
+
+    // Final flush and close
+    console.log('Finalizing deletion operations...')
+    await this.bulkWriter.close()
 
     const duration = (Date.now() - startTime) / 1000
-    console.info(`Deletion complete. Total docs deleted: ${totalDocsDeleted}. Time: ${duration} seconds`)
+    console.info(`Deletion complete. Total docs deleted: ${this.processedDocs}. Time: ${duration} seconds`)
   }
 
   async streamFromBigQuery (rowStream) {
     console.info('Starting BigQuery to Firestore transfer...')
     const startTime = Date.now()
-    let totalRowsProcessed = 0
-
     this.reset()
 
+    // Create BulkWriter for write operations
+    this.bulkWriter = this.createBulkWriter('writ')
+
+    let rowCount = 0
+    const collectionRef = this.firestore.collection(this.collectionName)
+
     for await (const row of rowStream) {
-      this.currentBatch.push(row)
-      await this.processInBatches('set')
-      totalRowsProcessed++
+      // Add document to BulkWriter
+      const docRef = collectionRef.doc()
+      this.bulkWriter.set(docRef, row)
+
+      rowCount++
+      this.totalDocs = rowCount // Update total as we go since we can't predict BigQuery result size
+
+      // Periodically flush to manage memory
+      if (rowCount % this.config.flushThreshold === 0) {
+        console.log(`Flushing BulkWriter at ${rowCount} operations...`)
+        await this.bulkWriter.flush()
+      }
     }
 
-    // Final flush
-    await this.processInBatches('set', true)
+    // Final flush and close
+    console.log('Finalizing write operations...')
+    await this.bulkWriter.close()
 
     const duration = (Date.now() - startTime) / 1000
-    console.info(`Transfer to ${this.collectionName} complete. Total rows processed: ${totalRowsProcessed}. Time: ${duration} seconds`)
+    console.info(`Transfer to ${this.collectionName} complete. Total rows processed: ${this.processedDocs}. Time: ${duration} seconds`)
   }
 
   async export (query, exportConfig) {

@@ -3,11 +3,13 @@ FROM node:current-slim
 
 WORKDIR /usr/src/app
 
+# Copy package files first for better caching
+COPY package*.json ./
+
+# Install dependencies
+RUN npm ci --only=production --quiet --no-fund --no-audit
+
+# Copy source code
 COPY . .
-
-# Clean up the node_modules directory
-RUN rm -rf node_modules
-
-RUN npm ci --only=production
 
 CMD ["node", "index.js"]
