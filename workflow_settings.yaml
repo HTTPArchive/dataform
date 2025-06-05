@@ -1,8 +1,6 @@
----
-
 defaultProject: httparchive
 defaultLocation: US
 defaultAssertionDataset: dataform_assertions
 
 vars:
-  environment: prod # MUST be equal 'prod' in main branch, enables processing sampled data
+  environment: prod # MUST be 'prod' in main branch, enables sampling
