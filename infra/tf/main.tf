@@ -48,15 +48,6 @@ module "bigquery_export" {
   function_name     = "bigquery-export"
 }
 
-module "masthead" {
-  source = "./masthead"
-
-  project = local.project
-  # source = "https://github.com/Masthead-Data/masthead-deployment"
-  # project_id = local.project
-  # project_number = local.project_number
-}
-
 module "functions" {
   source            = "./functions"
   project           = local.project
@@ -74,4 +65,24 @@ module "dataform_export" {
   function_name               = "dataform-export"
   remote_functions_connection = module.functions.google_bigquery_connection-remote_functions-id
   depends_on                  = [module.functions]
+}
+
+module "masthead_agent" {
+  source  = "github.com/masthead-data/terraform-google-masthead-agent?ref=48411ad144a8540552f366c6ceb24fd6aae787a9"
+  # version = "~> 0.1.3"
+
+  project_id = local.project
+
+  # Enable only specific modules
+  enable_modules = {
+    bigquery      = true
+    dataform      = true
+    dataplex      = true
+    analytics_hub = true
+  }
+
+  # Custom labels for resource management
+  labels = {
+    team        = "dataops"
+  }
 }
