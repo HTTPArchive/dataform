@@ -68,7 +68,7 @@ module "dataform_export" {
 }
 
 module "masthead_agent" {
-  source  = "github.com/masthead-data/terraform-google-masthead-agent?ref=48411ad144a8540552f366c6ceb24fd6aae787a9"
+  source = "github.com/masthead-data/terraform-google-masthead-agent?ref=48411ad144a8540552f366c6ceb24fd6aae787a9"
   # version = "~> 0.1.3"
 
   project_id = local.project
@@ -83,6 +83,6 @@ module "masthead_agent" {
 
   # Custom labels for resource management
   labels = {
-    team        = "dataops"
+    team = "dataops"
   }
 }
