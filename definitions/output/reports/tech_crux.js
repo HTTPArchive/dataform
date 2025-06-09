@@ -128,7 +128,7 @@ WITH pages AS (
     ${constants.devRankFilter}
 ),
 
-geo_summary AS (
+crux_base AS (
   SELECT
     \`chrome-ux-report\`.experimental.GET_COUNTRY(country_code) AS geo,
     rank,
@@ -246,7 +246,7 @@ crux AS (
       IS_GOOD(fast_ttfb, avg_ttfb, slow_ttfb) AS good_ttfb,
       IS_NON_ZERO(fast_inp, avg_inp, slow_inp) AS any_inp,
       IS_GOOD(fast_inp, avg_inp, slow_inp) AS good_inp
-    FROM geo_summary
+    FROM crux_base
   ),
     UNNEST(eligible_ranks) AS rank
 ),
