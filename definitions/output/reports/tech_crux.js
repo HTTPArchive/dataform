@@ -197,7 +197,7 @@ base_crux AS (
       WHEN rank <= 100000 THEN ['Top 100k', 'Top 1M', 'Top 10M', 'ALL']
       WHEN rank <= 1000000 THEN ['Top 1M', 'Top 10M', 'ALL']
       WHEN rank <= 10000000 THEN ['Top 10M', 'ALL']
-      ELSE ['Unknown']
+      WHEN rank <= 100000000 THEN ['ALL']
     END AS eligible_ranks,
     CONCAT(origin, '/') AS root_page,
     IF(device = 'desktop', 'desktop', 'mobile') AS client,
