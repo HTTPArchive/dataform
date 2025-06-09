@@ -42,61 +42,44 @@ const results = []
 for (const category of Object.keys(lighthouse?.categories ? lighthouse.categories : {})) {
   for (const audit of lighthouse.categories[category].auditRefs) {
 
-    // Moving lighthouse to insights https://developer.chrome.com/blog/moving-lighthouse-to-insights
-    if (category === 'performance' && '${pastMonth}' < '2025-10-01') {
-      if (
-        [
-          'first-meaningful-paint',
-          'no-document-write',
-          'offscreen-images',
-          'uses-passive-event-listeners',
-          'uses-rel-preload',
-          'third-party-facades'
-        ].includes(audit.id)
-      ) {
-        continue; // Deprecated audits
-      } else if (
-        lighthouse.audits[audit.id].score === 1 // Only include audits that passed
-          && !['metrics', 'hidden'].includes(audit.group) // Exclude metrics and hidden audits
-      ) {
-        // Map old audit IDs to new insight audit IDs
-        const performanceAuditIdMapping = {
-          'layout-shifts': 'cls-culprits-insight',
-          'non-composited-animations': 'cls-culprits-insight',
-          'unsized-images': 'cls-culprits-insight',
-          'redirects': 'document-latency-insight',
-          'server-response-time': 'document-latency-insight',
-          'uses-text-compression': 'document-latency-insight',
-          'dom-size': 'dom-size-insight',
-          'duplicated-javascript': 'duplicated-javascript-insight',
-          'font-display': 'font-display-insight',
-          'modern-image-formats': 'image-delivery-insight',
-          'uses-optimized-images': 'image-delivery-insight',
-          'efficient-animated-content': 'image-delivery-insight',
-          'uses-responsive-images': 'image-delivery-insight',
-          'work-during-interaction': 'interaction-to-next-paint-insight',
-          'prioritize-lcp-image': 'lcp-discovery-insight',
-          'lcp-lazy-loaded': 'lcp-discovery-insight',
-          'largest-contentful-paint-element': 'lcp-phases-insight',
-          'legacy-javascript': 'legacy-javascript-insight',
-          'uses-http2': 'modern-http-insight',
-          'critical-request-chains': 'network-dependency-tree-insight',
-          'uses-rel-preconnect': 'network-dependency-tree-insight',
-          'render-blocking-resources': 'render-blocking-insight',
-          'third-party-summary': 'third-parties-insight',
-          'uses-long-cache-ttl': 'use-cache-insight',
-          'viewport': 'viewport-insight'
-        };
-
-        // Use mapped audit ID if available, otherwise use original
-        const mappedAuditId = performanceAuditIdMapping[audit.id] || audit.id;
-
-        // Push the audit with the category and mapped ID
-        results.push({
-          category,
-          id: mappedAuditId
-        });
-      }
+    // Deprecated audits:
+    //  Moving lighthouse to insights https://developer.chrome.com/blog/moving-lighthouse-to-insights
+    if (
+      [
+        'first-meaningful-paint',
+        'no-document-write',
+        'offscreen-images',
+        'uses-passive-event-listeners',
+        'uses-rel-preload',
+        'third-party-facades',
+        "layout-shifts"
+        "non-composited-animations",
+        "unsized-images",
+        "redirects",
+        "server-response-time",
+        "uses-text-compression",
+        "dom-size",
+        "duplicated-javascript",
+        "font-display",
+        "modern-image-formats",
+        "uses-optimized-images",
+        "efficient-animated-content",
+        "uses-responsive-images",
+        "work-during-interaction",
+        "prioritize-lcp-image",
+        "lcp-lazy-loaded",
+        "largest-contentful-paint-element",
+        "legacy-javascript",
+        "uses-http2",
+        "critical-request-chains",
+        "uses-rel-preconnect",
+        "render-blocking-resources",
+        "third-party-summary",
+        "uses-long-cache-ttl",
+        "viewport"
+      ].includes(audit.id)
+    ) {
+      continue;
     }
 
     if (
@@ -406,6 +389,7 @@ audits_summary AS (
     ARRAY_AGG(STRUCT(
       category AS category,
       id AS id,
+      audits.origins AS origins,
       SAFE_DIVIDE(audits.origins, base_summary.origins) AS pass_rate
     )) AS audits
   FROM audits
