@@ -188,46 +188,6 @@ geo_summary AS (
     device IN ('desktop', 'phone')
 ),
 
-base_crux AS (
-  SELECT
-    geo,
-    CASE
-      WHEN rank <= 1000 THEN ['Top 1k', 'Top 10k', 'Top 100k', 'Top 1M', 'Top 10M', 'ALL']
-      WHEN rank <= 10000 THEN ['Top 10k', 'Top 100k', 'Top 1M', 'Top 10M', 'ALL']
-      WHEN rank <= 100000 THEN ['Top 100k', 'Top 1M', 'Top 10M', 'ALL']
-      WHEN rank <= 1000000 THEN ['Top 1M', 'Top 10M', 'ALL']
-      WHEN rank <= 10000000 THEN ['Top 10M', 'ALL']
-      WHEN rank <= 100000000 THEN ['ALL']
-    END AS eligible_ranks,
-    CONCAT(origin, '/') AS root_page,
-    IF(device = 'desktop', 'desktop', 'mobile') AS client,
-
-    # CWV
-    IS_NON_ZERO(fast_fid, avg_fid, slow_fid) AS any_fid,
-    IS_GOOD(fast_fid, avg_fid, slow_fid) AS good_fid,
-    IS_NON_ZERO(small_cls, medium_cls, large_cls) AS any_cls,
-    IS_GOOD(small_cls, medium_cls, large_cls) AS good_cls,
-    IS_NON_ZERO(fast_lcp, avg_lcp, slow_lcp) AS any_lcp,
-    IS_GOOD(fast_lcp, avg_lcp, slow_lcp) AS good_lcp,
-    IF('${pastMonth}' < '2024-01-01',
-      (IS_GOOD(fast_fid, avg_fid, slow_fid) OR fast_fid IS NULL) AND
-        IS_GOOD(small_cls, medium_cls, large_cls) AND
-        IS_GOOD(fast_lcp, avg_lcp, slow_lcp),
-      (IS_GOOD(fast_inp, avg_inp, slow_inp) OR fast_inp IS NULL) AND
-        IS_GOOD(small_cls, medium_cls, large_cls) AND
-        IS_GOOD(fast_lcp, avg_lcp, slow_lcp)
-    ) AS good_cwv,
-
-    # WV
-    IS_NON_ZERO(fast_fcp, avg_fcp, slow_fcp) AS any_fcp,
-    IS_GOOD(fast_fcp, avg_fcp, slow_fcp) AS good_fcp,
-    IS_NON_ZERO(fast_ttfb, avg_ttfb, slow_ttfb) AS any_ttfb,
-    IS_GOOD(fast_ttfb, avg_ttfb, slow_ttfb) AS good_ttfb,
-    IS_NON_ZERO(fast_inp, avg_inp, slow_inp) AS any_inp,
-    IS_GOOD(fast_inp, avg_inp, slow_inp) AS good_inp
-  FROM geo_summary
-),
-
 crux AS (
   SELECT
     geo,
@@ -249,7 +209,45 @@ crux AS (
     good_ttfb,
     any_inp,
     good_inp
-  FROM base_crux,
+  FROM (
+    SELECT
+      geo,
+      CASE
+        WHEN rank <= 1000 THEN ['Top 1k', 'Top 10k', 'Top 100k', 'Top 1M', 'Top 10M', 'ALL']
+        WHEN rank <= 10000 THEN ['Top 10k', 'Top 100k', 'Top 1M', 'Top 10M', 'ALL']
+        WHEN rank <= 100000 THEN ['Top 100k', 'Top 1M', 'Top 10M', 'ALL']
+        WHEN rank <= 1000000 THEN ['Top 1M', 'Top 10M', 'ALL']
+        WHEN rank <= 10000000 THEN ['Top 10M', 'ALL']
+        WHEN rank <= 100000000 THEN ['ALL']
+      END AS eligible_ranks,
+      CONCAT(origin, '/') AS root_page,
+      IF(device = 'desktop', 'desktop', 'mobile') AS client,
+
+      # CWV
+      IS_NON_ZERO(fast_fid, avg_fid, slow_fid) AS any_fid,
+      IS_GOOD(fast_fid, avg_fid, slow_fid) AS good_fid,
+      IS_NON_ZERO(small_cls, medium_cls, large_cls) AS any_cls,
+      IS_GOOD(small_cls, medium_cls, large_cls) AS good_cls,
+      IS_NON_ZERO(fast_lcp, avg_lcp, slow_lcp) AS any_lcp,
+      IS_GOOD(fast_lcp, avg_lcp, slow_lcp) AS good_lcp,
+      IF('${pastMonth}' < '2024-01-01',
+        (IS_GOOD(fast_fid, avg_fid, slow_fid) OR fast_fid IS NULL) AND
+          IS_GOOD(small_cls, medium_cls, large_cls) AND
+          IS_GOOD(fast_lcp, avg_lcp, slow_lcp),
+        (IS_GOOD(fast_inp, avg_inp, slow_inp) OR fast_inp IS NULL) AND
+          IS_GOOD(small_cls, medium_cls, large_cls) AND
+          IS_GOOD(fast_lcp, avg_lcp, slow_lcp)
+      ) AS good_cwv,
+
+      # WV
+      IS_NON_ZERO(fast_fcp, avg_fcp, slow_fcp) AS any_fcp,
+      IS_GOOD(fast_fcp, avg_fcp, slow_fcp) AS good_fcp,
+      IS_NON_ZERO(fast_ttfb, avg_ttfb, slow_ttfb) AS any_ttfb,
+      IS_GOOD(fast_ttfb, avg_ttfb, slow_ttfb) AS good_ttfb,
+      IS_NON_ZERO(fast_inp, avg_inp, slow_inp) AS any_inp,
+      IS_GOOD(fast_inp, avg_inp, slow_inp) AS good_inp
+    FROM geo_summary
+  ),
     UNNEST(eligible_ranks) AS rank
 ),
 
