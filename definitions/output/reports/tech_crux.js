@@ -156,6 +156,7 @@ crux_base AS (
   WHERE
     yyyymm = CAST(FORMAT_DATE('%Y%m', '${pastMonth}') AS INT64) AND
     device IN ('desktop', 'phone')
+    ${constants.devRankFilter}
 
   UNION ALL
 
@@ -186,6 +187,7 @@ crux_base AS (
   WHERE
     date = '${pastMonth}' AND
     device IN ('desktop', 'phone')
+    ${constants.devRankFilter}
 ),
 
 crux AS (
