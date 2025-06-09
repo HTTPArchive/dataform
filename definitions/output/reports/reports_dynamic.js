@@ -2,7 +2,7 @@ const configs = new reports.HTTPArchiveReports()
 const metrics = configs.listMetrics()
 
 const bucket = 'httparchive'
-const storagePath = '/reports/'
+const storagePath = '/reports/dev/'
 
 function generateExportQuery (metric, sql, params, ctx) {
   let query = ''
@@ -82,7 +82,7 @@ SELECT
     metrics.forEach(metric => {
       metric.SQL.forEach(sql => {
         operate(metric.id + '_' + sql.type + '_' + params.date, {
-          // tags: ['crawl_complete']
+          // tags: ['crawl_complete', 'http_reports']
         }).queries(ctx => `
 DELETE FROM reports.${metric.id}_${sql.type}
 WHERE date = '${params.date}';
