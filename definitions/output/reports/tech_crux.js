@@ -43,7 +43,7 @@ for (const category of Object.keys(lighthouse?.categories ? lighthouse.categorie
   for (const audit of lighthouse.categories[category].auditRefs) {
 
     // Moving lighthouse to insights https://developer.chrome.com/blog/moving-lighthouse-to-insights
-    if (category === 'performance' && ${pastMonth} < '2025-10-01') {
+    if (category === 'performance' && '${pastMonth}' < '2025-10-01') {
       if (
         [
           'first-meaningful-paint',
