@@ -188,17 +188,17 @@ geo_summary AS (
     device IN ('desktop', 'phone')
 ),
 
-crux AS (
+base_crux AS (
   SELECT
     geo,
-    CASE _rank
-      WHEN 100000000 THEN 'ALL'
-      WHEN 10000000 THEN 'Top 10M'
-      WHEN 1000000 THEN 'Top 1M'
-      WHEN 100000 THEN 'Top 100k'
-      WHEN 10000 THEN 'Top 10k'
-      WHEN 1000 THEN 'Top 1k'
-    END AS rank,
+    CASE
+      WHEN rank <= 1000 THEN ['Top 1k', 'Top 10k', 'Top 100k', 'Top 1M', 'Top 10M', 'ALL']
+      WHEN rank <= 10000 THEN ['Top 10k', 'Top 100k', 'Top 1M', 'Top 10M', 'ALL']
+      WHEN rank <= 100000 THEN ['Top 100k', 'Top 1M', 'Top 10M', 'ALL']
+      WHEN rank <= 1000000 THEN ['Top 1M', 'Top 10M', 'ALL']
+      WHEN rank <= 10000000 THEN ['Top 10M', 'ALL']
+      ELSE ['Unknown']
+    END AS eligible_ranks,
     CONCAT(origin, '/') AS root_page,
     IF(device = 'desktop', 'desktop', 'mobile') AS client,
 
@@ -225,9 +225,32 @@ crux AS (
     IS_GOOD(fast_ttfb, avg_ttfb, slow_ttfb) AS good_ttfb,
     IS_NON_ZERO(fast_inp, avg_inp, slow_inp) AS any_inp,
     IS_GOOD(fast_inp, avg_inp, slow_inp) AS good_inp
-  FROM geo_summary,
-    UNNEST([1000, 10000, 100000, 1000000, 10000000, 100000000]) AS _rank
-  WHERE rank <= _rank
+  FROM geo_summary
+),
+
+crux AS (
+  SELECT
+    geo,
+    rank,
+    root_page,
+    client,
+
+    any_fid,
+    good_fid,
+    any_cls,
+    good_cls,
+    any_lcp,
+    good_lcp,
+    good_cwv,
+
+    any_fcp,
+    good_fcp,
+    any_ttfb,
+    good_ttfb,
+    any_inp,
+    good_inp
+  FROM base_crux,
+    UNNEST(eligible_ranks) AS rank
 ),
 
 technologies AS (
@@ -289,36 +312,27 @@ lab_data AS (
 ),
 
 audits AS (
-  SELECT DISTINCT
-    client,
-    root_page,
-    technology,
-    version,
-    audit_category,
-    audit_id
-  FROM (
-    SELECT DISTINCT
-      client,
-      page,
-      root_page,
-      audits.category AS audit_category,
-      audits.id AS audit_id
-    FROM pages
-    INNER JOIN UNNEST(get_passed_audits(pages.lighthouse)) AS audits
-  ) AS audits_data
-  INNER JOIN technologies
-  USING (client, page)
-),
-
-origins_summary AS (
   SELECT
     geo,
     client,
     rank,
     technology,
     version,
+    category,
+    id,
     COUNT(DISTINCT root_page) AS origins
-  FROM lab_data
+  FROM (
+    SELECT DISTINCT
+      client,
+      page,
+      root_page,
+      audits.category,
+      audits.id
+    FROM pages
+    INNER JOIN UNNEST(get_passed_audits(pages.lighthouse)) AS audits
+  ) AS audits_data
+  INNER JOIN technologies
+  USING (client, page)
   INNER JOIN crux
   USING (client, root_page)
   GROUP BY
@@ -326,56 +340,12 @@ origins_summary AS (
     client,
     rank,
     technology,
-    version
-
-),
-
-
-audits_summary AS (
-  SELECT
-    geo,
-    client,
-    rank,
-    technology,
     version,
-    ARRAY_AGG(STRUCT(
-      audit_category AS category,
-      audit_id AS id,
-      SAFE_DIVIDE(audits.origins, origins_summary.origins) AS pass_rate
-    )) AS audits
-  FROM (
-    SELECT
-      geo,
-      client,
-      rank,
-      technology,
-      version,
-      audit_category,
-      audit_id,
-      COUNT(DISTINCT root_page) AS origins
-    FROM audits
-    INNER JOIN crux
-    USING (client, root_page)
-    GROUP BY
-      geo,
-      client,
-      rank,
-      technology,
-      version,
-      audit_category,
-      audit_id
-  ) AS audits
-  LEFT JOIN origins_summary
-  USING (geo, client, rank, technology, version)
-  GROUP BY
-    geo,
-    client,
-    rank,
-    technology,
-    version
+    category,
+    id
 ),
 
-other_summary AS (
+base_summary AS (
   SELECT
     geo,
     client,
@@ -412,11 +382,35 @@ other_summary AS (
       SAFE_CAST(APPROX_QUANTILES(bytesTotal, 1000)[OFFSET(500)] AS INT64) AS total,
       SAFE_CAST(APPROX_QUANTILES(bytesJS, 1000)[OFFSET(500)] AS INT64) AS js,
       SAFE_CAST(APPROX_QUANTILES(bytesImg, 1000)[OFFSET(500)] AS INT64) AS images
-    ) AS median_page_weight_bytes
+    ) AS median_page_weight_bytes,
 
+    COUNT(DISTINCT root_page) AS origins
   FROM lab_data
   INNER JOIN crux
   USING (client, root_page)
+  GROUP BY
+    geo,
+    client,
+    rank,
+    technology,
+    version
+),
+
+audits_summary AS (
+  SELECT
+    geo,
+    client,
+    rank,
+    technology,
+    version,
+    ARRAY_AGG(STRUCT(
+      category AS category,
+      id AS id,
+      SAFE_DIVIDE(audits.origins, base_summary.origins) AS pass_rate
+    )) AS audits
+  FROM audits
+  LEFT JOIN base_summary
+  USING (geo, client, rank, technology, version)
   GROUP BY
     geo,
     client,
@@ -433,15 +427,12 @@ SELECT
   technology,
   version,
 
-  # Metrics
   origins,
   crux,
   median_lighthouse_score,
   median_page_weight_bytes,
   audits
-FROM origins_summary
-LEFT JOIN other_summary
-USING (geo, client, rank, technology, version)
+FROM base_summary
 LEFT JOIN audits_summary
 USING (geo, client, rank, technology, version)
 `)
