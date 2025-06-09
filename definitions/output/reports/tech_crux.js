@@ -294,40 +294,6 @@ lab_data AS (
     version
 ),
 
-audits AS (
-  SELECT
-    geo,
-    client,
-    rank,
-    technology,
-    version,
-    category,
-    id,
-    COUNT(DISTINCT root_page) AS origins
-  FROM (
-    SELECT DISTINCT
-      client,
-      page,
-      root_page,
-      audits.category,
-      audits.id
-    FROM pages
-    INNER JOIN UNNEST(get_passed_audits(pages.lighthouse)) AS audits
-  ) AS audits_data
-  INNER JOIN technologies
-  USING (client, page)
-  INNER JOIN crux
-  USING (client, root_page)
-  GROUP BY
-    geo,
-    client,
-    rank,
-    technology,
-    version,
-    category,
-    id
-),
-
 base_summary AS (
   SELECT
     geo,
@@ -387,14 +353,43 @@ audits_summary AS (
     technology,
     version,
     ARRAY_AGG(STRUCT(
-      category AS category,
-      id AS id,
-      audits.origins AS origins,
-      SAFE_DIVIDE(audits.origins, base_summary.origins) AS pass_rate
+      category,
+      id,
+      pass_origins
     )) AS audits
-  FROM audits
-  LEFT JOIN base_summary
-  USING (geo, client, rank, technology, version)
+  FROM (
+    SELECT
+      geo,
+      client,
+      rank,
+      technology,
+      version,
+      category,
+      id,
+      COUNT(DISTINCT root_page) AS pass_origins
+    FROM (
+      SELECT DISTINCT
+        client,
+        page,
+        root_page,
+        audits.category,
+        audits.id
+      FROM pages
+      INNER JOIN UNNEST(get_passed_audits(pages.lighthouse)) AS audits
+    ) AS audits_data
+    INNER JOIN technologies
+    USING (client, page)
+    INNER JOIN crux
+    USING (client, root_page)
+    GROUP BY
+      geo,
+      client,
+      rank,
+      technology,
+      version,
+      category,
+      id
+  )
   GROUP BY
     geo,
     client,
