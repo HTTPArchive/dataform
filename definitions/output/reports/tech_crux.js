@@ -52,7 +52,7 @@ for (const category of Object.keys(lighthouse?.categories ? lighthouse.categorie
         'uses-passive-event-listeners',
         'uses-rel-preload',
         'third-party-facades',
-        "layout-shifts"
+        "layout-shifts",
         "non-composited-animations",
         "unsized-images",
         "redirects",
