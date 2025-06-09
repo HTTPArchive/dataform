@@ -41,47 +41,6 @@ const results = []
 
 for (const category of Object.keys(lighthouse?.categories ? lighthouse.categories : {})) {
   for (const audit of lighthouse.categories[category].auditRefs) {
-
-    // Deprecated audits:
-    //  Moving lighthouse to insights https://developer.chrome.com/blog/moving-lighthouse-to-insights
-    if (
-      [
-        'first-meaningful-paint',
-        'no-document-write',
-        'offscreen-images',
-        'uses-passive-event-listeners',
-        'uses-rel-preload',
-        'third-party-facades',
-        "layout-shifts",
-        "non-composited-animations",
-        "unsized-images",
-        "redirects",
-        "server-response-time",
-        "uses-text-compression",
-        "dom-size",
-        "duplicated-javascript",
-        "font-display",
-        "modern-image-formats",
-        "uses-optimized-images",
-        "efficient-animated-content",
-        "uses-responsive-images",
-        "work-during-interaction",
-        "prioritize-lcp-image",
-        "lcp-lazy-loaded",
-        "largest-contentful-paint-element",
-        "legacy-javascript",
-        "uses-http2",
-        "critical-request-chains",
-        "uses-rel-preconnect",
-        "render-blocking-resources",
-        "third-party-summary",
-        "uses-long-cache-ttl",
-        "viewport"
-      ].includes(audit.id)
-    ) {
-      continue;
-    }
-
     if (
       lighthouse.audits[audit.id].score === 1 // Only include audits that passed
         && !['metrics', 'hidden'].includes(audit.group) // Exclude metrics and hidden audits
