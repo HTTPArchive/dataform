@@ -41,56 +41,72 @@ const results = []
 
 for (const category of Object.keys(lighthouse?.categories ? lighthouse.categories : {})) {
   for (const audit of lighthouse.categories[category].auditRefs) {
-    if (
-      lighthouse.audits[audit.id].score === 1 // Only include audits that passed
-        && !['metrics', 'hidden'].includes(audit.group) // Exclude metrics and hidden audits
-        && ![
+
+    // Moving lighthouse to insights https://developer.chrome.com/blog/moving-lighthouse-to-insights
+    if (category === 'performance' && ${pastMonth} < '2025-10-01') {
+      if (
+        [
           'first-meaningful-paint',
           'no-document-write',
           'offscreen-images',
           'uses-passive-event-listeners',
           'uses-rel-preload',
           'third-party-facades'
-        ].includes(audit.id) // Add any specific audits to exclude here
+        ].includes(audit.id)
+      ) {
+        continue; // Deprecated audits
+      } else if (
+        lighthouse.audits[audit.id].score === 1 // Only include audits that passed
+          && !['metrics', 'hidden'].includes(audit.group) // Exclude metrics and hidden audits
+      ) {
+        // Map old audit IDs to new insight audit IDs
+        const performanceAuditIdMapping = {
+          'layout-shifts': 'cls-culprits-insight',
+          'non-composited-animations': 'cls-culprits-insight',
+          'unsized-images': 'cls-culprits-insight',
+          'redirects': 'document-latency-insight',
+          'server-response-time': 'document-latency-insight',
+          'uses-text-compression': 'document-latency-insight',
+          'dom-size': 'dom-size-insight',
+          'duplicated-javascript': 'duplicated-javascript-insight',
+          'font-display': 'font-display-insight',
+          'modern-image-formats': 'image-delivery-insight',
+          'uses-optimized-images': 'image-delivery-insight',
+          'efficient-animated-content': 'image-delivery-insight',
+          'uses-responsive-images': 'image-delivery-insight',
+          'work-during-interaction': 'interaction-to-next-paint-insight',
+          'prioritize-lcp-image': 'lcp-discovery-insight',
+          'lcp-lazy-loaded': 'lcp-discovery-insight',
+          'largest-contentful-paint-element': 'lcp-phases-insight',
+          'legacy-javascript': 'legacy-javascript-insight',
+          'uses-http2': 'modern-http-insight',
+          'critical-request-chains': 'network-dependency-tree-insight',
+          'uses-rel-preconnect': 'network-dependency-tree-insight',
+          'render-blocking-resources': 'render-blocking-insight',
+          'third-party-summary': 'third-parties-insight',
+          'uses-long-cache-ttl': 'use-cache-insight',
+          'viewport': 'viewport-insight'
+        };
+
+        // Use mapped audit ID if available, otherwise use original
+        const mappedAuditId = performanceAuditIdMapping[audit.id] || audit.id;
+
+        // Push the audit with the category and mapped ID
+        results.push({
+          category,
+          id: mappedAuditId
+        });
+      }
+    }
+
+    if (
+      lighthouse.audits[audit.id].score === 1 // Only include audits that passed
+        && !['metrics', 'hidden'].includes(audit.group) // Exclude metrics and hidden audits
     ) {
-
-      // Map old audit IDs to new insight audit IDs
-      const auditIdMapping = {
-        'layout-shifts': 'cls-culprits-insight',
-        'non-composited-animations': 'cls-culprits-insight',
-        'unsized-images': 'cls-culprits-insight',
-        'redirects': 'document-latency-insight',
-        'server-response-time': 'document-latency-insight',
-        'uses-text-compression': 'document-latency-insight',
-        'dom-size': 'dom-size-insight',
-        'duplicated-javascript': 'duplicated-javascript-insight',
-        'font-display': 'font-display-insight',
-        'modern-image-formats': 'image-delivery-insight',
-        'uses-optimized-images': 'image-delivery-insight',
-        'efficient-animated-content': 'image-delivery-insight',
-        'uses-responsive-images': 'image-delivery-insight',
-        'work-during-interaction': 'interaction-to-next-paint-insight',
-        'prioritize-lcp-image': 'lcp-discovery-insight',
-        'lcp-lazy-loaded': 'lcp-discovery-insight',
-        'largest-contentful-paint-element': 'lcp-phases-insight',
-        'legacy-javascript': 'legacy-javascript-insight',
-        'uses-http2': 'modern-http-insight',
-        'critical-request-chains': 'network-dependency-tree-insight',
-        'uses-rel-preconnect': 'network-dependency-tree-insight',
-        'render-blocking-resources': 'render-blocking-insight',
-        'third-party-summary': 'third-parties-insight',
-        'uses-long-cache-ttl': 'use-cache-insight',
-        'viewport': 'viewport-insight'
-      };
-
-      // Use mapped audit ID if available, otherwise use original
-      const mappedAuditId = auditIdMapping[audit.id] || audit.id;
-
-      // Push the audit with the category and mapped ID
       results.push({
         category,
-        id: mappedAuditId
-      })
+        id: audit.id
+      });
     }
   }
 }
@@ -252,16 +268,24 @@ technologies AS (
 lab_data AS (
   SELECT
     client,
-    page,
     root_page,
-    SAFE.INT64(summary.bytesTotal) AS bytesTotal,
-    SAFE.INT64(summary.bytesJS) AS bytesJS,
-    SAFE.INT64(summary.bytesImg) AS bytesImg,
-    SAFE.FLOAT64(lighthouse.categories.accessibility.score) AS accessibility,
-    SAFE.FLOAT64(lighthouse.categories['best-practices'].score) AS best_practices,
-    SAFE.FLOAT64(lighthouse.categories.performance.score) AS performance,
-    SAFE.FLOAT64(lighthouse.categories.seo.score) AS seo
+    technology,
+    version,
+    AVG(SAFE.INT64(summary.bytesTotal)) AS bytesTotal,
+    AVG(SAFE.INT64(summary.bytesJS)) AS bytesJS,
+    AVG(SAFE.INT64(summary.bytesImg)) AS bytesImg,
+    AVG(SAFE.FLOAT64(lighthouse.categories.accessibility.score)) AS accessibility,
+    AVG(SAFE.FLOAT64(lighthouse.categories['best-practices'].score)) AS best_practices,
+    AVG(SAFE.FLOAT64(lighthouse.categories.performance.score)) AS performance,
+    AVG(SAFE.FLOAT64(lighthouse.categories.seo.score)) AS seo
   FROM pages
+  INNER JOIN technologies
+  USING (client, page)
+  GROUP BY
+    client,
+    root_page,
+    technology,
+    version
 ),
 
 audits AS (
@@ -273,7 +297,7 @@ audits AS (
     audit_category,
     audit_id
   FROM (
-    SELECT
+    SELECT DISTINCT
       client,
       page,
       root_page,
@@ -286,29 +310,6 @@ audits AS (
   USING (client, page)
 ),
 
-lab_metrics AS (
-  SELECT
-    client,
-    root_page,
-    technology,
-    version,
-    AVG(bytesTotal) AS bytesTotal,
-    AVG(bytesJS) AS bytesJS,
-    AVG(bytesImg) AS bytesImg,
-    AVG(accessibility) AS accessibility,
-    AVG(best_practices) AS best_practices,
-    AVG(performance) AS performance,
-    AVG(seo) AS seo
-  FROM lab_data
-  INNER JOIN technologies
-  USING (client, page)
-  GROUP BY
-    client,
-    root_page,
-    technology,
-    version
-),
-
 origins_summary AS (
   SELECT
     geo,
@@ -317,7 +318,7 @@ origins_summary AS (
     technology,
     version,
     COUNT(DISTINCT root_page) AS origins
-  FROM lab_metrics
+  FROM lab_data
   INNER JOIN crux
   USING (client, root_page)
   GROUP BY
@@ -413,7 +414,7 @@ other_summary AS (
       SAFE_CAST(APPROX_QUANTILES(bytesImg, 1000)[OFFSET(500)] AS INT64) AS images
     ) AS median_page_weight_bytes
 
-  FROM lab_metrics
+  FROM lab_data
   INNER JOIN crux
   USING (client, root_page)
   GROUP BY
