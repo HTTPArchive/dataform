@@ -16,7 +16,7 @@ CREATE TEMP FUNCTION GET_AUDITS(
     audits ARRAY<STRUCT<
       category STRING,
       id STRING,
-      pass_rate FLOAT64
+      pass_origins FLOAT64
     >>
   >>
 )
@@ -24,10 +24,10 @@ RETURNS ARRAY<STRUCT<
   category STRING,
   id STRING,
   mobile STRUCT<
-    pass_rate FLOAT64
+    pass_origins FLOAT64
   >,
   desktop STRUCT<
-    pass_rate FLOAT64
+    pass_origins FLOAT64
   >
 >>
 LANGUAGE js AS '''
@@ -45,15 +45,15 @@ records.forEach(function(record) {
       auditMap[key] = {
         category: audit.category,
         id: audit.id,
-        mobile: { pass_rate: 0 },
-        desktop: { pass_rate: 0 }
+        mobile: { pass_origins: 0 },
+        desktop: { pass_origins: 0 }
       };
     }
-    // Add the pass_rate to the proper client type.
+    // Add the pass_origins to the proper client type.
     if (record.client === 'mobile') {
-      auditMap[key].mobile.pass_rate += audit.pass_rate;
+      auditMap[key].mobile.pass_origins += audit.pass_origins;
     } else if (record.client === 'desktop') {
-      auditMap[key].desktop.pass_rate += audit.pass_rate;
+      auditMap[key].desktop.pass_origins += audit.pass_origins;
     }
   });
 });

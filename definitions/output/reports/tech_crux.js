@@ -42,13 +42,13 @@ const results = []
 for (const category of Object.keys(lighthouse?.categories ? lighthouse.categories : {})) {
   for (const audit of lighthouse.categories[category].auditRefs) {
     if (
-      lighthouse.audits[audit.id].score === 1 &&
-        !['metrics', 'hidden'].includes(audit.group)
+      lighthouse.audits[audit.id].score === 1 // Only include audits that passed
+        && !['metrics', 'hidden'].includes(audit.group) // Exclude metrics and hidden audits
     ) {
       results.push({
         category,
         id: audit.id
-      })
+      });
     }
   }
 }
@@ -70,7 +70,7 @@ WITH pages AS (
     ${constants.devRankFilter}
 ),
 
-geo_summary AS (
+crux_base AS (
   SELECT
     \`chrome-ux-report\`.experimental.GET_COUNTRY(country_code) AS geo,
     rank,
@@ -135,43 +135,64 @@ geo_summary AS (
 crux AS (
   SELECT
     geo,
-    CASE _rank
-      WHEN 100000000 THEN 'ALL'
-      WHEN 10000000 THEN 'Top 10M'
-      WHEN 1000000 THEN 'Top 1M'
-      WHEN 100000 THEN 'Top 100k'
-      WHEN 10000 THEN 'Top 10k'
-      WHEN 1000 THEN 'Top 1k'
-    END AS rank,
-    CONCAT(origin, '/') AS root_page,
-    IF(device = 'desktop', 'desktop', 'mobile') AS client,
+    rank,
+    root_page,
+    client,
 
-    # CWV
-    IS_NON_ZERO(fast_fid, avg_fid, slow_fid) AS any_fid,
-    IS_GOOD(fast_fid, avg_fid, slow_fid) AS good_fid,
-    IS_NON_ZERO(small_cls, medium_cls, large_cls) AS any_cls,
-    IS_GOOD(small_cls, medium_cls, large_cls) AS good_cls,
-    IS_NON_ZERO(fast_lcp, avg_lcp, slow_lcp) AS any_lcp,
-    IS_GOOD(fast_lcp, avg_lcp, slow_lcp) AS good_lcp,
-    IF('${pastMonth}' < '2024-01-01',
-      (IS_GOOD(fast_fid, avg_fid, slow_fid) OR fast_fid IS NULL) AND
-        IS_GOOD(small_cls, medium_cls, large_cls) AND
-        IS_GOOD(fast_lcp, avg_lcp, slow_lcp),
-      (IS_GOOD(fast_inp, avg_inp, slow_inp) OR fast_inp IS NULL) AND
-        IS_GOOD(small_cls, medium_cls, large_cls) AND
-        IS_GOOD(fast_lcp, avg_lcp, slow_lcp)
-    ) AS good_cwv,
+    any_fid,
+    good_fid,
+    any_cls,
+    good_cls,
+    any_lcp,
+    good_lcp,
+    good_cwv,
 
-    # WV
-    IS_NON_ZERO(fast_fcp, avg_fcp, slow_fcp) AS any_fcp,
-    IS_GOOD(fast_fcp, avg_fcp, slow_fcp) AS good_fcp,
-    IS_NON_ZERO(fast_ttfb, avg_ttfb, slow_ttfb) AS any_ttfb,
-    IS_GOOD(fast_ttfb, avg_ttfb, slow_ttfb) AS good_ttfb,
-    IS_NON_ZERO(fast_inp, avg_inp, slow_inp) AS any_inp,
-    IS_GOOD(fast_inp, avg_inp, slow_inp) AS good_inp
-  FROM geo_summary,
-    UNNEST([1000, 10000, 100000, 1000000, 10000000, 100000000]) AS _rank
-  WHERE rank <= _rank
+    any_fcp,
+    good_fcp,
+    any_ttfb,
+    good_ttfb,
+    any_inp,
+    good_inp
+  FROM (
+    SELECT
+      geo,
+      CASE
+        WHEN rank <= 1000 THEN ['Top 1k', 'Top 10k', 'Top 100k', 'Top 1M', 'Top 10M', 'ALL']
+        WHEN rank <= 10000 THEN ['Top 10k', 'Top 100k', 'Top 1M', 'Top 10M', 'ALL']
+        WHEN rank <= 100000 THEN ['Top 100k', 'Top 1M', 'Top 10M', 'ALL']
+        WHEN rank <= 1000000 THEN ['Top 1M', 'Top 10M', 'ALL']
+        WHEN rank <= 10000000 THEN ['Top 10M', 'ALL']
+        ELSE ['ALL']
+      END AS eligible_ranks,
+      CONCAT(origin, '/') AS root_page,
+      IF(device = 'desktop', 'desktop', 'mobile') AS client,
+
+      # CWV
+      IS_NON_ZERO(fast_fid, avg_fid, slow_fid) AS any_fid,
+      IS_GOOD(fast_fid, avg_fid, slow_fid) AS good_fid,
+      IS_NON_ZERO(small_cls, medium_cls, large_cls) AS any_cls,
+      IS_GOOD(small_cls, medium_cls, large_cls) AS good_cls,
+      IS_NON_ZERO(fast_lcp, avg_lcp, slow_lcp) AS any_lcp,
+      IS_GOOD(fast_lcp, avg_lcp, slow_lcp) AS good_lcp,
+      IF('${pastMonth}' < '2024-01-01',
+        (IS_GOOD(fast_fid, avg_fid, slow_fid) OR fast_fid IS NULL) AND
+          IS_GOOD(small_cls, medium_cls, large_cls) AND
+          IS_GOOD(fast_lcp, avg_lcp, slow_lcp),
+        (IS_GOOD(fast_inp, avg_inp, slow_inp) OR fast_inp IS NULL) AND
+          IS_GOOD(small_cls, medium_cls, large_cls) AND
+          IS_GOOD(fast_lcp, avg_lcp, slow_lcp)
+      ) AS good_cwv,
+
+      # WV
+      IS_NON_ZERO(fast_fcp, avg_fcp, slow_fcp) AS any_fcp,
+      IS_GOOD(fast_fcp, avg_fcp, slow_fcp) AS good_fcp,
+      IS_NON_ZERO(fast_ttfb, avg_ttfb, slow_ttfb) AS any_ttfb,
+      IS_GOOD(fast_ttfb, avg_ttfb, slow_ttfb) AS good_ttfb,
+      IS_NON_ZERO(fast_inp, avg_inp, slow_inp) AS any_inp,
+      IS_GOOD(fast_inp, avg_inp, slow_inp) AS good_inp
+    FROM crux_base
+  ),
+    UNNEST(eligible_ranks) AS rank
 ),
 
 technologies AS (
@@ -212,54 +233,17 @@ technologies AS (
 lab_data AS (
   SELECT
     client,
-    page,
     root_page,
-    SAFE.INT64(summary.bytesTotal) AS bytesTotal,
-    SAFE.INT64(summary.bytesJS) AS bytesJS,
-    SAFE.INT64(summary.bytesImg) AS bytesImg,
-    SAFE.FLOAT64(lighthouse.categories.accessibility.score) AS accessibility,
-    SAFE.FLOAT64(lighthouse.categories['best-practices'].score) AS best_practices,
-    SAFE.FLOAT64(lighthouse.categories.performance.score) AS performance,
-    SAFE.FLOAT64(lighthouse.categories.seo.score) AS seo
+    technology,
+    version,
+    AVG(SAFE.INT64(summary.bytesTotal)) AS bytesTotal,
+    AVG(SAFE.INT64(summary.bytesJS)) AS bytesJS,
+    AVG(SAFE.INT64(summary.bytesImg)) AS bytesImg,
+    AVG(SAFE.FLOAT64(lighthouse.categories.accessibility.score)) AS accessibility,
+    AVG(SAFE.FLOAT64(lighthouse.categories['best-practices'].score)) AS best_practices,
+    AVG(SAFE.FLOAT64(lighthouse.categories.performance.score)) AS performance,
+    AVG(SAFE.FLOAT64(lighthouse.categories.seo.score)) AS seo
   FROM pages
-),
-
-audits AS (
-  SELECT DISTINCT
-    client,
-    root_page,
-    technology,
-    version,
-    audit_category,
-    audit_id
-  FROM (
-    SELECT
-      client,
-      page,
-      root_page,
-      audits.category AS audit_category,
-      audits.id AS audit_id
-    FROM pages
-    INNER JOIN UNNEST(get_passed_audits(pages.lighthouse)) AS audits
-  ) AS audits_data
-  INNER JOIN technologies
-  USING (client, page)
-),
-
-lab_metrics AS (
-  SELECT
-    client,
-    root_page,
-    technology,
-    version,
-    AVG(bytesTotal) AS bytesTotal,
-    AVG(bytesJS) AS bytesJS,
-    AVG(bytesImg) AS bytesImg,
-    AVG(accessibility) AS accessibility,
-    AVG(best_practices) AS best_practices,
-    AVG(performance) AS performance,
-    AVG(seo) AS seo
-  FROM lab_data
   INNER JOIN technologies
   USING (client, page)
   GROUP BY
@@ -269,72 +253,7 @@ lab_metrics AS (
     version
 ),
 
-origins_summary AS (
-  SELECT
-    geo,
-    client,
-    rank,
-    technology,
-    version,
-    COUNT(DISTINCT root_page) AS origins
-  FROM lab_metrics
-  INNER JOIN crux
-  USING (client, root_page)
-  GROUP BY
-    geo,
-    client,
-    rank,
-    technology,
-    version
-
-),
-
-
-audits_summary AS (
-  SELECT
-    geo,
-    client,
-    rank,
-    technology,
-    version,
-    ARRAY_AGG(STRUCT(
-      audit_category AS category,
-      audit_id AS id,
-      SAFE_DIVIDE(audits.origins, origins_summary.origins) AS pass_rate
-    )) AS audits
-  FROM (
-    SELECT
-      geo,
-      client,
-      rank,
-      technology,
-      version,
-      audit_category,
-      audit_id,
-      COUNT(DISTINCT root_page) AS origins
-    FROM audits
-    INNER JOIN crux
-    USING (client, root_page)
-    GROUP BY
-      geo,
-      client,
-      rank,
-      technology,
-      version,
-      audit_category,
-      audit_id
-  ) AS audits
-  LEFT JOIN origins_summary
-  USING (geo, client, rank, technology, version)
-  GROUP BY
-    geo,
-    client,
-    rank,
-    technology,
-    version
-),
-
-other_summary AS (
+base_summary AS (
   SELECT
     geo,
     client,
@@ -371,11 +290,65 @@ other_summary AS (
       SAFE_CAST(APPROX_QUANTILES(bytesTotal, 1000)[OFFSET(500)] AS INT64) AS total,
       SAFE_CAST(APPROX_QUANTILES(bytesJS, 1000)[OFFSET(500)] AS INT64) AS js,
       SAFE_CAST(APPROX_QUANTILES(bytesImg, 1000)[OFFSET(500)] AS INT64) AS images
-    ) AS median_page_weight_bytes
+    ) AS median_page_weight_bytes,
 
-  FROM lab_metrics
+    COUNT(DISTINCT root_page) AS origins
+  FROM lab_data
   INNER JOIN crux
   USING (client, root_page)
+  GROUP BY
+    geo,
+    client,
+    rank,
+    technology,
+    version
+),
+
+audits_summary AS (
+  SELECT
+    geo,
+    client,
+    rank,
+    technology,
+    version,
+    ARRAY_AGG(STRUCT(
+      category,
+      id,
+      pass_origins
+    )) AS audits
+  FROM (
+    SELECT
+      geo,
+      client,
+      rank,
+      technology,
+      version,
+      category,
+      id,
+      COUNT(DISTINCT root_page) AS pass_origins
+    FROM (
+      SELECT DISTINCT
+        client,
+        page,
+        root_page,
+        audits.category,
+        audits.id
+      FROM pages
+      INNER JOIN UNNEST(get_passed_audits(pages.lighthouse)) AS audits
+    ) AS audits_data
+    INNER JOIN technologies
+    USING (client, page)
+    INNER JOIN crux
+    USING (client, root_page)
+    GROUP BY
+      geo,
+      client,
+      rank,
+      technology,
+      version,
+      category,
+      id
+  )
   GROUP BY
     geo,
     client,
@@ -392,15 +365,12 @@ SELECT
   technology,
   version,
 
-  # Metrics
   origins,
   crux,
   median_lighthouse_score,
   median_page_weight_bytes,
   audits
-FROM origins_summary
-LEFT JOIN other_summary
-USING (geo, client, rank, technology, version)
+FROM base_summary
 LEFT JOIN audits_summary
 USING (geo, client, rank, technology, version)
 `)
