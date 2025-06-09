@@ -98,6 +98,7 @@ geo_summary AS (
   WHERE
     yyyymm = CAST(FORMAT_DATE('%Y%m', '${pastMonth}') AS INT64) AND
     device IN ('desktop', 'phone')
+    ${constants.devRankFilter}
 
   UNION ALL
 
@@ -128,6 +129,7 @@ geo_summary AS (
   WHERE
     date = '${pastMonth}' AND
     device IN ('desktop', 'phone')
+    ${constants.devRankFilter}
 ),
 
 crux AS (
