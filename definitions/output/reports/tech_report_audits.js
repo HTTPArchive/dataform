@@ -16,7 +16,7 @@ CREATE TEMP FUNCTION GET_AUDITS(
     audits ARRAY<STRUCT<
       category STRING,
       id STRING,
-      pass_origins FLOAT64
+      pass_origins INT64
     >>
   >>
 )
@@ -24,10 +24,10 @@ RETURNS ARRAY<STRUCT<
   category STRING,
   id STRING,
   mobile STRUCT<
-    pass_origins FLOAT64
+    pass_origins INT64
   >,
   desktop STRUCT<
-    pass_origins FLOAT64
+    pass_origins INT64
   >
 >>
 LANGUAGE js AS '''
