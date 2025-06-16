@@ -1,5 +1,6 @@
 const configs = new reports.HTTPArchiveReports()
 const metrics = configs.listMetrics()
+const lenses = configs.lenses;
 
 const bucket = 'httparchive'
 const storagePath = '/reports/dev/'
@@ -8,31 +9,30 @@ const storagePath = '/reports/dev/'
 const startDate = '2024-12-01' // constants.currentMonth;
 const endDate = '2024-12-01' // constants.currentMonth;
 
-function generateExportPath (metric, sql, params) {
-  if (sql.type === 'histogram') {
-    return `${storagePath}${params.date.replaceAll('-', '_')}/${metric.id}.json`
-  } else if (sql.type === 'timeseries') {
-    return `${storagePath}${metric.id}.json`
+function generateExportPath (ctx, params) {
+  if (params.sql.type === 'histogram') {
+    return `${storagePath}${params.date.replaceAll('-', '_')}/${params.metric.id}.json`
+  } else if (params.sql.type === 'timeseries') {
+    return `${storagePath}${params.metric.id}.json`
   } else {
     throw new Error('Unknown SQL type')
   }
 }
 
-function generateExportQuery (metric, sql, params, ctx) {
+function generateExportQuery (ctx, params) {
   let query = ''
-  if (sql.type === 'histogram') {
+  if (params.sql.type === 'histogram') {
     query = `
-SELECT
-  * EXCEPT(date)
-FROM ${ctx.self()}
+SELECT * EXCEPT(date)
+FROM \`reports.${params.sql.type}\`
 WHERE date = '${params.date}'
 `
-  } else if (sql.type === 'timeseries') {
+  } else if (params.sql.type === 'timeseries') {
     query = `
 SELECT
   FORMAT_DATE('%Y_%m_%d', date) AS date,
   * EXCEPT(date)
-FROM ${ctx.self()}
+FROM \`reports.${params.sql.type}\`
 `
   } else {
     throw new Error('Unknown SQL type')
@@ -40,17 +40,6 @@ FROM ${ctx.self()}
 
   const queryOutput = query.replace(/[\r\n]+/g, ' ')
   return queryOutput
-}
-
-const lenses = {
-  all: '',
-  top1k: 'AND rank <= 1000',
-  top10k: 'AND rank <= 10000',
-  top100k: 'AND rank <= 100000',
-  top1m: 'AND rank <= 1000000',
-  drupal: 'AND \'Drupal\' IN UNNEST(technologies.technology)',
-  magento: 'AND \'Magento\' IN UNNEST(technologies.technology)',
-  wordpress: 'AND \'WordPress\' IN UNNEST(technologies.technology)'
 }
 
 const iterations = []
@@ -91,15 +80,13 @@ CREATE TABLE IF NOT EXISTS reports.${params.sql.type} (
   data JSON
 )
 PARTITION BY date
-CLUSTER BY metric, lens;
+CLUSTER BY metric, lens, client;
 
 DELETE FROM reports.${params.sql.type}
 WHERE date = '${params.date}'
-AND metric = '${params.metric.id}'
-AND lens = '${params.lens.sql}';
+AND metric = '${params.metric.id}';
 
-INSERT INTO reports.${params.sql.type}
-${params.sql.query(ctx, params)};
+INSERT INTO reports.${params.sql.type} ${params.sql.query(ctx, params)};
 
 SELECT
 reports.run_export_job(
@@ -107,9 +94,9 @@ reports.run_export_job(
     "destination": "cloud_storage",
     "config": {
       "bucket": "${bucket}",
-      "name": "${generateExportPath(params.metric, params.sql, params)}"
+      "name": "${generateExportPath(ctx, params)}"
     },
-    "query": "${generateExportQuery(params.metric, params.sql, params, ctx)}"
+    "query": "${generateExportQuery(ctx, params)}"
   }'''
 );
   `)

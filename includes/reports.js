@@ -14,9 +14,10 @@ WITH pages AS (
     CAST(FLOOR(INT64(summary.bytesTotal) / 1024 / 100) * 100 AS INT64) AS bin
   FROM crawl.pages
   WHERE
-    date = '${params.date}' ${params.lens.sql} AND
-    is_root_page AND
-    INT64(summary.bytesTotal) > 0
+    date = '${params.date}'
+    ${params.lens.sql}
+    AND is_root_page
+    AND INT64(summary.bytesTotal) > 0
 )
 
 SELECT
@@ -54,9 +55,10 @@ WITH pages AS (
     INT64(summary.bytesTotal) AS bytesTotal
   FROM crawl.pages
   WHERE
-    date = '${params.date}' $ ${params.lens.sql} AND
-    is_root_page AND
-    INT64(summary.bytesTotal) > 0
+    date = '${params.date}'
+    ${params.lens.sql}
+    AND is_root_page
+    AND INT64(summary.bytesTotal) > 0
 )
 
 SELECT
@@ -80,9 +82,21 @@ GROUP BY
   }
 }
 
+const lenses = {
+  all: '',
+  top1k: 'AND rank <= 1000',
+  top10k: 'AND rank <= 10000',
+  top100k: 'AND rank <= 100000',
+  top1m: 'AND rank <= 1000000',
+  drupal: 'AND \'Drupal\' IN UNNEST(technologies.technology)',
+  magento: 'AND \'Magento\' IN UNNEST(technologies.technology)',
+  wordpress: 'AND \'WordPress\' IN UNNEST(technologies.technology)'
+}
+
 class HTTPArchiveReports {
   constructor () {
-    this.config = config
+    this.config = config,
+      this.lenses = lenses;
   }
 
   listReports () {
