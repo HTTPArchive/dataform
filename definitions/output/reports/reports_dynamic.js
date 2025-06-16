@@ -1,9 +1,46 @@
 const configs = new reports.HTTPArchiveReports()
 const metrics = configs.listMetrics()
 
+const bucket = 'httparchive'
+const storagePath = '/reports/dev/'
+
 // Adjust start and end dates to update reports retrospectively
 const startDate = '2024-12-01' // constants.currentMonth;
 const endDate = '2024-12-01' // constants.currentMonth;
+
+function generateExportPath (metric, sql, params) {
+  if (sql.type === 'histogram') {
+    return `${storagePath}${params.date.replaceAll('-', '_')}/${metric.id}.json`
+  } else if (sql.type === 'timeseries') {
+    return `${storagePath}${metric.id}.json`
+  } else {
+    throw new Error('Unknown SQL type')
+  }
+}
+
+function generateExportQuery (metric, sql, params, ctx) {
+  let query = ''
+  if (sql.type === 'histogram') {
+    query = `
+SELECT
+  * EXCEPT(date)
+FROM ${ctx.self()}
+WHERE date = '${params.date}'
+`
+  } else if (sql.type === 'timeseries') {
+    query = `
+SELECT
+  FORMAT_DATE('%Y_%m_%d', date) AS date,
+  * EXCEPT(date)
+FROM ${ctx.self()}
+`
+  } else {
+    throw new Error('Unknown SQL type')
+  }
+
+  const queryOutput = query.replace(/[\r\n]+/g, ' ')
+  return queryOutput
+}
 
 const lenses = {
   all: '',
@@ -54,13 +91,26 @@ CREATE TABLE IF NOT EXISTS reports.${params.sql.type} (
   data JSON
 )
 PARTITION BY date
-CLUSTER BY client, lens;
+CLUSTER BY metric, lens;
 
 DELETE FROM reports.${params.sql.type}
-WHERE date = '${params.date}';
+WHERE date = '${params.date}'
+AND metric = '${params.metric.id}'
+AND lens = '${params.lens.sql}';
 
-/* {"dataform_trigger": "report_complete", "date": "${params.date}", "name": "${params.metric.id}", "type": "${params.sql.type}", "lense": "${params.lens.name}"} */
-INSERT INTO reports.${params.sql.type}` +
-params.sql.query(ctx, params)
-    )
+INSERT INTO reports.${params.sql.type}
+${params.sql.query(ctx, params)};
+
+SELECT
+reports.run_export_job(
+  JSON '''{
+    "destination": "cloud_storage",
+    "config": {
+      "bucket": "${bucket}",
+      "name": "${generateExportPath(params.metric, params.sql, params)}"
+    },
+    "query": "${generateExportQuery(params.metric, params.sql, params, ctx)}"
+  }'''
+);
+  `)
 })

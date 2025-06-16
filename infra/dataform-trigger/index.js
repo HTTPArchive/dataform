@@ -18,8 +18,8 @@ WITH crux AS (
     AND partition_id IN (previousMonth, previousMonth_YYYYMM)
 ), report AS (
   SELECT MAX(partition_id) = previousMonth AS report_exists
-  FROM httparchive.core_web_vitals.INFORMATION_SCHEMA.PARTITIONS
-  WHERE table_name = 'technologies'
+  FROM httparchive.reports.INFORMATION_SCHEMA.PARTITIONS
+  WHERE table_name = 'tech_report_categories'
     AND partition_id != '__NULL__'
 )
 
@@ -31,7 +31,7 @@ FROM crux, report;
     action: 'runDataformRepo',
     actionArgs: {
       repoName: 'crawl-data',
-      tags: ['tech_report']
+      tags: ['crux_ready']
     }
   },
   crawl_complete: {

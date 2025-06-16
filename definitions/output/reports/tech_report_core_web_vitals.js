@@ -8,7 +8,7 @@ publish('tech_report_core_web_vitals', {
     partitionBy: 'date',
     clusterBy: ['rank', 'geo']
   },
-  tags: ['tech_report']
+  tags: ['crux_ready']
 }).preOps(ctx => `
 CREATE TEMPORARY FUNCTION GET_VITALS(
   records ARRAY<STRUCT<
@@ -68,7 +68,6 @@ return Object.values(vitals)
 DELETE FROM ${ctx.self()}
 WHERE date = '${pastMonth}';
 `).query(ctx => `
-/* {"dataform_trigger": "tech_report_complete", "date": "${pastMonth}", "name": "core_web_vitals", "type": "report"} */
 SELECT
   date,
   geo,
@@ -100,4 +99,18 @@ GROUP BY
   rank,
   technology,
   version
-`)
+`).postOps(ctx => `
+  SELECT
+    reports.run_export_job(
+      JSON '''{
+        "destination": "firestore",
+        "config": {
+          "database": "tech-report-api-${constants.environment}",
+          "collection": "core_web_vitals",
+          "type": "report",
+          "date": "${pastMonth}"
+        },
+        "query": "SELECT STRING(date) AS date, * EXCEPT(date) FROM ${ctx.self()} WHERE date = '${pastMonth}'"
+      }'''
+    );
+  `)

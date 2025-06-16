@@ -1,3 +1,35 @@
+// See https://github.com/HTTPArchive/dataform/issues/43
+assert('corrupted_technology_values')
+  .tags(['crawl_complete'])
+  .query(ctx => `
+SELECT
+  /*
+    date,
+    client,
+    tech,
+    ARRAY_AGG(DISTINCT page LIMIT 3) AS sample_pages,
+  */
+  COUNT(DISTINCT page) AS cnt_pages
+FROM ${ctx.ref('crawl_staging', 'pages')} AS pages
+LEFT JOIN pages.technologies AS tech
+LEFT JOIN tech.categories AS category
+WHERE
+  date = '${constants.currentMonth}' AND
+  (
+    tech.technology NOT IN (SELECT DISTINCT name FROM wappalyzer.technologies)
+    OR category NOT IN (SELECT DISTINCT name FROM wappalyzer.categories)
+    OR ARRAY_LENGTH(tech.categories) = 0
+  )
+/*
+GROUP BY
+  date,
+  client,
+  tech
+ORDER BY cnt_pages DESC
+*/
+HAVING cnt_pages > 200
+  `)
+
 publish('pages', {
   type: 'incremental',
   protected: true,
@@ -48,8 +80,10 @@ publish('pages', {
     metadata: 'Additional metadata about the test'
   },
   tags: ['crawl_complete'],
-  dependencies: ['create_reservation_assignment']
+  dependOnDependencyAssertions: true
 }).preOps(ctx => `
+SET @@RESERVATION='projects/httparchive/locations/US/reservations/enterprise';
+
 DELETE FROM ${ctx.self()}
 WHERE date = '${constants.currentMonth}' AND
   client = 'desktop';
@@ -73,6 +107,8 @@ WHERE date = '${constants.currentMonth}' AND
   client = 'mobile'
   ${constants.devRankFilter}
 `).postOps(ctx => `
+SET @@RESERVATION='none';
+
 CREATE TEMP TABLE technologies_cleaned AS (
   WITH technologies AS (
     SELECT DISTINCT

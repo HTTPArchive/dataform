@@ -4,8 +4,8 @@ import zlib from 'zlib'
 
 const storage = new Storage()
 
-export class StorageExport {
-  constructor (bucket = 'httparchive') {
+export class StorageUpload {
+  constructor (bucket) {
     this.bucket = bucket
     this.stream = new Readable({
       objectMode: true,

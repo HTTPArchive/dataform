@@ -24,14 +24,8 @@ provider "google" {
   billing_project       = local.project
 }
 
-module "dataform_export" {
-  source = "./dataform_export"
-
-  project           = local.project
-  project_number    = local.project_number
-  region            = local.region
+locals {
   function_identity = "cloud-function@httparchive.iam.gserviceaccount.com"
-  function_name     = "dataform-export"
 }
 
 module "dataform_trigger" {
@@ -40,7 +34,7 @@ module "dataform_trigger" {
   project           = local.project
   project_number    = local.project_number
   region            = local.region
-  function_identity = "cloud-function@httparchive.iam.gserviceaccount.com"
+  function_identity = local.function_identity
   function_name     = "dataform-trigger"
 }
 
@@ -48,15 +42,47 @@ module "bigquery_export" {
   source = "./bigquery_export"
 
   project           = local.project
-  project_number    = local.project_number
   region            = local.region
   location          = local.location
-  function_identity = "cloud-function@httparchive.iam.gserviceaccount.com"
+  function_identity = local.function_identity
   function_name     = "bigquery-export"
 }
 
-module "masthead" {
-  source = "./masthead"
+module "functions" {
+  source            = "./functions"
+  project           = local.project
+  location          = local.location
+  function_identity = local.function_identity
+  edit_datasets     = local.edit_datasets
+}
 
-  project = local.project
+module "dataform_export" {
+  source = "./dataform_export"
+
+  project_number              = local.project_number
+  region                      = local.region
+  function_identity           = local.function_identity
+  function_name               = "dataform-export"
+  remote_functions_connection = module.functions.google_bigquery_connection-remote_functions-id
+  depends_on                  = [module.functions]
+}
+
+module "masthead_agent" {
+  source = "github.com/masthead-data/terraform-google-masthead-agent?ref=httparchive"
+  # version = "~> 0.1.3"
+
+  project_id = local.project
+
+  # Enable only specific modules
+  enable_modules = {
+    bigquery      = true
+    dataform      = true
+    dataplex      = true
+    analytics_hub = true
+  }
+
+  # Custom labels for resource management
+  labels = {
+    team = "dataops"
+  }
 }

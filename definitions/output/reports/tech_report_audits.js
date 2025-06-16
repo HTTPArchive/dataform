@@ -8,7 +8,7 @@ publish('tech_report_audits', {
     partitionBy: 'date',
     clusterBy: ['rank', 'geo']
   },
-  tags: ['tech_report']
+  tags: ['crux_ready']
 }).preOps(ctx => `
 CREATE TEMP FUNCTION GET_AUDITS(
   records ARRAY<STRUCT<
@@ -16,7 +16,7 @@ CREATE TEMP FUNCTION GET_AUDITS(
     audits ARRAY<STRUCT<
       category STRING,
       id STRING,
-      pass_rate FLOAT64
+      pass_origins INT64
     >>
   >>
 )
@@ -24,10 +24,10 @@ RETURNS ARRAY<STRUCT<
   category STRING,
   id STRING,
   mobile STRUCT<
-    pass_rate FLOAT64
+    pass_origins INT64
   >,
   desktop STRUCT<
-    pass_rate FLOAT64
+    pass_origins INT64
   >
 >>
 LANGUAGE js AS '''
@@ -45,15 +45,15 @@ records.forEach(function(record) {
       auditMap[key] = {
         category: audit.category,
         id: audit.id,
-        mobile: { pass_rate: 0 },
-        desktop: { pass_rate: 0 }
+        mobile: { pass_origins: 0 },
+        desktop: { pass_origins: 0 }
       };
     }
-    // Add the pass_rate to the proper client type.
+    // Add the pass_origins to the proper client type.
     if (record.client === 'mobile') {
-      auditMap[key].mobile.pass_rate += audit.pass_rate;
+      auditMap[key].mobile.pass_origins += audit.pass_origins;
     } else if (record.client === 'desktop') {
-      auditMap[key].desktop.pass_rate += audit.pass_rate;
+      auditMap[key].desktop.pass_origins += audit.pass_origins;
     }
   });
 });
@@ -67,7 +67,6 @@ return Object.keys(auditMap).map(function(key) {
 DELETE FROM ${ctx.self()}
 WHERE date = '${pastMonth}';
 `).query(ctx => `
-/* {"dataform_trigger": "tech_report_complete", "date": "${pastMonth}", "name": "audits", "type": "report"} */
 SELECT
   date,
   geo,
@@ -86,4 +85,18 @@ GROUP BY
   rank,
   technology,
   version
-`)
+`).postOps(ctx => `
+  SELECT
+    reports.run_export_job(
+      JSON '''{
+        "destination": "firestore",
+        "config": {
+          "database": "tech-report-api-${constants.environment}",
+          "collection": "audits",
+          "type": "report",
+          "date": "${pastMonth}"
+        },
+        "query": "SELECT STRING(date) AS date, * EXCEPT(date) FROM ${ctx.self()} WHERE date = '${pastMonth}'"
+      }'''
+    );
+  `)

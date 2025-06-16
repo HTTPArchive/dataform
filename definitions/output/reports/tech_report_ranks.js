@@ -1,19 +1,19 @@
 const pastMonth = constants.fnPastMonth(constants.currentMonth)
 
-publish('tech_report_versions', {
+publish('tech_report_ranks', {
   schema: 'reports',
   type: 'table',
-  tags: ['crux_ready']
+  tags: ['tech_report']
 }).query(ctx => `
 SELECT
-  technology,
-  version,
-  adoption AS origins
+  rank,
+  adoption.mobile AS mobile_origins
 FROM ${ctx.ref('reports', 'tech_report_adoption')}
 WHERE
   date = '${pastMonth}'
-  AND rank = 'ALL'
   AND geo = 'ALL'
+  AND technology = 'ALL'
+  AND version = 'ALL'
   ${constants.devRankFilter}
 `).postOps(ctx => `
   SELECT
@@ -22,7 +22,7 @@ WHERE
         "destination": "firestore",
         "config": {
           "database": "tech-report-api-${constants.environment}",
-          "collection": "versions",
+          "collection": "ranks",
           "type": "dict"
         },
         "query": "SELECT * FROM ${ctx.self()}"

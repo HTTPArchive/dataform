@@ -36,26 +36,31 @@ publish('requests', {
     },
     response_body: 'Text-based response body'
   },
-  tags: ['crawl_complete'],
-  dependencies: ['create_reservation_assignment']
+  tags: ['crawl_complete']
 }).preOps(ctx => `
-FOR client_value IN (SELECT * FROM UNNEST(['desktop', 'mobile']) AS client) DO
-  FOR is_root_page_value IN (SELECT * FROM UNNEST([TRUE, FALSE]) AS is_root_page) DO
+SET @@RESERVATION='projects/httparchive/locations/US/reservations/enterprise';
 
-    -- Delete old entries
-    DELETE FROM ${ctx.self()}
-    WHERE date = '${constants.currentMonth}'
-      AND client = client_value.client
-      AND is_root_page = is_root_page_value.is_root_page;
+FOR client_var IN (SELECT * FROM UNNEST(['desktop', 'mobile']) AS value) DO
+  FOR is_root_page_var IN (SELECT * FROM UNNEST([TRUE, FALSE]) AS value) DO
+    FOR rank_lt_50M_var IN (SELECT * FROM UNNEST([TRUE, FALSE]) AS value) DO
 
-    -- Insert new entries
-    INSERT INTO ${ctx.self()}
-    SELECT *
-    FROM ${ctx.ref('crawl_staging', 'requests')}
-    WHERE date = '${constants.currentMonth}' AND
-      client = client_value.client AND
-      is_root_page = is_root_page_value.is_root_page ${constants.devRankFilter};
+      -- Delete old entries
+      DELETE FROM ${ctx.self()}
+      WHERE date = '${constants.currentMonth}' AND
+        client = client_var.value AND
+        is_root_page = is_root_page_var.value AND
+        (rank < 50000000) = rank_lt_50M_var.value;
 
+      -- Insert new entries
+      INSERT INTO ${ctx.self()}
+      SELECT *
+      FROM ${ctx.ref('crawl_staging', 'requests')}
+      WHERE date = '${constants.currentMonth}' AND
+        client = client_var.value AND
+        is_root_page = is_root_page_var.value AND
+        (rank < 50000000) = rank_lt_50M_var.value ${constants.devRankFilter};
+
+    END FOR;
   END FOR;
 END FOR;
 `).query(ctx => `

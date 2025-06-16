@@ -1,4 +1,4 @@
-const today = (dataform.projectConfig.vars.today ? dataform.projectConfig.vars.today : new Date().toISOString()).substring(0, 10)
+const today = new Date().toISOString().substring(0, 10)
 const currentMonth = today.substring(0, 8) + '01'
 function fnDateUnderscored (dateStr) {
   return dateStr.replaceAll('-', '_')
@@ -10,10 +10,11 @@ function fnPastMonth (monthISOstring) {
 }
 const clients = ['desktop', 'mobile']
 const booleans = ['FALSE', 'TRUE']
+const environment = dataform.projectConfig.vars.environment
 const [
   devTABLESAMPLE,
   devRankFilter
-] = dataform.projectConfig.vars.env_name === 'dev'
+] = environment === 'dev'
   ? [
       'TABLESAMPLE SYSTEM (0.001 PERCENT)',
       'AND rank <= 10000'
@@ -68,6 +69,7 @@ module.exports = {
   fnDateUnderscored,
   clients,
   booleans,
+  environment,
   devTABLESAMPLE,
   devRankFilter,
   DataformTemplateBuilder

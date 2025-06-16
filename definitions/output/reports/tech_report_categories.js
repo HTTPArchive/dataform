@@ -3,9 +3,8 @@ const pastMonth = constants.fnPastMonth(constants.currentMonth)
 publish('tech_report_categories', {
   schema: 'reports',
   type: 'table',
-  tags: ['tech_report']
+  tags: ['crux_ready']
 }).query(ctx => `
-/* {"dataform_trigger": "tech_report_complete", "name": "categories", "type": "dict"} */
 WITH pages AS (
   SELECT DISTINCT
     client,
@@ -24,6 +23,26 @@ category_descriptions AS (
   FROM ${ctx.ref('wappalyzer', 'categories')}
 ),
 
+crux AS (
+  SELECT
+    IF(device = 'desktop', 'desktop', 'mobile') AS client,
+    CONCAT(origin, '/') AS root_page
+  FROM ${ctx.ref('chrome-ux-report', 'materialized', 'device_summary')}
+  WHERE
+    date = '${pastMonth}'
+    AND device IN ('desktop', 'phone')
+),
+
+merged_pages AS (
+  SELECT DISTINCT
+    client,
+    technologies,
+    root_page
+  FROM pages
+  INNER JOIN crux
+  USING (client, root_page)
+),
+
 category_stats AS (
   SELECT
     category,
@@ -36,8 +55,8 @@ category_stats AS (
       client,
       category,
       COUNT(DISTINCT root_page) AS origins
-    FROM pages
-    INNER JOIN pages.technologies AS tech
+    FROM merged_pages
+    INNER JOIN merged_pages.technologies AS tech
     INNER JOIN tech.categories AS category
     WHERE
       category IS NOT NULL
@@ -52,18 +71,15 @@ technology_stats AS (
   SELECT
     technology,
     category_obj AS categories,
-    SUM(origins) AS total_origins
+    origins.mobile AS mobile_origins
   FROM ${ctx.ref('reports', 'tech_report_technologies')}
-  GROUP BY
-    technology,
-    categories
 )
 
 SELECT
   category,
   description,
   origins,
-  ARRAY_AGG(technology IGNORE NULLS ORDER BY technology_stats.total_origins DESC) AS technologies
+  ARRAY_AGG(technology IGNORE NULLS ORDER BY technology_stats.mobile_origins DESC) AS technologies
 FROM category_stats
 INNER JOIN technology_stats
 ON category_stats.category IN UNNEST(technology_stats.categories)
@@ -88,7 +104,20 @@ FROM (
   SELECT
     client,
     COUNT(DISTINCT root_page) AS origins
-  FROM pages
+  FROM merged_pages
   GROUP BY client
 )
-`)
+`).postOps(ctx => `
+  SELECT
+    reports.run_export_job(
+      JSON '''{
+        "destination": "firestore",
+        "config": {
+          "database": "tech-report-api-${constants.environment}",
+          "collection": "categories",
+          "type": "dict"
+        },
+        "query": "SELECT * FROM ${ctx.self()}"
+      }'''
+    );
+  `)
