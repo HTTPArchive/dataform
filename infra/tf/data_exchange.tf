@@ -28,10 +28,11 @@ resource "google_bigquery_analytics_hub_listing" "crawl" {
   bigquery_dataset {
     dataset = "projects/${local.project_number}/datasets/crawl"
   }
-  request_access = "https://har.fyi/guides/getting-started/#setting-up-bigquery-to-access-the-http-archive"
-  description    = "A comprehensive dataset tracking how the web is built. We regularly crawl top websites, capturing detailed resource metadata, web platform API usage, and execution traces. This dataset offers in-depth insights into web performance, trends, and technologies."
-  documentation  = file("attachments/documentation.md")
-  icon           = filebase64("attachments/icon.png")
+  request_access                      = "https://har.fyi/guides/getting-started/#setting-up-bigquery-to-access-the-http-archive"
+  description                         = "A comprehensive dataset tracking how the web is built. We regularly crawl top websites, capturing detailed resource metadata, web platform API usage, and execution traces. This dataset offers in-depth insights into web performance, trends, and technologies."
+  documentation                       = file("attachments/documentation.md")
+  icon                                = filebase64("attachments/icon.png")
+  log_linked_dataset_query_user_email = true
   data_provider {
     name            = "HTTP Archive"
     primary_contact = "https://httparchive.org/"
