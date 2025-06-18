@@ -1,6 +1,6 @@
 const configs = new reports.HTTPArchiveReports()
 const metrics = configs.listMetrics()
-const lenses = configs.lenses;
+const lenses = configs.lenses
 
 const bucket = 'httparchive'
 const storagePath = '/reports/dev/'

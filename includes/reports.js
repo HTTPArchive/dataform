@@ -95,8 +95,8 @@ const lenses = {
 
 class HTTPArchiveReports {
   constructor () {
-    this.config = config,
-      this.lenses = lenses;
+    this.config = config
+    this.lenses = lenses
   }
 
   listReports () {
