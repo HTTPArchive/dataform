@@ -7,21 +7,14 @@
 version: 2
 updates:
   - package-ecosystem: "npm"
-    directory: "/"
+    directories:
+      - "/"
+      - "/infra/bigquery-export"
+      - "infra/dataform-export"
+      - "infra/dataform-trigger"
     schedule:
       interval: "weekly"
-  - package-ecosystem: "npm"
-    directory: "/infra/bigquery-export"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "npm"
-    directory: "infra/dataform-export"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "npm"
-    directory: "infra/dataform-trigger"
-    schedule:
-      interval: "weekly"
+
   - package-ecosystem: "terraform"
     directory: "infra/tf/"
     schedule:
