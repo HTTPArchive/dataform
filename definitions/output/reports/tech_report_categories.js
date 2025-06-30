@@ -58,12 +58,14 @@ category_stats AS (
 
 technology_stats AS (
   SELECT
-    client,
-    technology,
-    category_obj AS categories,
-    IF(client = 'mobile', origins.mobile, origins.desktop) AS origins
+    category,
+    STRUCT(
+      ARRAY_AGG(technology IGNORE NULLS ORDER BY origins.mobile DESC) AS mobile,
+      ARRAY_AGG(technology IGNORE NULLS ORDER BY origins.desktop DESC) AS desktop
+    ) AS technologies
   FROM ${ctx.ref('reports', 'tech_report_technologies')},
-    UNNEST(ARRAY['desktop', 'mobile']) AS client
+    UNNEST(category_obj) AS category
+  GROUP BY category
 )
 
 SELECT
@@ -73,18 +75,14 @@ SELECT
   origins,
   IF(
     client = 'mobile',
-    ARRAY_AGG(technology IGNORE NULLS ORDER BY technology_stats.origins.mobile DESC),
-    ARRAY_AGG(technology IGNORE NULLS ORDER BY technology_stats.origins.desktop DESC)
+    technologies.mobile,
+    technologies.desktop
   ) AS technologies
 FROM category_stats
 INNER JOIN technology_stats
-ON category_stats.category IN UNNEST(technology_stats.categories)
+USING (category)
 INNER JOIN category_descriptions
-USING (category, client)
-GROUP BY
-  category,
-  description,
-  origins
+USING (category)
 
 UNION ALL
 
