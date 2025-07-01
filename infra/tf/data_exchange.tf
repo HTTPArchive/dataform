@@ -1,9 +1,10 @@
 resource "google_bigquery_analytics_hub_data_exchange" "default" {
-  data_exchange_id = "httparchive"
-  location         = local.location
-  display_name     = "HTTP Archive"
-  description      = "The HTTP Archive is an open source project that tracks how the web is built. Historical data is provided to show how the web is constantly evolving, and the project is frequently used for research by the web community, scholars and industry leaders."
-  primary_contact  = "https://httparchive.org/"
+  data_exchange_id                    = "httparchive"
+  location                            = local.location
+  display_name                        = "HTTP Archive"
+  description                         = "The HTTP Archive is an open source project that tracks how the web is built. Historical data is provided to show how the web is constantly evolving, and the project is frequently used for research by the web community, scholars and industry leaders."
+  primary_contact                     = "https://httparchive.org/"
+  log_linked_dataset_query_user_email = true
   sharing_environment_config {
     default_exchange_config {
     }
