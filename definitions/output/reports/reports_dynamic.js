@@ -1,24 +1,38 @@
 const configs = new reports.HTTPArchiveReports()
 const metrics = configs.listMetrics()
+const lenses = configs.lenses
 
 const bucket = 'httparchive'
 const storagePath = '/reports/dev/'
 
-function generateExportQuery (metric, sql, params, ctx) {
+// Adjust start and end dates to update reports retrospectively
+const startDate = '2024-12-01' // constants.currentMonth;
+const endDate = '2024-12-01' // constants.currentMonth;
+
+function generateExportPath (ctx, params) {
+  if (params.sql.type === 'histogram') {
+    return `${storagePath}${params.date.replaceAll('-', '_')}/${params.metric.id}.json`
+  } else if (params.sql.type === 'timeseries') {
+    return `${storagePath}${params.metric.id}.json`
+  } else {
+    throw new Error('Unknown SQL type')
+  }
+}
+
+function generateExportQuery (ctx, params) {
   let query = ''
-  if (sql.type === 'histogram') {
+  if (params.sql.type === 'histogram') {
     query = `
-SELECT
-  * EXCEPT(date)
-FROM ${ctx.self()}
+SELECT * EXCEPT(date)
+FROM \`reports.${params.sql.type}\`
 WHERE date = '${params.date}'
 `
-  } else if (sql.type === 'timeseries') {
+  } else if (params.sql.type === 'timeseries') {
     query = `
 SELECT
   FORMAT_DATE('%Y_%m_%d', date) AS date,
   * EXCEPT(date)
-FROM ${ctx.self()}
+FROM \`reports.${params.sql.type}\`
 `
   } else {
     throw new Error('Unknown SQL type')
@@ -28,80 +42,62 @@ FROM ${ctx.self()}
   return queryOutput
 }
 
-function generateExportPath (metric, sql, params) {
-  if (sql.type === 'histogram') {
-    return `${storagePath}${params.date.replaceAll('-', '_')}/${metric.id}.json`
-  } else if (sql.type === 'timeseries') {
-    return `${storagePath}${metric.id}.json`
-  } else {
-    throw new Error('Unknown SQL type')
-  }
-}
-
 const iterations = []
+// dates
 for (
-  let date = constants.currentMonth; date >= constants.currentMonth; date = constants.fnPastMonth(date)) {
-  iterations.push({
-    date,
-    devRankFilter: constants.devRankFilter
-  })
-}
-
-if (iterations.length === 1) {
-  const params = iterations[0]
+  let date = endDate;
+  date >= startDate;
+  date = constants.fnPastMonth(date)
+) {
+  // metrics
   metrics.forEach(metric => {
+    // timeseries and histograms
     metric.SQL.forEach(sql => {
-      publish(metric.id + '_' + sql.type, {
-        type: 'incremental',
-        protected: true,
-        bigquery: sql.type === 'histogram' ? { partitionBy: 'date', clusterBy: ['client'] } : {},
-        schema: 'reports'
-        // tags: ['crawl_complete', 'http_reports']
-      }).preOps(ctx => `
---DELETE FROM ${ctx.self()}
---WHERE date = '${params.date}';
-      `).query(
-        ctx => sql.query(ctx, params)
-      ).postOps(ctx => `
-SELECT
-  reports.run_export_job(
-    JSON '''{
-      "destination": "cloud_storage",
-      "config": {
-        "bucket": "${bucket}",
-        "name": "${generateExportPath(metric, sql, params)}"
-      },
-      "query": "${generateExportQuery(metric, sql, params, ctx)}"
-    }'''
-  );
-      `)
-    })
-  })
-} else {
-  iterations.forEach((params, i) => {
-    metrics.forEach(metric => {
-      metric.SQL.forEach(sql => {
-        operate(metric.id + '_' + sql.type + '_' + params.date, {
-          // tags: ['crawl_complete', 'http_reports']
-        }).queries(ctx => `
-DELETE FROM reports.${metric.id}_${sql.type}
-WHERE date = '${params.date}';
-
-INSERT INTO reports.${metric.id}_${sql.type}` + sql.query(ctx, params)
-        ).postOps(ctx => `
-  SELECT
-  reports.run_export_job(
-    JSON '''{
-      "destination": "cloud_storage",
-      "config": {
-        "bucket": "${bucket}",
-        "name": "${generateExportPath(metric, sql, params)}"
-      },
-      "query": "${generateExportQuery(metric, sql, params, ctx)}"
-    }'''
-  );
-        `)
-      })
+      // lenses
+      for (const [key, value] of Object.entries(lenses)) {
+        iterations.push({
+          date,
+          metric,
+          sql,
+          lens: { name: key, sql: value },
+          devRankFilter: constants.devRankFilter
+        })
+      }
     })
   })
 }
+
+iterations.forEach((params, i) => {
+  operate(
+    params.metric.id + '_' + params.sql.type + '_' + params.lens.name + '_' + params.date)
+    .tags(['crawl_complete', 'reports'])
+    .queries(ctx => `
+CREATE TABLE IF NOT EXISTS reports.${params.sql.type} (
+  date DATE,
+  lens STRING,
+  metric STRING,
+  client STRING,
+  data JSON
+)
+PARTITION BY date
+CLUSTER BY metric, lens, client;
+
+DELETE FROM reports.${params.sql.type}
+WHERE date = '${params.date}'
+AND metric = '${params.metric.id}';
+
+INSERT INTO reports.${params.sql.type} ${params.sql.query(ctx, params)};
+
+SELECT
+reports.run_export_job(
+  JSON '''{
+    "destination": "cloud_storage",
+    "config": {
+      "bucket": "${bucket}",
+      "name": "${generateExportPath(ctx, params)}"
+    },
+    "query": "${generateExportQuery(ctx, params)}"
+  }'''
+);
+  `)
+})
