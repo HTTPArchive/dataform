@@ -2,9 +2,9 @@ terraform {
   required_version = ">= 1.9.7"
 
   required_providers {
-    archive = {
-      source  = "hashicorp/archive"
-      version = ">= 2.6.0"
+    docker = {
+      source  = "kreuzwerker/docker"
+      version = ">= 3.6.2"
     }
     google = {
       source  = "hashicorp/google"
@@ -29,11 +29,11 @@ resource "google_cloud_run_v2_job" "bigquery_export" {
       max_retries     = 0   # No retries
 
       containers {
-        image = "${var.location}.gcr.io/${var.project}/cloud-run/${var.function_name}:latest"
+        image = docker_registry_image.registry_image.name
         resources {
           limits = {
             cpu    = "4"
-            memory = "4Gi"
+            memory = "8Gi"
           }
         }
         env {

@@ -52,7 +52,6 @@ graph LR;
     dataformTrigger --> cloud_run_logs
     dataform_repo_workflow --> dataform_logs
     bq_jobs --> bq_logs
-
 ```
 
 ## Triggering pipelines

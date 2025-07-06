@@ -1,6 +1,13 @@
-const functions = require('@google-cloud/functions-framework')
-const { BigQuery } = require('@google-cloud/bigquery')
-const { getCompilationResults, runWorkflow } = require('./dataform')
+import functions from '@google-cloud/functions-framework'
+import { BigQuery } from '@google-cloud/bigquery'
+
+import { callRunJob } from './cloud_run.js'
+import { getCompilationResults, runWorkflow } from './dataform.js'
+
+
+const projectId = 'httparchive'
+const location = 'us-central1'
+const jobId = 'bigquery-export'
 
 const TRIGGERS = {
   crux_ready: {
@@ -46,13 +53,60 @@ FROM crux, report;
   }
 }
 
+function hasRequiredKeys(obj) {
+  const requiredKeys = ['destination', 'config', 'query']
+  return requiredKeys.every(key => key in obj)
+}
+
 /**
- * Handle incoming message and trigger the appropriate action.
+ * Handle export requests.
  *
  * @param {object} req Cloud Function request context.
  * @param {object} res Cloud Function response context.
  */
-async function messageHandler (req, res) {
+async function handleExport(req, res) {
+  console.log(JSON.stringify(req.body))
+  try {
+    const payload = req.body.calls[0][0]
+    if (!payload) {
+      res.status(400).json({
+        replies: [400],
+        errorMessage: 'Bad Request: no payload received, expected JSON object'
+      })
+      return
+    }
+
+    if (!hasRequiredKeys(payload)) {
+      res.status(400).json({
+        replies: [400],
+        errorMessage: 'Bad Request: unexpected payload structure, required keys: destination, config, query'
+      })
+      return
+    }
+
+    const jobName = `projects/${projectId}/locations/${location}/jobs/${jobId}`
+    await callRunJob(jobName, payload)
+
+    res.status(200).json({
+      replies: [200],
+      message: 'Export job initialized'
+    })
+  } catch (error) {
+    res.status(400).json({
+      replies: [400],
+      errorMessage: error
+    })
+  }
+}
+
+// Trigger functionality
+/**
+ * Handle trigger messages and trigger the appropriate action.
+ *
+ * @param {object} req Cloud Function request context.
+ * @param {object} res Cloud Function response context.
+ */
+async function handleTrigger(req, res) {
   try {
     const message = req.body.message
     if (!message) {
@@ -94,8 +148,9 @@ async function messageHandler (req, res) {
       } else {
         console.error(`No action found for event: ${eventName}`)
         res.status(404).send(`No action found for event: ${eventName}`)
+        return
       }
-      res.status(200).send('Event processed sucessfully')
+      res.status(200).send('Event processed successfully')
     } else {
       console.error(`No action found for event: ${eventName}`)
       res.status(404).send(`No action found for event: ${eventName}`)
@@ -112,7 +167,7 @@ async function messageHandler (req, res) {
  * @param {string} query Polling query.
  * @returns {boolean} Query result.
  */
-async function runQuery (query) {
+async function runQuery(query) {
   const bigquery = new BigQuery()
 
   const [job] = await bigquery.createQueryJob({ query })
@@ -128,7 +183,7 @@ async function runQuery (query) {
  * @param {string} actionName Action to execute.
  * @param {object} actionArgs Action arguments.
  */
-async function executeAction (actionName, actionArgs) {
+async function executeAction(actionName, actionArgs) {
   if (actionName === 'runDataformRepo') {
     console.info(`Executing action: ${actionName}`)
     await runDataformRepo(actionArgs)
@@ -140,7 +195,7 @@ async function executeAction (actionName, actionArgs) {
  *
  * @param {object} args Action arguments.
  */
-async function runDataformRepo (args) {
+async function runDataformRepo(args) {
   const project = 'httparchive'
   const location = 'us-central1'
   const { repoName, tags } = args
@@ -153,16 +208,53 @@ async function runDataformRepo (args) {
 }
 
 /**
- * Trigger function for Dataform workflows.
+ * Main HTTP handler that routes requests based on path.
+ *
+ * @param {object} req Cloud Function request context.
+ * @param {object} res Cloud Function response context.
+ */
+async function mainHandler(req, res) {
+  const path = req.path || req.url
+
+  console.info(`Received request for path: ${path}`)
+
+  if (path === '/trigger' || path.startsWith('/trigger/')) {
+    await handleTrigger(req, res)
+  } else if (path === '/') {
+    await handleExport(req, res)
+  } else {
+    res.status(404).json({
+      error: 'Not Found',
+      message: 'Available endpoints: /, /export'
+    })
+  }
+}
+
+/**
+ * Main entry point for the combined Dataform service.
+ * Handles both trigger and export operations based on the request path.
+ *
+ * Routes:
+ * - /trigger: Handles Dataform workflow triggers
+ * - /: Handles BigQuery export jobs
  *
  * @param {object} req Cloud Function request context.
  * @param {object} res Cloud Function response context.
  *
- * Example request payload:
+ * Example trigger request payload:
  * {
  *  "message": {
  *     "name": "crux_ready"
  *   }
  * }
+ *
+ * Example export request payload:
+ * {
+ *   "calls": [[{
+ *     "destination": "...",
+ *     "config": "...",
+ *     "query": "..."
+ *   }]]
+ * }
  */
-functions.http('dataform-trigger', (req, res) => messageHandler(req, res))
+functions.http('dataform-service', mainHandler)
