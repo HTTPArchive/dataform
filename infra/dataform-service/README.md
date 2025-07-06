@@ -1,14 +1,23 @@
 # Dataform Service
 
-A unified Cloud Run service that combines the functionality of both dataform-trigger and dataform-export services. This service provides two main endpoints for different operations:
+A unified [dataform-service](https://console.cloud.google.com/functions/details/us-central1/dataform-service?authuser=7&project=httparchive) Cloud Run service that provides two main endpoints for different operations.
 
-## Endpoints
+## `/trigger` Trigger Dataform workflows
 
-### `/trigger`
+This service may be triggered by a PubSub message or Cloud Scheduler and invokes a Dataform workflow based on the provided configuration.
 
-Handles Dataform workflow triggers based on events or polling conditions.
+Trigger types:
 
-**Example Request:**
+1. `event` - immediately triggers a Dataform workflow using tags provided in configuration.
+
+2. `poller` - first triggers a BigQuery polling query. If the query returns TRUE, the Dataform workflow is triggered using the tags provided in configuration.
+
+Supported Triggers:
+
+- `crux_ready` - polls for Chrome UX Report data availability and triggers processing when conditions are met
+- `crawl_complete` - event-based trigger for when crawl data processing is complete
+
+Request body example:
 
 ```json
 {
@@ -18,100 +27,98 @@ Handles Dataform workflow triggers based on events or polling conditions.
 }
 ```
 
-### `/export`
+Request example for local development:
 
-Handles BigQuery export job initialization.
+```bash
+curl -X POST http://localhost:8080/ \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": {
+      "name": "crux_ready"
+    }
+  }'
+```
 
-**Example Request:**
+## `/` Trigger data exports
+
+[exportReport](https://console.cloud.google.com/functions/details/us-central1/bqExport?env=gen2&authuser=7&project=httparchive) Cloud Run Function
+
+This function triggers a job to export data to GCS or Firestore.
+
+Request body example:
 
 ```json
 {
   "calls": [[{
-    "destination": "...",
-    "config": "...",
-    "query": "..."
+    "destination": "gs://httparchive-reports/tech-report-2024",
+    "config": {
+      "format": "PARQUET",
+      "compression": "SNAPPY"
+    },
+    "query": "SELECT * FROM httparchive.reports.tech_report_categories WHERE _TABLE_SUFFIX = '2024_01_01'"
   }]]
 }
 ```
 
-## Supported Triggers
-
-- `crux_ready`: Polls for Chrome UX Report data availability and triggers processing when conditions are met
-- `crawl_complete`: Event-based trigger for when crawl data processing is complete
-
-## Environment Variables
-
-- `PORT`: Port number for the service (default: 8080)
-
-## Development
+Request example for local development:
 
 ```bash
-# Install dependencies
-npm install
-
-# Start development server
-npm run start_dev
-
-# Build Docker image
-npm run build
+curl -X POST http://localhost:8080/ \
+  -H "Content-Type: application/json" \
+  -d '{
+  "calls": [[{
+    "destination": "gs://httparchive-reports/tech-report-2024",
+    "config": {
+      "format": "PARQUET",
+      "compression": "SNAPPY"
+    },
+    "query": "SELECT * FROM httparchive.reports.tech_report_categories WHERE _TABLE_SUFFIX = '2024_01_01'"
+  }]]
+}'
 ```
+
+## Cloud Run Job for exporting data
+
+[exportData](https://console.cloud.google.com/run/detail/us-central1/export-data?authuser=7&project=httparchive) Cloud Run Job
+
+This job exports data to GCS or Firestore based on the provided configuration.
+
+Input parameters:
+
+- `EXPORT_CONFIG` - JSON string with the export configuration.
+
+Example values:
+
+```plaintext
+{"dataform_trigger":"report_cwv_tech_complete","name":"technologies","type":"dict"}
+{"dataform_trigger":"report_cwv_tech_complete","date":"2024-11-01","name":"page_weight","type":"report"}
+{"dataform_trigger":"report_complete","name":"bytesTotal","type":"timeseries"}
+{"dataform_trigger":"report_complete","date":"2024-11-01","name":"bytesTotal","type":"histogram"}
+```
+
+## Monitoring
+
+The issues within the pipeline are being tracked using the following alerts:
+
+- [Dataform Trigger Function Error](https://console.cloud.google.com/monitoring/alerting/policies/570799173843203905?authuser=2&project=httparchive) policy
+- [Dataform Export Function Error](https://console.cloud.google.com/monitoring/alerting/policies/2588749473925942477?authuser=2&project=httparchive) policy
+
+Error notifications are sent to [#10x-infra](https://httparchive.slack.com/archives/C030V4WAVL3) Slack channel.
+
+## Local development
+
+To test the function locally run from the function directory:
+
+```bash
+npm run start_dev
+```
+
+Then, in a separate terminal, run the command with the test trigger payload.
 
 ## Deployment
 
-The service is deployed to Google Cloud Run using Cloud Build:
+From project root directory run:
 
 ```bash
-gcloud builds submit --config cloudbuild.yaml
-```
-
-## Migration from Separate Services
-
-This service replaces the following separate services:
-
-- `dataform-trigger`: Now accessible via `/trigger` endpoint
-- `dataform-export`: Now accessible via `/export` endpoint
-
-Update your service calls to use the new endpoint paths when migrating.
-
-```js
-// Example usage of the merged dataform-service
-
-// Trigger example
-const triggerPayload = {
-  message: {
-    name: "crux_ready"
-  }
-}
-
-// Export example
-const exportPayload = {
-  calls: [[{
-    destination: "gs://httparchive-reports/tech-report-2024",
-    config: {
-      format: "PARQUET",
-      compression: "SNAPPY"
-    },
-    query: "SELECT * FROM httparchive.reports.tech_report_categories WHERE _TABLE_SUFFIX = '2024_01_01'"
-  }]]
-}
-
-// Usage examples:
-
-// POST to /trigger endpoint
-fetch('https://dataform-service-url/trigger', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify(triggerPayload)
-})
-
-// POST to /export endpoint
-fetch('https://dataform-service-url/export', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify(exportPayload)
-})
+make tf_apply
 ```
