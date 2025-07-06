@@ -6,38 +6,35 @@ This repository handles the HTTP Archive data pipeline, which takes the results 
 
 The pipelines are run in Dataform service in Google Cloud Platform (GCP) and are kicked off automatically on crawl completion and other events. The code in the `main` branch is used on each triggered pipeline run.
 
-### Crawl results
+### HTTP Archive Crawl
 
 Tag: `crawl_complete`
 
-- httparchive.crawl.pages
-- httparchive.crawl.parsed_css
-- httparchive.crawl.requests
+- Crawl dataset `httparchive.crawl.*`
 
-### Core Web Vitals Technology Report
+  Consumers:
+
+  - public dataset and [BQ Sharing Listing](https://console.cloud.google.com/bigquery/analytics-hub/discovery/projects/httparchive/locations/us/dataExchanges/httparchive/listings/crawl)
+
+- Blink Features Report `httparchive.blink_features.usage`
+
+  Consumers:
+
+  - [chromestatus.com](https://chromestatus.com/metrics/feature/timeline/popularity/2089)
+
+### HTTP Archive Technology Report
 
 Tag: `crux_ready`
 
-- httparchive.core_web_vitals.technologies
+- `httparchive.reports.cwv_tech_*` and `httparchive.reports.tech_*`
 
-Consumers:
+  Consumers:
 
-- [HTTP Archive Tech Report](https://httparchive.org/reports/techreport/landing)
-
-### Blink Features Report
-
-Tag: `crawl_complete`
-
-- httparchive.blink_features.features
-- httparchive.blink_features.usage
-
-Consumers:
-
-- chromestatus.com - [example](https://chromestatus.com/metrics/feature/timeline/popularity/2089)
+  - [HTTP Archive Tech Report](https://httparchive.org/reports/techreport/landing)
 
 ## Schedules
 
-1. [crawl-complete](https://console.cloud.google.com/cloudpubsub/subscription/detail/dataformTrigger?authuser=7&project=httparchive) PubSub subscription
+1. [crawl-complete](https://console.cloud.google.com/cloudpubsub/subscription/detail/dataform-service-crawl-complete?authuser=2&project=httparchive) PubSub subscription
 
     Tags: ["crawl_complete"]
 
@@ -49,30 +46,66 @@ Consumers:
 
 In order to unify the workflow triggering mechanism, we use [a Cloud Run function](./infra/README.md) that can be invoked in a number of ways (e.g. listen to PubSub messages), do intermediate checks and trigger the particular Dataform workflow execution configuration.
 
-## Contributing
+## Cloud resources overview
 
-### Dataform development
+```mermaid
+graph TB;
+    subgraph Cloud Run
+        dataform-service[dataform-service service]
+        bigquery-export[bigquery-export job]
+    end
 
-1. [Create new dev workspace](https://cloud.google.com/dataform/docs/quickstart-dev-environments) in Dataform.
-2. Make adjustments to the dataform configuration files and manually run a workflow to verify.
-3. Push all your changes to a dev branch & open a PR with the link to the BigQuery artifacts generated in the test workflow.
+    subgraph PubSub
+        crawl-complete[crawl-complete topic]
+        dataform-service-crawl-complete[dataform-service-crawl-complete subscription]
+        crawl-complete --> dataform-service-crawl-complete
+    end
 
-#### Workspace hints
+    dataform-service-crawl-complete --> dataform-service
 
-1. In `workflow_settings.yaml` set `environment: dev` to process sampled data.
-2. For development and testing, you can modify variables in `includes/constants.js`, but note that these are programmatically generated.
+    subgraph Cloud_Scheduler
+        bq-poller-crux-ready[bq-poller-crux-ready Poller Scheduler Job]
+        bq-poller-crux-ready --> dataform-service
+    end
 
-## Repository Structure
+    subgraph Dataform
+        dataform[Dataform Repository]
+        dataform_release_config[dataform Release Configuration]
+        dataform_workflow[dataform Workflow Execution]
+    end
 
-- `definitions/` - Contains the core Dataform SQL definitions and declarations
-  - `output/` - Contains the main pipeline transformation logic
-  - `declarations/` - Contains referenced tables/views declarations and other resources definitions
-- `includes/` - Contains shared JavaScript utilities and constants
-- `infra/` - Infrastructure code and deployment configurations
-  - `dataform-trigger/` - Cloud Run function for workflow automation
-  - `tf/` - Terraform configurations
-  - `bigquery-export/` - BigQuery export configurations
-- `docs/` - Additional documentation
+    dataform-service --> dataform[Dataform Repository]
+    dataform --> dataform_release_config
+    dataform_release_config --> dataform_workflow
+
+    subgraph BigQuery
+        bq_jobs[BigQuery jobs]
+        bq_datasets[BigQuery table updates]
+        bq_jobs --> bq_datasets
+    end
+
+    dataform_workflow --> bq_jobs
+
+    bq_jobs --> bigquery-export
+
+    subgraph Monitoring
+        cloud_run_logs[Cloud Run logs]
+        dataform_logs[Dataform logs]
+        bq_logs[BigQuery logs]
+        alerting_policies[Alerting Policies]
+        slack_notifications[Slack notifications]
+
+        cloud_run_logs --> alerting_policies
+        dataform_logs --> alerting_policies
+        bq_logs --> alerting_policies
+        alerting_policies --> slack_notifications
+    end
+
+    dataform-service --> cloud_run_logs
+    dataform_workflow --> dataform_logs
+    bq_jobs --> bq_logs
+    bigquery-export --> cloud_run_logs
+```
 
 ## Development Setup
 
@@ -86,6 +119,7 @@ In order to unify the workflow triggering mechanism, we use [a Cloud Run functio
 
     - `npm run format` - Format code using Standard.js, fix Markdown issues, and format Terraform files
     - `npm run lint` - Run linting checks on JavaScript, Markdown files, and compile Dataform configs
+    - `make tf_apply` - Apply Terraform configurations
 
 ## Code Quality
 
