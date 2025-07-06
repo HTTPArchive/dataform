@@ -1,4 +1,4 @@
-const { DataformClient } = require('@google-cloud/dataform').v1beta1
+import { DataformClient } from '@google-cloud/dataform'
 
 const dataformClient = new DataformClient()
 
@@ -8,7 +8,7 @@ const dataformClient = new DataformClient()
  * @param {string} repoURI Dataform repository URI.
  * @returns {object} Compilation result.
  */
-async function getCompilationResults (repoURI) {
+export async function getCompilationResults (repoURI) {
   const request = {
     parent: repoURI,
     compilationResult: {
@@ -30,7 +30,7 @@ async function getCompilationResults (repoURI) {
  * @param {object} tags Dataform tags.
  * @returns
  */
-async function runWorkflow (repoURI, compilationResult, tags) {
+export async function runWorkflow (repoURI, compilationResult, tags) {
   const request = {
     parent: repoURI,
     workflowInvocation: {
@@ -48,5 +48,3 @@ async function runWorkflow (repoURI, compilationResult, tags) {
   const [response] = await dataformClient.createWorkflowInvocation(request)
   console.info(`Workflow invoked: ${response.name}`)
 }
-
-module.exports = { getCompilationResults, runWorkflow }
