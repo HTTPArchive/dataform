@@ -34,7 +34,6 @@ module "bigquery_export" {
 
   project           = local.project
   region            = local.region
-  location          = local.location
   function_identity = local.function_identity
   function_name     = "bigquery-export"
 }

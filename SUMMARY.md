@@ -51,19 +51,19 @@ I've successfully merged the `dataform-trigger` and `dataform-export` services i
 
 1. **Deploy the new service:**
 
-   ```bash
-   cd infra/dataform-service
-   gcloud builds submit --config cloudbuild.yaml
-   ```
+    ```bash
+    cd infra/dataform-service
+    gcloud builds submit --config cloudbuild.yaml
+    ```
 
 2. **Update Terraform to use the new module:**
 
-   ```terraform
-   module "dataform_service" {
-     source = "./dataform_service"
-     # ... variables
-   }
-   ```
+    ```terraform
+    module "dataform_service" {
+      source = "./dataform_service"
+      # ... variables
+    }
+    ```
 
 3. **Test both endpoints** using the examples in `examples.js`
 
