@@ -6,7 +6,7 @@ I've successfully merged the `dataform-trigger` and `dataform-export` services i
 
 ### New Service Structure
 
-```
+```files
 /infra/dataform-service/
 ├── index.js              # Main service with /trigger and /export endpoints
 ├── dataform.js           # Dataform client utilities (converted to ES modules)
@@ -20,7 +20,7 @@ I've successfully merged the `dataform-trigger` and `dataform-export` services i
 
 ### New Terraform Configuration
 
-```
+```files
 /infra/tf/dataform_service/
 ├── main.tf               # Unified infrastructure configuration
 └── variables.tf          # Variable definitions
@@ -29,16 +29,19 @@ I've successfully merged the `dataform-trigger` and `dataform-export` services i
 ## Key Features
 
 ### Path-Based Routing
+
 - **`/trigger`** - Handles Dataform workflow triggers (Pub/Sub events, scheduler)
 - **`/export`** - Handles BigQuery export jobs (remote functions)
 
 ### Unified Functionality
+
 - Combined all trigger logic (crux_ready, crawl_complete events)
 - Combined all export logic (BigQuery to various destinations)
 - Shared dependencies and infrastructure
 - Single Docker image and deployment
 
 ### Infrastructure Updates
+
 - Pub/Sub subscriptions point to `/trigger` endpoint
 - BigQuery remote functions point to `/export` endpoint
 - Cloud Scheduler jobs point to `/trigger` endpoint
@@ -47,12 +50,14 @@ I've successfully merged the `dataform-trigger` and `dataform-export` services i
 ## Next Steps
 
 1. **Deploy the new service:**
+
    ```bash
    cd infra/dataform-service
    gcloud builds submit --config cloudbuild.yaml
    ```
 
 2. **Update Terraform to use the new module:**
+
    ```terraform
    module "dataform_service" {
      source = "./dataform_service"

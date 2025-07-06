@@ -1,8 +1,7 @@
 import run from '@google-cloud/run'
 
-
 // Export functionality
-export async function callRunJob(name, payload = {}) {
+export async function callRunJob (name, payload = {}) {
   const client = new run.v2.JobsClient()
 
   const request = {

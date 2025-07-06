@@ -4,7 +4,6 @@ import { BigQuery } from '@google-cloud/bigquery'
 import { callRunJob } from './cloud_run.js'
 import { getCompilationResults, runWorkflow } from './dataform.js'
 
-
 const projectId = 'httparchive'
 const location = 'us-central1'
 const jobId = 'bigquery-export'
@@ -53,7 +52,7 @@ FROM crux, report;
   }
 }
 
-function hasRequiredKeys(obj) {
+function hasRequiredKeys (obj) {
   const requiredKeys = ['destination', 'config', 'query']
   return requiredKeys.every(key => key in obj)
 }
@@ -64,7 +63,7 @@ function hasRequiredKeys(obj) {
  * @param {object} req Cloud Function request context.
  * @param {object} res Cloud Function response context.
  */
-async function handleExport(req, res) {
+async function handleExport (req, res) {
   console.log(JSON.stringify(req.body))
   try {
     const payload = req.body.calls[0][0]
@@ -106,7 +105,7 @@ async function handleExport(req, res) {
  * @param {object} req Cloud Function request context.
  * @param {object} res Cloud Function response context.
  */
-async function handleTrigger(req, res) {
+async function handleTrigger (req, res) {
   try {
     const message = req.body.message
     if (!message) {
@@ -167,7 +166,7 @@ async function handleTrigger(req, res) {
  * @param {string} query Polling query.
  * @returns {boolean} Query result.
  */
-async function runQuery(query) {
+async function runQuery (query) {
   const bigquery = new BigQuery()
 
   const [job] = await bigquery.createQueryJob({ query })
@@ -183,7 +182,7 @@ async function runQuery(query) {
  * @param {string} actionName Action to execute.
  * @param {object} actionArgs Action arguments.
  */
-async function executeAction(actionName, actionArgs) {
+async function executeAction (actionName, actionArgs) {
   if (actionName === 'runDataformRepo') {
     console.info(`Executing action: ${actionName}`)
     await runDataformRepo(actionArgs)
@@ -195,7 +194,7 @@ async function executeAction(actionName, actionArgs) {
  *
  * @param {object} args Action arguments.
  */
-async function runDataformRepo(args) {
+async function runDataformRepo (args) {
   const project = 'httparchive'
   const location = 'us-central1'
   const { repoName, tags } = args
@@ -213,7 +212,7 @@ async function runDataformRepo(args) {
  * @param {object} req Cloud Function request context.
  * @param {object} res Cloud Function response context.
  */
-async function mainHandler(req, res) {
+async function mainHandler (req, res) {
   const path = req.path || req.url
 
   console.info(`Received request for path: ${path}`)

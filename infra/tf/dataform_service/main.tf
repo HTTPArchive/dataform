@@ -45,7 +45,7 @@ resource "google_cloud_run_v2_service" "dataform_service" {
     percent = 100
   }
 
-  depends_on = [ docker_registry_image.registry_image ]
+  depends_on = [docker_registry_image.registry_image]
 }
 
 resource "google_cloud_run_service_iam_member" "member" {

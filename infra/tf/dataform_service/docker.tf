@@ -14,7 +14,7 @@ provider "docker" {
 # Calculate hash of source files to determine if rebuild is needed
 locals {
   source_files = fileset(path.root, "../${var.function_name}/*")
-  source_hash = sha1(join("", [for f in local.source_files : filesha1(f)]))
+  source_hash  = sha1(join("", [for f in local.source_files : filesha1(f)]))
 }
 
 # Build Docker image
@@ -33,7 +33,7 @@ resource "docker_image" "function_image" {
 }
 
 resource "docker_registry_image" "registry_image" {
-  name          = docker_image.function_image.name
+  name = docker_image.function_image.name
 
   triggers = {
     source_hash = local.source_hash

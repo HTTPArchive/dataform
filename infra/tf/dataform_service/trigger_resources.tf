@@ -42,7 +42,7 @@ EOF
 
 resource "google_cloud_scheduler_job" "bq-poller-crux-ready" {
   attempt_deadline = "180s"
-  region  = var.region
+  region           = var.region
   description      = null
   name             = "bq-poller-crux-ready"
   paused           = false

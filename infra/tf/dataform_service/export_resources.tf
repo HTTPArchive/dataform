@@ -39,7 +39,7 @@ EOT
   return_type = "{\"typeKind\" :  \"INT64\"}"
 
   remote_function_options {
-    endpoint          = "${google_cloud_run_v2_service.dataform_service.uri}"
+    endpoint          = google_cloud_run_v2_service.dataform_service.uri
     connection        = google_bigquery_connection.cloud-resources.id
     max_batching_rows = "1"
   }

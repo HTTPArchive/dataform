@@ -49,11 +49,11 @@ module "functions" {
 module "dataform_service" {
   source = "./dataform_service"
 
-  project                     = local.project
-  region                      = local.region
-  location                    = local.location
-  function_identity           = local.function_identity
-  function_name               = "dataform-service"
+  project           = local.project
+  region            = local.region
+  location          = local.location
+  function_identity = local.function_identity
+  function_name     = "dataform-service"
 }
 
 module "masthead_agent" {
