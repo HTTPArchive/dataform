@@ -36,7 +36,7 @@ resource "google_cloud_run_v2_service" "dataform_service" {
     }
 
     service_account                  = var.function_identity
-    timeout                          = "600s"
+    timeout                          = "60s"
     max_instance_request_concurrency = 1
   }
 
@@ -44,8 +44,6 @@ resource "google_cloud_run_v2_service" "dataform_service" {
     type    = "TRAFFIC_TARGET_ALLOCATION_TYPE_LATEST"
     percent = 100
   }
-
-  depends_on = [docker_registry_image.registry_image]
 }
 
 resource "google_cloud_run_service_iam_member" "member" {
