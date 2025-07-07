@@ -10,12 +10,17 @@ updates:
     directories:
       - "/"
       - "/infra/bigquery-export"
-      - "infra/dataform-export"
-      - "infra/dataform-trigger"
+      - "/infra/dataform-service"
     schedule:
       interval: "weekly"
 
   - package-ecosystem: "terraform"
-    directory: "infra/tf/"
+    directories:
+      - "/infra/tf/"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
     schedule:
       interval: "weekly"
