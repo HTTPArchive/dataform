@@ -1,12 +1,16 @@
 {
   "name": "crawl-data",
   "author": "@max-ostapenko",
-  "dependencies": {
-    "@dataform/core": "3.0.25"
-  },
   "scripts": {
     "format": "npx standard --fix; npx markdownlint --ignore-path .gitignore --config package.json --configPointer /markdownlint . --fix; terraform -chdir=infra/tf fmt -recursive",
     "lint": "npx standard; npx markdownlint --ignore-path .gitignore --config package.json --configPointer /markdownlint .; dataform compile"
+  },
+  "dependencies": {
+    "@dataform/core": "3.0.25"
+  },
+  "devDependencies": {
+    "markdownlint-cli": "0.45.0",
+    "standard": "17.1.2"
   },
   "standard": {
     "globals": [
@@ -19,9 +23,18 @@
       "dataform"
     ]
   },
-  "devDependencies": {
-    "markdownlint-cli": "0.45.0",
-    "standard": "17.1.2"
+  "eslintConfig": {
+    "env": {
+      "node": true
+    },
+    "globals": {
+        "dataform": "readonly",
+        "constants": "readonly",
+        "declare": "readonly",
+        "assert": "readonly",
+        "publish": "readonly",
+        "ctx": "readonly"
+      }
   },
   "markdownlint": {
     "default": true,
