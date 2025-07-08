@@ -78,7 +78,7 @@ SELECT
     })
   })
 } else {
-  iterations.forEach((params, i) => {
+  iterations.forEach((params, _) => {
     metrics.forEach(metric => {
       metric.SQL.forEach(sql => {
         operate(metric.id + '_' + sql.type + '_' + params.date, {
