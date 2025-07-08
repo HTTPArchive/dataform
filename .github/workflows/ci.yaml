@@ -34,6 +34,7 @@ jobs:
           VALIDATE_JAVASCRIPT_PRETTIER: false
           VALIDATE_MARKDOWN_PRETTIER: false
           VALIDATE_CHECKOV: false
+          JAVASCRIPT_ES_CONFIG_FILE: eslint.config.mjs
 
   dependabot:
     name: Dependabot auto-merge
