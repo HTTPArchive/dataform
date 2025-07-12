@@ -57,9 +57,12 @@ module "dataform_service" {
 
 module "masthead_agent" {
   source = "github.com/masthead-data/terraform-google-masthead-agent?ref=httparchive"
+  # source  = "masthead-data/masthead-agent/google"
   # version = "~> 0.1.3"
 
   project_id = local.project
+
+  enable_privatelogviewer_role = false
 
   # Enable only specific modules
   enable_modules = {
