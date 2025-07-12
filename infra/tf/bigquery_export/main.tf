@@ -20,13 +20,13 @@ resource "google_cloud_run_v2_job" "bigquery_export" {
   deletion_protection = false
 
   template {
-    parallelism = 1
-    task_count  = 1 # Ensure single task execution
+    parallelism = 2
+    task_count  = 10
 
     template {
       timeout         = "10800s" # 3 hours
       service_account = var.function_identity
-      max_retries     = 0 # No retries
+      max_retries     = 0
 
       containers {
         image = docker_registry_image.registry_image.name
