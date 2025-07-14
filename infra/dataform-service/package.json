@@ -8,7 +8,7 @@
     "@google-cloud/bigquery": "8.1.0",
     "@google-cloud/dataform": "2.1.0",
     "@google-cloud/functions-framework": "4.0.0",
-    "@google-cloud/run": "2.1.0"
+    "@google-cloud/run": "2.2.0"
   },
   "scripts": {
     "start": "npx functions-framework --target=dataform-service --signature-type=http --port=${PORT:-8080}",
