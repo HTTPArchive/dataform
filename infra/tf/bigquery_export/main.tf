@@ -20,8 +20,8 @@ resource "google_cloud_run_v2_job" "bigquery_export" {
   deletion_protection = false
 
   template {
-    parallelism = 2
-    task_count  = 10
+    parallelism = 1
+    task_count  = 1
 
     template {
       timeout         = "10800s" # 3 hours
@@ -32,8 +32,8 @@ resource "google_cloud_run_v2_job" "bigquery_export" {
         image = docker_registry_image.registry_image.name
         resources {
           limits = {
-            cpu    = "4"
-            memory = "8Gi"
+            cpu    = "2"
+            memory = "4Gi"
           }
         }
         env {
