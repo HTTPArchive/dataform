@@ -5,7 +5,6 @@
   "scripts": {
     "build": "docker build -t bigquery-export .",
     "run": "docker run -v ~/.config/gcloud:/home/app/.config/gcloud:ro --env-file .env bigquery-export"
-  }
   },
   "type": "module",
   "dependencies": {
