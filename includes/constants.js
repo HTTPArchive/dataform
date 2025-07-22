@@ -16,9 +16,9 @@ const [
   devRankFilter
 ] = environment === 'dev'
   ? [
-      'TABLESAMPLE SYSTEM (0.001 PERCENT)',
-      'AND rank <= 10000'
-    ]
+    'TABLESAMPLE SYSTEM (0.001 PERCENT)',
+    'AND rank <= 10000'
+  ]
   : ['', '']
 
 class DataformTemplateBuilder {
