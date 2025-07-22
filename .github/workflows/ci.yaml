@@ -30,11 +30,12 @@ jobs:
         env:
           DEFAULT_BRANCH: main
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          LINTER_RULES_PATH: ./
+          LINTER_RULES_PATH: .
           VALIDATE_JSCPD: false
           VALIDATE_JAVASCRIPT_PRETTIER: false
           VALIDATE_MARKDOWN_PRETTIER: false
           VALIDATE_CHECKOV: false
+          VALIDATE_GIT_COMMITLINT: false
 
   dependabot:
     name: Dependabot auto-merge
