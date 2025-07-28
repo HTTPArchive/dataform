@@ -10,7 +10,7 @@
     "@dataform/core": "3.0.26"
   },
   "devDependencies": {
-    "eslint": "^9.0.0",
+    "eslint": "^9.32.0",
     "globals": "^15.0.0",
     "markdownlint-cli": "0.45.0"
   },
