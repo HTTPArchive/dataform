@@ -3,9 +3,9 @@ const pastMonth = constants.fnPastMonth(constants.currentMonth)
 publish('html_elements_popularity', {
   schema: 'reports',
   type: 'incremental',
-  tags: ['crux_ready'],
-  description: `Contact: https://github.com/bkardell`
-}).preOps(`
+  tags: ['crawl_complete'],
+  description: 'Contact: https://github.com/bkardell'
+}).preOps(ctx => `
 CREATE TEMPORARY FUNCTION getElements(payload STRING)
 RETURNS ARRAY<STRING> LANGUAGE js AS '''
 try {
@@ -53,6 +53,7 @@ JOIN totals t
 ON p.client = t.client,
   UNNEST(getElements(TO_JSON_STRING(p.element_count))) AS element
 GROUP BY
+  p.date,
   p.client,
   t.total,
   element
