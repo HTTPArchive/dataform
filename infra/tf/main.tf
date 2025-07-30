@@ -63,7 +63,7 @@ module "masthead_agent" {
   project_id = local.project
 
   enable_privatelogviewer_role = false
-  enable_apis = false
+  enable_apis                  = false
 
   # Enable only specific modules
   enable_modules = {
