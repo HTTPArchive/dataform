@@ -22,6 +22,7 @@ const [
   : ['', '']
 const bucket = 'httparchive'
 const storagePath = 'reports/'
+const reservation_id = 'projects/httparchive/locations/US/reservations/pipeline'
 
 class DataformTemplateBuilder {
   /**
@@ -76,5 +77,6 @@ module.exports = {
   devRankFilter,
   DataformTemplateBuilder,
   bucket,
-  storagePath
+  storagePath,
+  reservation_id
 }
