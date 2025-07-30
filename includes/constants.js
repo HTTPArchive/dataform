@@ -20,6 +20,8 @@ const [
     'AND rank <= 10000'
   ]
   : ['', '']
+const bucket = 'httparchive'
+const storagePath = 'reports/'
 
 class DataformTemplateBuilder {
   /**
@@ -72,5 +74,7 @@ module.exports = {
   environment,
   devTABLESAMPLE,
   devRankFilter,
-  DataformTemplateBuilder
+  DataformTemplateBuilder,
+  bucket,
+  storagePath
 }

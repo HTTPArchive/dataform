@@ -191,10 +191,10 @@ ORDER BY
 SELECT
   reports.run_export_job(
     JSON '''{
-      "destination": "storage",
+      "destination": "cloud_storage",
       "config": {
         "bucket": "${constants.bucket}",
-        "name": "httparchive/reports/${pastMonth.replaceAll('-', '_')}/cruxShopifyThemes.json"
+        "name": "${constants.storagePath}${pastMonth.replaceAll('-', '_')}/cruxShopifyThemes_test.json"
       },
       "query": "SELECT * FROM ${ctx.self()}"
     }'''
