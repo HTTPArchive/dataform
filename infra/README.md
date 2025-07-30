@@ -1,10 +1,10 @@
-# Infrastructure for the HTTP Archive data pipeline
+# Dataform Service
 
-## Cloud Function for triggering Dataform workflows
+A unified [dataform-service](https://console.cloud.google.com/functions/details/us-central1/dataform-service?authuser=7&project=httparchive) Cloud Run service that provides two main endpoints for different operations.
 
-[dataformTrigger](https://console.cloud.google.com/functions/details/us-central1/dataformTrigger?env=gen2&authuser=7&project=httparchive) Cloud Run Function
+## `/trigger` Trigger Dataform workflows
 
-This function may be triggered by a PubSub message or Cloud Scheduler and invokes a Dataform workflow based on the provided configuration.
+This service may be triggered by a PubSub message or Cloud Scheduler and invokes a Dataform workflow based on the provided configuration.
 
 Trigger types:
 
@@ -12,7 +12,10 @@ Trigger types:
 
 2. `poller` - first triggers a BigQuery polling query. If the query returns TRUE, the Dataform workflow is triggered using the tags provided in configuration.
 
-See [available trigger configurations](https://github.com/HTTPArchive/dataform/blob/main/src/index.js#L4).
+Supported Triggers:
+
+- `crux_ready` - polls for Chrome UX Report data availability and triggers processing when conditions are met
+- `crawl_complete` - event-based trigger for when crawl data processing is complete
 
 Request body example:
 
@@ -36,7 +39,7 @@ curl -X POST http://localhost:8080/ \
   }'
 ```
 
-## Cloud Function for triggering data exports
+## `/` Trigger data exports
 
 [exportReport](https://console.cloud.google.com/functions/details/us-central1/bqExport?env=gen2&authuser=7&project=httparchive) Cloud Run Function
 
@@ -46,19 +49,14 @@ Request body example:
 
 ```json
 {
-  "protoPayload": {
-    "serviceData": {
-      "jobCompletedEvent": {
-        "job": {
-          "jobConfiguration": {
-            "query": {
-              "query": "/* {\"dataform_trigger\": \"report_cwv_tech_complete\", \"date\": \"2024-11-01\", \"name\": \"technologies\", \"type\": \"dict\"} *\/"
-            }
-          }
-        }
-      }
-    }
-  }
+  "calls": [[{
+    "destination": "gs://httparchive-reports/tech-report-2024",
+    "config": {
+      "format": "PARQUET",
+      "compression": "SNAPPY"
+    },
+    "query": "SELECT * FROM httparchive.reports.tech_report_categories WHERE _TABLE_SUFFIX = '2024_01_01'"
+  }]]
 }
 ```
 
@@ -68,41 +66,14 @@ Request example for local development:
 curl -X POST http://localhost:8080/ \
   -H "Content-Type: application/json" \
   -d '{
-  "protoPayload": {
-    "serviceData": {
-      "jobCompletedEvent": {
-        "job": {
-          "jobConfiguration": {
-            "query": {
-              "query": "/* {\"dataform_trigger\": \"report_complete\", \"date\": \"2024-11-01\", \"name\": \"bytesTotal\", \"type\": \"timeseries\"} *\/"
-            }
-          }
-        }
-      }
-    }
-  }
-}'
-```
-
-or
-
-```bash
-curl -X POST http://localhost:8080/ \
-  -H "Content-Type: application/json" \
-  -d '{
-  "protoPayload": {
-    "serviceData": {
-      "jobCompletedEvent": {
-        "job": {
-          "jobConfiguration": {
-            "query": {
-              "query": "/* {\"dataform_trigger\": \"report_cwv_tech_complete\", \"date\": \"2024-11-01\", \"name\": \"lighthouse\", \"type\": \"report\"} *\/"
-            }
-          }
-        }
-      }
-    }
-  }
+  "calls": [[{
+    "destination": "gs://httparchive-reports/tech-report-2024",
+    "config": {
+      "format": "PARQUET",
+      "compression": "SNAPPY"
+    },
+    "query": "SELECT * FROM httparchive.reports.tech_report_categories WHERE _TABLE_SUFFIX = '2024_01_01'"
+  }]]
 }'
 ```
 
@@ -129,9 +100,8 @@ Example values:
 
 The issues within the pipeline are being tracked using the following alerts:
 
-1. the event trigger processing fails - [Dataform Trigger Function Error](https://console.cloud.google.com/monitoring/alerting/policies/570799173843203905?authuser=7&project=httparchive)
-2. a job in the workflow fails - "[Dataform Workflow Invocation Failed](https://console.cloud.google.com/monitoring/alerting/policies/16526940745374967367?authuser=7&project=httparchive)
-3. the export function fails - [Dataform Export Function Error](https://console.cloud.google.com/monitoring/alerting/policies/570799173843203905?authuser=7&project=httparchive)
+- [Dataform Trigger Function Error](https://console.cloud.google.com/monitoring/alerting/policies/570799173843203905?authuser=2&project=httparchive) policy
+- [Dataform Export Function Error](https://console.cloud.google.com/monitoring/alerting/policies/2588749473925942477?authuser=2&project=httparchive) policy
 
 Error notifications are sent to [#10x-infra](https://httparchive.slack.com/archives/C030V4WAVL3) Slack channel.
 
@@ -140,19 +110,10 @@ Error notifications are sent to [#10x-infra](https://httparchive.slack.com/archi
 To test the function locally run from the function directory:
 
 ```bash
-npm run start
+npm run start_dev
 ```
 
 Then, in a separate terminal, run the command with the test trigger payload.
-
-## Build
-
-Building a container image for the `bigquery-export` Cloud Run Job:
-
-```bash
-cd infra/bigquery-export
-npm run buildpack
-```
 
 ## Deployment
 

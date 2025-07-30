@@ -1,4 +1,3 @@
-# checkov:skip=CKV_DOCKER_3:Ensure that a user for the container has been created
 FROM node:22-slim
 
 # Set the working directory
@@ -10,9 +9,14 @@ COPY package*.json ./
 # Install dependencies (this layer will be cached unless package files change)
 RUN npm ci --only=production --quiet --no-fund --no-audit && npm cache clean --force
 
-ENV EXPORT_CONFIG=""
-
 # Copy source code
 COPY . .
 
-CMD ["node", "index.js"]
+# Set default port (Cloud Run will override this)
+ENV PORT=8080
+
+# Expose port for Cloud Run
+EXPOSE 8080
+
+# Start the function
+CMD ["npm", "start"]

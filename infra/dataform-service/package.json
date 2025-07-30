@@ -1,0 +1,18 @@
+{
+  "name": "dataform-service",
+  "version": "1.0.0",
+  "author": "@max-ostapenko",
+  "main": "index.js",
+  "type": "module",
+  "dependencies": {
+    "@google-cloud/bigquery": "8.1.1",
+    "@google-cloud/dataform": "2.2.0",
+    "@google-cloud/functions-framework": "4.0.0",
+    "@google-cloud/run": "2.3.0"
+  },
+  "scripts": {
+    "start": "npx functions-framework --target=dataform-service --signature-type=http --port=${PORT:-8080}",
+    "start_dev": "npx functions-framework --target=dataform-service --signature-type=http --port=8080 --debug",
+    "build": "docker build -t dataform-service ."
+  }
+}

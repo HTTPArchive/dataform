@@ -24,17 +24,3 @@ resource "google_bigquery_dataset_iam_member" "cloud_function_dataset_reader_rol
   role       = "roles/bigquery.dataViewer"
   member     = "serviceAccount:${var.function_identity}"
 }
-
-resource "google_bigquery_connection" "remote-functions" {
-  connection_id = "remote-functions"
-  location      = var.location
-  cloud_resource {}
-}
-
-resource "google_project_iam_member" "bigquery-connection-remote-functions" {
-  for_each = toset(["roles/run.invoker"])
-
-  project = var.project
-  role    = each.value
-  member  = "serviceAccount:${google_bigquery_connection.remote-functions.cloud_resource[0].service_account_id}"
-}

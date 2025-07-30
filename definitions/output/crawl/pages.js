@@ -82,7 +82,7 @@ publish('pages', {
   tags: ['crawl_complete'],
   dependOnDependencyAssertions: true
 }).preOps(ctx => `
-SET @@RESERVATION='projects/httparchive/locations/US/reservations/enterprise';
+SET @@RESERVATION='${constants.reservation_id}';
 
 DELETE FROM ${ctx.self()}
 WHERE date = '${constants.currentMonth}' AND

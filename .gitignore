@@ -1,8 +1,4 @@
 node_modules/
 .DS_Store
-.venv/
-
-# Terraform
 infra/tf/.terraform/
-infra/tf/tmp/
-**/*.zip
+.env

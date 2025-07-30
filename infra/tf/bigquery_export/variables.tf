@@ -13,7 +13,3 @@ variable "function_identity" {
 variable "function_name" {
   type = string
 }
-
-variable "location" {
-  type = string
-}
