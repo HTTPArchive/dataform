@@ -194,7 +194,7 @@ SELECT
       "destination": "cloud_storage",
       "config": {
         "bucket": "${constants.bucket}",
-        "name": "${constants.storagePath}${pastMonth.replaceAll('-', '_')}/cruxShopifyThemes_test.json"
+        "name": "${constants.storagePath}${pastMonth.replaceAll('-', '_')}/cruxShopifyThemes.json"
       },
       "query": "SELECT * FROM ${ctx.self()}"
     }'''
