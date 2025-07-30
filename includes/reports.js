@@ -11,13 +11,13 @@ WITH pages AS (
   SELECT
     date,
     client,
-    CAST(FLOOR(INT64(summary.bytesTotal) / 1024 / 100) * 100 AS INT64) AS bin
+    CAST(FLOOR(FLOAT64(summary.bytesTotal) / 1024 / 100) * 100 AS INT64) AS bin
   FROM crawl.pages
   WHERE
     date = '${params.date}'
     ${params.lens.sql}
     AND is_root_page
-    AND INT64(summary.bytesTotal) > 0
+    AND FLOAT64(summary.bytesTotal) > 0
 )
 
 SELECT
@@ -32,15 +32,14 @@ FROM (
       *,
       COUNT(0) AS volume
     FROM pages
+    WHERE bin IS NOT NULL
     GROUP BY
       date,
       client,
       bin
-    HAVING bin IS NOT NULL
   )
 )
 ORDER BY
-  date,
   bin,
   client
 `)
@@ -52,7 +51,7 @@ WITH pages AS (
   SELECT
     date,
     client,
-    INT64(summary.bytesTotal) AS bytesTotal
+    FLOAT64(summary.bytesTotal) AS bytesTotal
   FROM crawl.pages
   WHERE
     date = '${params.date}'
@@ -75,6 +74,9 @@ GROUP BY
   date,
   client,
   timestamp
+ORDER BY
+  date,
+  client
 `)
         }
       ]
@@ -94,12 +96,12 @@ const lenses = {
 }
 
 class HTTPArchiveReports {
-  constructor () {
+  constructor() {
     this.config = config
     this.lenses = lenses
   }
 
-  listReports () {
+  listReports() {
     const reportIds = this.config._reports
 
     const reports = reportIds.map(reportId => {
@@ -110,7 +112,7 @@ class HTTPArchiveReports {
     return reports
   }
 
-  getReport (reportId) {
+  getReport(reportId) {
     const report = this.config[reportId]
     return {
       id: reportId,
@@ -118,7 +120,7 @@ class HTTPArchiveReports {
     }
   }
 
-  listMetrics (reportId) {
+  listMetrics(reportId) {
     if (reportId === undefined) {
       const metrics = Object.keys(this.config._metrics).map(metricId => {
         const metric = this.getMetric(metricId)
@@ -139,7 +141,7 @@ class HTTPArchiveReports {
     }
   }
 
-  getMetric (metricId) {
+  getMetric(metricId) {
     const metric = this.config._metrics[metricId]
 
     return {
