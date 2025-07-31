@@ -171,7 +171,7 @@ JOIN (
     COUNT(DISTINCT url) AS pages_count,
     theme_store_id,
     theme_name,
-    row_number() OVER (PARTITION BY theme_store_id ORDER BY COUNT(DISTINCT url) DESC) AS rank
+    ROW_NUMBER() OVER (PARTITION BY theme_store_id ORDER BY COUNT(DISTINCT url) DESC) AS rank
   FROM archive_pages
   GROUP BY
     theme_store_id,
