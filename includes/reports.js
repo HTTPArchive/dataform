@@ -12,9 +12,10 @@ WITH pages AS (
     date,
     client,
     CAST(FLOOR(FLOAT64(summary.bytesTotal) / 1024 / 100) * 100 AS INT64) AS bin
-  FROM crawl.pages
+  FROM ${ctx.ref('crawl', 'pages')}
   WHERE
     date = '${params.date}'
+    ${params.devRankFilter}
     ${params.lens.sql}
     AND is_root_page
     AND FLOAT64(summary.bytesTotal) > 0
@@ -52,9 +53,10 @@ WITH pages AS (
     date,
     client,
     FLOAT64(summary.bytesTotal) AS bytesTotal
-  FROM crawl.pages
+  FROM ${ctx.ref('crawl', 'pages')}
   WHERE
     date = '${params.date}'
+    ${params.devRankFilter}
     ${params.lens.sql}
     AND is_root_page
     AND INT64(summary.bytesTotal) > 0
@@ -63,7 +65,7 @@ WITH pages AS (
 SELECT
   date,
   client,
-  UNIX_SECONDS(TIMESTAMP(date)) AS timestamp,
+  UNIX_DATE(date) * 1000 * 60 * 60 * 24 AS timestamp,
   ROUND(APPROX_QUANTILES(bytesTotal, 1001)[OFFSET(101)] / 1024, 2) AS p10,
   ROUND(APPROX_QUANTILES(bytesTotal, 1001)[OFFSET(251)] / 1024, 2) AS p25,
   ROUND(APPROX_QUANTILES(bytesTotal, 1001)[OFFSET(501)] / 1024, 2) AS p50,

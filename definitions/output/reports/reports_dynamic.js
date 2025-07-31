@@ -2,37 +2,47 @@ const configs = new reports.HTTPArchiveReports()
 const metrics = configs.listMetrics()
 const lenses = configs.lenses
 
-const bucket = 'httparchive'
-const storagePath = '/reports/dev/'
+const bucket = constants.bucket
+const storagePath = constants.storagePath
+const dataset = 'reports'
 
 // Adjust start and end dates to update reports retrospectively
-const startDate = '2024-12-01' // constants.currentMonth;
-const endDate = '2024-12-01' // constants.currentMonth;
+const startDate = constants.currentMonth; // '2025-07-01'
+const endDate = constants.currentMonth; // '2025-07-01'
 
-function generateExportPath (ctx, params) {
+function generateExportPath (params) {
+  objectName = storagePath
   if (params.sql.type === 'histogram') {
-    return `${storagePath}${params.date.replaceAll('-', '_')}/${params.metric.id}.json`
+    objectName = objectName + params.date.replaceAll('-', '_') + '/' + params.metric.id
   } else if (params.sql.type === 'timeseries') {
-    return `${storagePath}${params.metric.id}.json`
+    objectName = objectName + params.metric.id
   } else {
     throw new Error('Unknown SQL type')
   }
+  return objectName + '_test.json' // TODO: remove test suffix from the path
 }
 
-function generateExportQuery (ctx, params) {
+function generateExportQuery (params) {
   let query = ''
   if (params.sql.type === 'histogram') {
     query = `
-SELECT * EXCEPT(date)
-FROM \`reports.${params.sql.type}\`
+SELECT
+  * EXCEPT(date, metric, lens)
+FROM \`${dataset}.${params.tableName}\`
 WHERE date = '${params.date}'
+  AND metric = '${params.metric.id}'
+  AND lens = '${params.lens.name}'
+ORDER BY bin ASC
 `
   } else if (params.sql.type === 'timeseries') {
     query = `
 SELECT
   FORMAT_DATE('%Y_%m_%d', date) AS date,
-  * EXCEPT(date)
-FROM \`reports.${params.sql.type}\`
+  * EXCEPT(date, metric, lens)
+FROM \`${dataset}.${params.tableName}\`
+WHERE metric = '${params.metric.id}'
+  AND lens = '${params.lens.name}'
+ORDER BY date DESC
 `
   } else {
     throw new Error('Unknown SQL type')
@@ -60,7 +70,8 @@ for (
           metric,
           sql,
           lens: { name: key, sql: value },
-          devRankFilter: constants.devRankFilter
+          devRankFilter: constants.devRankFilter,
+          tableName: metric.id + '_' + sql.type
         })
       }
     })
@@ -68,36 +79,45 @@ for (
 }
 
 iterations.forEach((params, i) => {
-  operate(
-    params.metric.id + '_' + params.sql.type + '_' + params.lens.name + '_' + params.date)
+  operate(params.tableName + '_' + params.date + '_' + params.lens.name)
     .tags(['crawl_complete', 'reports'])
     .queries(ctx => `
-CREATE TABLE IF NOT EXISTS reports.${params.sql.type} (
-  date DATE,
-  lens STRING,
-  metric STRING,
-  client STRING,
-  data JSON
-)
+DECLARE job_config JSON;
+
+/* First report run
+CREATE TABLE IF NOT EXISTS ${dataset}.${params.tableName}
 PARTITION BY date
-CLUSTER BY metric, lens, client;
+CLUSTER BY metric, lens, client
+AS
+*/
 
-DELETE FROM reports.${params.sql.type}
+--/* Subsequent report run
+DELETE FROM ${dataset}.${params.tableName}
 WHERE date = '${params.date}'
-AND metric = '${params.metric.id}';
-
-INSERT INTO reports.${params.sql.type} ${params.sql.query(ctx, params)};
+  AND metric = '${params.metric.id}'
+  AND lens = '${params.lens.name}';
+INSERT INTO ${dataset}.${params.tableName}
+--*/
 
 SELECT
-reports.run_export_job(
-  JSON '''{
-    "destination": "cloud_storage",
-    "config": {
-      "bucket": "${bucket}",
-      "name": "${generateExportPath(ctx, params)}"
-    },
-    "query": "${generateExportQuery(ctx, params)}"
-  }'''
+  '${params.metric.id}' AS metric,
+  '${params.lens.name}' AS lens,
+  *
+FROM (
+  ${params.sql.query(ctx, params)}
 );
-  `)
+
+SET job_config = TO_JSON(
+  STRUCT(
+    "cloud_storage" AS destination,
+    STRUCT(
+      "httparchive" AS bucket,
+      "${generateExportPath(params)}" AS name
+    ) AS config,
+    r"${generateExportQuery(params)}" AS query
+  )
+);
+
+SELECT reports.run_export_job(job_config);
+    `)
 })
