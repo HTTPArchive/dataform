@@ -36,6 +36,7 @@ jobs:
           VALIDATE_MARKDOWN_PRETTIER: false
           VALIDATE_CHECKOV: false
           VALIDATE_GIT_COMMITLINT: false
+          VALIDATE_EDITORCONFIG: false
 
   dependabot:
     name: Dependabot auto-merge
