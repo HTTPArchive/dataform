@@ -24,7 +24,7 @@ const EXPORT_CONFIG = {
   bucket: constants.bucket,
   storagePath: constants.storagePath,
   dataset: 'reports',
-  testSuffix: '_test.json' // TODO: remove test suffix from the path
+  testSuffix: '.json'
 }
 
 // Date range for report generation
