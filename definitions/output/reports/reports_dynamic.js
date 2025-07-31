@@ -123,8 +123,8 @@ function generateReportConfigurations() {
 
   // Generate configurations for each date in range
   for (let date = DATE_RANGE.endDate;
-       date >= DATE_RANGE.startDate;
-       date = constants.fnPastMonth(date)) {
+    date >= DATE_RANGE.startDate;
+    date = constants.fnPastMonth(date)) {
 
     // For each available metric
     availableMetrics.forEach(metric => {
@@ -162,44 +162,44 @@ function generateOperationSQL(ctx, reportConfig) {
   const { date, metric, lens, sql, tableName } = reportConfig
 
   return `
-    DECLARE job_config JSON;
+DECLARE job_config JSON;
 
-    /* First report run - uncomment to create table
-    CREATE TABLE IF NOT EXISTS ${EXPORT_CONFIG.dataset}.${tableName}
-    PARTITION BY date
-    CLUSTER BY metric, lens, client
-    AS
-    */
+/* First report run - uncomment to create table
+CREATE TABLE IF NOT EXISTS ${EXPORT_CONFIG.dataset}.${tableName}
+PARTITION BY date
+CLUSTER BY metric, lens, client
+AS
+*/
 
-    --/* Subsequent report run
-    DELETE FROM ${EXPORT_CONFIG.dataset}.${tableName}
-    WHERE date = '${date}'
-      AND metric = '${metric.id}'
-      AND lens = '${lens.name}';
-    INSERT INTO ${EXPORT_CONFIG.dataset}.${tableName}
-    --*/
+--/* Subsequent report run
+DELETE FROM ${EXPORT_CONFIG.dataset}.${tableName}
+WHERE date = '${date}'
+  AND metric = '${metric.id}'
+  AND lens = '${lens.name}';
+INSERT INTO ${EXPORT_CONFIG.dataset}.${tableName}
+--*/
 
-    SELECT
-      '${metric.id}' AS metric,
-      '${lens.name}' AS lens,
-      *
-    FROM (
-      ${sql.query(ctx, reportConfig)}
-    );
+SELECT
+  '${metric.id}' AS metric,
+  '${lens.name}' AS lens,
+  *
+FROM (
+  ${sql.query(ctx, reportConfig)}
+);
 
-    SET job_config = TO_JSON(
-      STRUCT(
-        "cloud_storage" AS destination,
-        STRUCT(
-          "httparchive" AS bucket,
-          "${buildExportPath(reportConfig)}" AS name
-        ) AS config,
-        r"${buildExportQuery(reportConfig)}" AS query
-      )
-    );
+SET job_config = TO_JSON(
+  STRUCT(
+    "cloud_storage" AS destination,
+    STRUCT(
+      "httparchive" AS bucket,
+      "${buildExportPath(reportConfig)}" AS name
+    ) AS config,
+    r"${buildExportQuery(reportConfig)}" AS query
+  )
+);
 
-    SELECT reports.run_export_job(job_config);
-  `
+SELECT reports.run_export_job(job_config);
+`
 }
 
 // Generate all report configurations
@@ -210,6 +210,6 @@ reportConfigurations.forEach(reportConfig => {
   const operationName = createOperationName(reportConfig)
 
   operate(operationName)
-    .tags(['crawl_complete', 'reports'])
+    .tags(['crawl_complete', 'crawl_reports'])
     .queries(ctx => generateOperationSQL(ctx, reportConfig))
 })
