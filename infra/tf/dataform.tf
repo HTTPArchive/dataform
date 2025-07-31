@@ -7,10 +7,8 @@ locals {
     "sample_data",
     "wappalyzer",
 
-    // Blink features
-    "blink_features",
-
     // Reports
+    "blink_features",
     "core_web_vitals", // TODO: Remove after tech report migration
     "reports",
 
