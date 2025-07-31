@@ -1,12 +1,18 @@
 import functions from '@google-cloud/functions-framework'
-import { BigQuery } from '@google-cloud/bigquery'
 
+import { BigQueryExport } from './bigquery.js'
 import { callRunJob } from './cloud_run.js'
 import { getCompilationResults, runWorkflow } from './dataform.js'
+import { StorageUpload } from './storage.js'
 
 const projectId = 'httparchive'
 const location = 'us-central1'
 const jobId = 'bigquery-export'
+
+const bigquery = new BigQueryExport({
+  projectId,
+  location: 'US'
+})
 
 const TRIGGERS = {
   crux_ready: {
@@ -83,8 +89,22 @@ async function handleExport (req, res) {
       return
     }
 
-    const jobName = `projects/${projectId}/locations/${location}/jobs/${jobId}`
-    await callRunJob(jobName, payload)
+    const { query, destination, config } = payload
+
+    if (destination === 'cloud_storage') {
+      console.info('Cloud Storage export')
+      console.log(query, config)
+
+      const data = await bigquery.queryResults(query)
+      const storage = new StorageUpload(config.bucket)
+      await storage.exportToJson(data, config.name)
+    } else if (destination === 'firestore') {
+      console.info('Firestore export')
+      const jobName = `projects/${projectId}/locations/${location}/jobs/${jobId}`
+      await callRunJob(jobName, payload)
+    } else {
+      throw new Error('Bad Request: destination unknown')
+    }
 
     res.status(200).json({
       replies: [200],
@@ -136,7 +156,9 @@ async function handleTrigger (req, res) {
       const trigger = TRIGGERS[eventName]
       if (trigger.type === 'poller') {
         console.info(`Poller action ${eventName}`)
-        const result = await runQuery(trigger.query)
+
+        const rows = await bigquery.queryResults(trigger.query)
+        const result = rows.length > 0 && rows[0][Object.keys(rows[0])[0]] === true
         console.info(`Query result: ${result}`)
         if (result) {
           await executeAction(trigger.action, trigger.actionArgs)
@@ -158,22 +180,6 @@ async function handleTrigger (req, res) {
     console.error(error)
     res.status(500).send('Internal Server Error')
   }
-}
-
-/**
- * Run BigQuery poll query.
- *
- * @param {string} query Polling query.
- * @returns {boolean} Query result.
- */
-async function runQuery (query) {
-  const bigquery = new BigQuery()
-
-  const [job] = await bigquery.createQueryJob({ query })
-  console.info(`Query job ${job.id} started.`)
-
-  const [rows] = await job.getQueryResults()
-  return rows.length > 0 && rows[0][Object.keys(rows[0])[0]] === true
 }
 
 /**
