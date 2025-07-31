@@ -1,10 +1,10 @@
-# HTTP Archive Dynamic Reports
+# HTTP Archive Reports
 
-This document describes the HTTP Archive dynamic reports system, which automatically generates standardized reports from HTTP Archive crawl data.
+This document describes the HTTP Archive reports system, which automatically generates standardized reports from HTTP Archive crawl data.
 
 ## Overview
 
-The dynamic reports system generates Dataform operations that:
+The reports system generates Dataform operations that:
 
 1. Calculate metrics from HTTP Archive crawl data
 2. Store results in BigQuery tables partitioned by date and clustered by metric/lens/client
@@ -15,7 +15,7 @@ The dynamic reports system generates Dataform operations that:
 ### Core Components
 
 - **`includes/reports.js`** - Defines metrics and lenses
-- **`definitions/output/reports/reports_dynamic.js`** - Generates Dataform operations dynamically
+- **`definitions/output/reports/reports_dynamic.js`** - Generates Dataform operations
 - **`includes/constants.js`** - Provides shared constants and the `DataformTemplateBuilder`
 
 ## Supported Features
@@ -57,7 +57,7 @@ Lenses allow filtering data by different criteria:
 - Processes data month by month using `constants.fnPastMonth()`
 - Supports retrospective report generation
 
-## How to Add a New Dynamic Report
+## How to Add a New Report
 
 ### Step 1: Define Your Metric
 
@@ -251,7 +251,7 @@ const EXPORT_CONFIG = {
 2. **Verify table creation** in BigQuery console
 3. **Check export logs** in Cloud Run for export errors
 4. **Verify Cloud Storage paths** for exported files
-5. **Test SQL templates** individually before adding to the dynamic system
+5. **Test SQL templates** individually before adding
 6. **Use development environment** with smaller datasets for testing
 
 ## Examples
