@@ -189,9 +189,9 @@ For each combination of date, metric, SQL type, and lens, the system:
 
 1. **Creates a unique operation name**: `{metricId}_{sqlType}_{date}_{lensName}`
 2. **Generates BigQuery SQL** that:
-   - Deletes existing data for the date/metric/lens combination
-   - Inserts new calculated data
-   - Exports results to Cloud Storage
+    - Deletes existing data for the date/metric/lens combination
+    - Inserts new calculated data
+    - Exports results to Cloud Storage
 3. **Tags operations** with `crawl_complete` tags to be triggered on crawl completion.
 
 ### Table Structure
@@ -208,8 +208,8 @@ Reports are stored in BigQuery tables with this structure:
 1. Data is calculated and stored in BigQuery
 2. A `run_export_job` function exports filtered data to Cloud Storage
 3. Export paths follow the pattern:
-   - Histogram: `reports/[{lens}/]{date_underscore}/{metric_id}.json`
-   - Timeseries: `reports/[{lens}/]{metric_id}.json`
+    - Histogram: `reports/[{lens}/]{date_underscore}/{metric_id}.json`
+    - Timeseries: `reports/[{lens}/]{metric_id}.json`
 
 ### Development vs Production
 
