@@ -49,6 +49,7 @@ class DataformTemplateBuilder {
         if (typeof value === 'string') return `'${value}'`
         if (typeof value === 'number') return value.toString()
         if (typeof value === 'boolean') return value.toString()
+        if (typeof value === 'function') return value.toString()
 
         // For objects or arrays, use JSON.stringify
         return JSON.stringify(value)
