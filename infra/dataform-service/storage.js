@@ -1,9 +1,7 @@
 import { Storage } from '@google-cloud/storage'
-import { BigQueryExport } from './bigquery.js'
 import { Readable } from 'stream'
 import zlib from 'zlib'
 
-const bigquery = new BigQueryExport()
 const storage = new Storage()
 
 export class StorageUpload {
@@ -15,8 +13,7 @@ export class StorageUpload {
     })
   }
 
-  async exportToJson (query, fileName) {
-    const data = await bigquery.queryResults(query)
+  async exportToJson (data, fileName) {
     const bucket = storage.bucket(this.bucket)
     const file = bucket.file(fileName)
 
