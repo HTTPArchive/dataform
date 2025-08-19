@@ -15,7 +15,9 @@ DELETE FROM ${ctx.self()}
 WHERE date = '${constants.currentMonth}'
   AND client = 'desktop';
 `).query(ctx => `
-SELECT *
+SELECT
+  * EXCEPT(css),
+  SAFE.PARSE_JSON(css, wide_number_mode=>'round') AS css
 FROM ${ctx.ref('crawl_staging', 'parsed_css')}
 WHERE date = '${constants.currentMonth}'
   AND client = 'desktop'
@@ -26,7 +28,9 @@ WHERE date = '${constants.currentMonth}'
   AND client = 'mobile';
 
 INSERT INTO ${ctx.self()}
-SELECT *
+SELECT
+  * EXCEPT(css),
+  SAFE.PARSE_JSON(css, wide_number_mode=>'round') AS css
 FROM ${ctx.ref('crawl_staging', 'parsed_css')}
 WHERE date = '${constants.currentMonth}'
   AND client = 'mobile'
