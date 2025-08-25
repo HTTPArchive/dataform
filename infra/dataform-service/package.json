@@ -9,7 +9,7 @@
     "@google-cloud/dataform": "2.2.0",
     "@google-cloud/functions-framework": "4.0.0",
     "@google-cloud/run": "3.0.0",
-    "@google-cloud/storage": "7.16.0"
+    "@google-cloud/storage": "7.17.0"
   },
   "scripts": {
     "start": "npx functions-framework --target=dataform-service --signature-type=http --port=${PORT:-8080}",
