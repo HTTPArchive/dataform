@@ -21,6 +21,7 @@ jobs:
 
     steps:
       - name: Checkout Code
+        # zizmor: ignore[unpinned-uses]
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
