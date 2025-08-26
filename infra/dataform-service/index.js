@@ -223,14 +223,20 @@ async function mainHandler (req, res) {
 
   console.info(`Received request for path: ${path}`)
 
-  if (path === '/trigger' || path.startsWith('/trigger/')) {
+  if (path === '/health') {
+    // Health check endpoint
+    res.status(200).json({
+      status: 'healthy',
+      timestamp: new Date().toISOString()
+    })
+  } else if (path === '/trigger' || path.startsWith('/trigger/')) {
     await handleTrigger(req, res)
   } else if (path === '/') {
     await handleExport(req, res)
   } else {
     res.status(404).json({
       error: 'Not Found',
-      message: 'Available endpoints: /, /export'
+      message: 'Available endpoints: /, /trigger, /health'
     })
   }
 }
