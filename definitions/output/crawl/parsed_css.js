@@ -17,8 +17,8 @@ WHERE date = '${constants.currentMonth}'
 `).query(ctx => `
 SELECT
   * EXCEPT(css),
-  SAFE.PARSE_JSON(css, wide_number_mode=>'round') AS css,
-  NULL AS css_backup
+  CAST(NULL AS STRING) AS css_backup,
+  SAFE.PARSE_JSON(css, wide_number_mode=>'round') AS css
 FROM ${ctx.ref('crawl_staging', 'parsed_css')}
 WHERE date = '${constants.currentMonth}'
   AND client = 'desktop'
@@ -31,8 +31,8 @@ WHERE date = '${constants.currentMonth}'
 INSERT INTO ${ctx.self()}
 SELECT
   * EXCEPT(css),
-  SAFE.PARSE_JSON(css, wide_number_mode=>'round') AS css,
-  NULL AS css_backup
+  CAST(NULL AS STRING) AS css_backup,
+  SAFE.PARSE_JSON(css, wide_number_mode=>'round') AS css
 FROM ${ctx.ref('crawl_staging', 'parsed_css')}
 WHERE date = '${constants.currentMonth}'
   AND client = 'mobile'
