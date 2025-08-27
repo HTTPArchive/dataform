@@ -1,1 +1,1 @@
-ignorefile: ".trivyignore"
+ignorefile: ".github/linters/.trivyignore"
