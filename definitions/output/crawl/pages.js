@@ -2,6 +2,8 @@
 assert('corrupted_technology_values')
   .tags(['crawl_complete'])
   .query(ctx => `
+${reservations.reservation_setter(ctx)}
+
 SELECT
   /*
     date,
@@ -96,7 +98,7 @@ publish('pages', {
   tags: ['crawl_complete'],
   dependOnDependencyAssertions: true
 }).preOps(ctx => `
-SET @@RESERVATION='${constants.reservation_id}';
+${reservations.reservation_setter(ctx)}
 
 DELETE FROM ${ctx.self()}
 WHERE date = '${constants.currentMonth}' AND

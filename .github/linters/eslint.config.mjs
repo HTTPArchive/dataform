@@ -21,7 +21,8 @@ export default [
         operate: 'readonly',
         ctx: 'readonly',
         constants: 'readonly',
-        reports: 'readonly'
+        reports: 'readonly',
+        reservations: 'readonly'
       }
     },
     rules: {
