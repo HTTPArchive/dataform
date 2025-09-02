@@ -19,7 +19,7 @@ publish('parsed_css', {
   },
   tags: ['crawl_complete']
 }).preOps(ctx => `
-SET @@RESERVATION='${constants.reservation_id}';
+${reservations.reservation_setter(ctx)}
 
 DELETE FROM ${ctx.self()}
 WHERE date = '${constants.currentMonth}'
