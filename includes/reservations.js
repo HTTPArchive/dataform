@@ -1,89 +1,74 @@
-// Reservation references
-const RESERVATIONS = {
-  HIGH_SLOTS: 'projects/httparchive/locations/US/reservations/pipeline',
-  LOW_SLOTS: null,
-  ON_DEMAND: 'none',
-  DEFAULT: null
-}
-
-// Configuration for actions (JSON format for dynamic injection)
-const RESERVATION_CONFIG = {
-  'highSlots': [
-    'httparchive.crawl.pages',
-    'httparchive.crawl.requests',
-    'httparchive.crawl.parsed_css',
-    'httparchive.f1.pages_latest',
-    'httparchive.f1.requests_latest'
-  ],
-  'lowSlots': [],
-  'onDemand': [
-    'httparchive.dataform_assertions.corrupted_technology_values'
-  ]
-}
-
-// Convert arrays to Sets for O(1) lookup performance
-const RESERVATION_SETS = {
-  highSlots: new Set(RESERVATION_CONFIG.highSlots),
-  lowSlots: new Set(RESERVATION_CONFIG.lowSlots),
-  onDemand: new Set(RESERVATION_CONFIG.onDemand)
-}
-
-/**
- * Determines the appropriate reservation for a given action name
- * @param {string} actionName - The fully qualified table name (with or without backticks)
- * @returns {string|null} The reservation identifier or null if no reservation assignment needed
- */
-function getReservation(actionName) {
-  if (!actionName || typeof actionName !== 'string') {
-    return RESERVATIONS.DEFAULT
+const default_reservation = null
+const RESERVATION_CONFIG = [
+  {
+    tag: 'high_slots',
+    reservation: 'projects/httparchive/locations/US/reservations/pipeline',
+    actions: [
+      'httparchive.crawl.pages',
+      'httparchive.crawl.requests',
+      'httparchive.crawl.parsed_css',
+      'httparchive.f1.pages_latest',
+      'httparchive.f1.requests_latest'
+    ]
+  },
+  {
+    tag: 'low_slots',
+    reservation: null,
+    actions: []
+  },
+  {
+    tag: 'on_demand',
+    reservation: 'none',
+    actions: [
+      'httparchive.dataform_assertions.corrupted_technology_values'
+    ]
   }
+]
 
-  // Strip backticks if present and normalize
-  const normalizedName = actionName.replace(/`/g, '').trim()
+const RESERVATION_SETS = RESERVATION_CONFIG.map(cfg => ({
+  ...cfg,
+  set: new Set(cfg.actions)
+}))
 
-  if (RESERVATION_SETS.highSlots.has(normalizedName)) {
-    return RESERVATIONS.HIGH_SLOTS
-  } else if (RESERVATION_SETS.lowSlots.has(normalizedName)) {
-    return RESERVATIONS.LOW_SLOTS
-  } else if (RESERVATION_SETS.onDemand.has(normalizedName)) {
-    return RESERVATIONS.ON_DEMAND
-  } else {
-    return RESERVATIONS.DEFAULT
-  }
-}
 
 /**
  * Extracts action name from Dataform context object
  * @param {Object} ctx - Dataform context object
  * @returns {string|null} The extracted action name or null if not found
  */
-function extractActionName(ctx) {
-  if (!ctx) {
-    return null
-  }
+function getActionName(ctx) {
+  if (!ctx) return null
 
-  // Try primary method: ctx.self()
-  if (typeof ctx.self === 'function') {
+  if (typeof ctx.self === 'function' && !ctx?.operation) {
+    // Try primary method: ctx.self()
     const selfName = ctx.self()
-    if (selfName) {
-      return selfName
-    }
-  }
-
-  // Fallback: construct from proto target
-  if (ctx?.operation?.proto?.target) {
-    const operationTarget = ctx?.operation?.proto?.target
-    const parts = []
-
-    if (operationTarget.database) parts.push(operationTarget.database)
-    if (operationTarget.schema) parts.push(operationTarget.schema)
-    if (operationTarget.name) parts.push(operationTarget.name)
-
-    return parts.length > 0 ? parts.join('.') : null
+    if (selfName) return selfName.replace(/`/g, '').trim()
+  } else if (ctx?.operation?.proto?.target) {
+    // Fallback: construct from proto target
+    const t = ctx?.operation?.proto?.target
+    return t ? [t.database, t.name].join('.') : null
   }
 
   return null
 }
+
+/**
+ * Determines the appropriate reservation for a given action name
+ * @param {string} actionName - The action name (without backticks)
+ * @returns {string|null} The reservation identifier or null if no reservation assignment needed
+ */
+function getReservation(actionName) {
+  if (!actionName || typeof actionName !== 'string') return default_reservation
+
+  for (const { reservation, set } of Object.values(RESERVATION_SETS)) {
+    if (set.has(actionName)) {
+      return reservation
+    }
+  }
+
+  return default_reservation
+}
+
 
 /**
  * Generates the reservation SQL statement for a given Dataform context
@@ -91,9 +76,9 @@ function extractActionName(ctx) {
  * @returns {string} The SQL statement to set reservation or empty string
  */
 function reservation_setter(ctx) {
-  const actionName = extractActionName(ctx)
+  const actionName = getActionName(ctx)
   const reservation = getReservation(actionName)
-  return reservation ? `SET @@RESERVATION='${reservation}';` : ''
+  return reservation ? `SET @@reservation='${reservation}';` : ''
 }
 
 module.exports = {
