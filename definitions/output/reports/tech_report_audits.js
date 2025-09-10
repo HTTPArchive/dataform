@@ -1,6 +1,7 @@
 const pastMonth = constants.fnPastMonth(constants.currentMonth)
 
 publish('tech_report_audits', {
+  disabled: true,
   schema: 'reports',
   type: 'incremental',
   protected: true,

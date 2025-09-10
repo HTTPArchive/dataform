@@ -209,7 +209,9 @@ const reportConfigurations = generateReportConfigurations()
 reportConfigurations.forEach(reportConfig => {
   const operationName = createOperationName(reportConfig)
 
-  operate(operationName)
+  operate(operationName, {
+    disabled: true,
+  })
     .tags(['crawl_complete', 'crawl_reports'])
     .queries(ctx => generateOperationSQL(ctx, reportConfig))
 })
