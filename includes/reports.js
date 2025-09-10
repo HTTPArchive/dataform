@@ -16,7 +16,6 @@ FROM (
     volume / SUM(volume) OVER (PARTITION BY client) AS pdf
   FROM (
     SELECT
-      date,
       client,
       COUNT(0) AS volume,
       CAST(FLOOR(FLOAT64(summary.bytesCss) / 10240) * 10 AS INT64) AS bin
@@ -27,7 +26,6 @@ FROM (
       ${params.lens.sql} AND
       is_root_page
     GROUP BY
-      date,
       bin,
       client
   )
@@ -42,7 +40,6 @@ ORDER BY
           query: DataformTemplateBuilder.create((ctx, params) => `
 SELECT
   date,
-  UNIX_DATE(date) * 1000 * 60 * 60 * 24 AS timestamp,
   client,
   ROUND(APPROX_QUANTILES(FLOAT64(summary.bytesCss), 1001)[OFFSET(101)] / 1024, 2) AS p10,
   ROUND(APPROX_QUANTILES(FLOAT64(summary.bytesCss), 1001)[OFFSET(251)] / 1024, 2) AS p25,
@@ -81,7 +78,6 @@ FROM (
     volume / SUM(volume) OVER (PARTITION BY client) AS pdf
   FROM (
     SELECT
-      date,
       client,
       COUNT(0) AS volume,
       CAST(FLOOR(CAST(IFNULL(
@@ -98,7 +94,6 @@ FROM (
       ${params.lens.sql} AND
       is_root_page
     GROUP BY
-      date,
       bin,
       client
     HAVING
@@ -115,7 +110,6 @@ ORDER BY
           query: DataformTemplateBuilder.create((ctx, params) => `
 SELECT
   date,
-  UNIX_DATE(date) * 1000 * 60 * 60 * 24 AS timestamp,
   client,
   ROUND(APPROX_QUANTILES(value, 1000)[OFFSET(100)], 2) AS p10,
   ROUND(APPROX_QUANTILES(value, 1000)[OFFSET(250)], 2) AS p25,
@@ -158,7 +152,6 @@ ORDER BY
           query: DataformTemplateBuilder.create((ctx, params) => `
 SELECT
   date,
-  UNIX_DATE(date) * 1000 * 60 * 60 * 24 AS timestamp,
   client,
   ROUND(SUM(IF(STARTS_WITH(url, 'https'), 1, 0)) * 100 / COUNT(0), 2) AS percent
 FROM ${ctx.ref('crawl', 'requests')}
@@ -187,7 +180,6 @@ ORDER BY
           query: DataformTemplateBuilder.create((ctx, params) => `
 SELECT
   date,
-  UNIX_DATE(date) * 1000 * 60 * 60 * 24 AS timestamp,
   client,
   SUM(IF(feat.id IS NOT NULL, 1, 0)) AS num_urls,
   ROUND(SUM(IF(feat.id IS NOT NULL, 1, 0)) / COUNT(0) * 100, 5) AS percent
@@ -225,7 +217,6 @@ FROM (
     volume / SUM(volume) OVER (PARTITION BY client) AS pdf
   FROM (
     SELECT
-      date,
       client,
       COUNT(0) AS volume,
       FLOOR(FLOAT64(IFNULL(lighthouse.audits['bootup-time'].numericValue, lighthouse.audits['bootup-time'].rawValue)) / 100) / 10 AS bin
@@ -236,7 +227,6 @@ FROM (
       ${params.lens.sql} AND
       is_root_page
     GROUP BY
-      date,
       bin,
       client
     HAVING
@@ -253,7 +243,6 @@ ORDER BY
           query: DataformTemplateBuilder.create((ctx, params) => `
 SELECT
   date,
-  UNIX_DATE(date) * 1000 * 60 * 60 * 24 AS timestamp,
   client,
   ROUND(APPROX_QUANTILES(value, 1000)[OFFSET(100)], 2) AS p10,
   ROUND(APPROX_QUANTILES(value, 1000)[OFFSET(250)], 2) AS p25,
@@ -302,7 +291,6 @@ FROM (
     volume / SUM(volume) OVER (PARTITION BY client) AS pdf
   FROM (
     SELECT
-      date,
       client,
       COUNT(0) AS volume,
       CAST(FLOOR(FLOAT64(summary.bytesFont) / 10240) * 10 AS INT64) AS bin
@@ -313,7 +301,6 @@ FROM (
       ${params.lens.sql} AND
       is_root_page
     GROUP BY
-      date,
       bin,
       client
   )
@@ -328,7 +315,6 @@ ORDER BY
           query: DataformTemplateBuilder.create((ctx, params) => `
 SELECT
   date,
-  UNIX_DATE(date) * 1000 * 60 * 60 * 24 AS timestamp,
   client,
   ROUND(APPROX_QUANTILES(FLOAT64(summary.bytesFont), 1001)[OFFSET(101)] / 1024, 2) AS p10,
   ROUND(APPROX_QUANTILES(FLOAT64(summary.bytesFont), 1001)[OFFSET(251)] / 1024, 2) AS p25,
@@ -367,7 +353,6 @@ FROM (
     volume / SUM(volume) OVER (PARTITION BY client) AS pdf
   FROM (
     SELECT
-      date,
       client,
       COUNT(0) AS volume,
       CAST(FLOOR(FLOAT64(summary.bytesHtml) / 10240) * 10 AS INT64) AS bin
@@ -378,7 +363,6 @@ FROM (
       ${params.lens.sql} AND
       is_root_page
     GROUP BY
-      date,
       bin,
       client
   )
@@ -393,7 +377,6 @@ ORDER BY
           query: DataformTemplateBuilder.create((ctx, params) => `
 SELECT
   date,
-  UNIX_DATE(date) * 1000 * 60 * 60 * 24 AS timestamp,
   client,
   ROUND(APPROX_QUANTILES(FLOAT64(summary.bytesHtml), 1001)[OFFSET(101)] / 1024, 2) AS p10,
   ROUND(APPROX_QUANTILES(FLOAT64(summary.bytesHtml), 1001)[OFFSET(251)] / 1024, 2) AS p25,
@@ -432,7 +415,6 @@ FROM (
     volume / SUM(volume) OVER (PARTITION BY client) AS pdf
   FROM (
     SELECT
-      date,
       client,
       COUNT(0) AS volume,
       CAST(FLOOR(FLOAT64(summary.bytesImg) / 102400) * 100 AS INT64) AS bin
@@ -443,7 +425,6 @@ FROM (
       ${params.lens.sql} AND
       is_root_page
     GROUP BY
-      date,
       bin,
       client
   )
@@ -458,7 +439,6 @@ ORDER BY
           query: DataformTemplateBuilder.create((ctx, params) => `
 SELECT
   date,
-  UNIX_DATE(date) * 1000 * 60 * 60 * 24 AS timestamp,
   client,
   ROUND(APPROX_QUANTILES(FLOAT64(summary.bytesImg), 1001)[OFFSET(101)] / 1024, 2) AS p10,
   ROUND(APPROX_QUANTILES(FLOAT64(summary.bytesImg), 1001)[OFFSET(251)] / 1024, 2) AS p25,
@@ -497,7 +477,6 @@ FROM (
     volume / SUM(volume) OVER (PARTITION BY client) AS pdf
   FROM (
     SELECT
-      date,
       client,
       COUNT(0) AS volume,
       CAST(FLOOR(FLOAT64(summary.bytesJS) / 10240) * 10 AS INT64) AS bin
@@ -508,7 +487,6 @@ FROM (
       ${params.lens.sql} AND
       is_root_page
     GROUP BY
-      date,
       bin,
       client
   )
@@ -523,7 +501,6 @@ ORDER BY
           query: DataformTemplateBuilder.create((ctx, params) => `
 SELECT
   date,
-  UNIX_DATE(date) * 1000 * 60 * 60 * 24 AS timestamp,
   client,
   ROUND(APPROX_QUANTILES(FLOAT64(summary.bytesJS), 1001)[OFFSET(101)] / 1024, 2) AS p10,
   ROUND(APPROX_QUANTILES(FLOAT64(summary.bytesJS), 1001)[OFFSET(251)] / 1024, 2) AS p25,
@@ -562,7 +539,6 @@ FROM (
     volume / SUM(volume) OVER (PARTITION BY client) AS pdf
   FROM (
     SELECT
-      date,
       client,
       COUNT(0) AS volume,
       CAST(FLOOR(FLOAT64(summary.bytesOther) / 10240) * 10 AS INT64) AS bin
@@ -573,7 +549,6 @@ FROM (
       ${params.lens.sql} AND
       is_root_page
     GROUP BY
-      date,
       bin,
       client
   )
@@ -588,7 +563,6 @@ ORDER BY
           query: DataformTemplateBuilder.create((ctx, params) => `
 SELECT
   date,
-  UNIX_DATE(date) * 1000 * 60 * 60 * 24 AS timestamp,
   client,
   ROUND(APPROX_QUANTILES(FLOAT64(summary.bytesOther), 1001)[OFFSET(101)] / 1024, 2) AS p10,
   ROUND(APPROX_QUANTILES(FLOAT64(summary.bytesOther), 1001)[OFFSET(251)] / 1024, 2) AS p25,
@@ -627,7 +601,6 @@ FROM (
     volume / SUM(volume) OVER (PARTITION BY client) AS pdf
   FROM (
     SELECT
-      date,
       client,
       COUNT(0) AS volume,
       CAST(FLOOR(FLOAT64(summary.bytesTotal) / 1024 / 100) * 100 AS INT64) AS bin
@@ -638,7 +611,6 @@ FROM (
       ${params.lens.sql} AND
       is_root_page
     GROUP BY
-      date,
       bin,
       client
   )
@@ -653,7 +625,6 @@ ORDER BY
           query: DataformTemplateBuilder.create((ctx, params) => `
 SELECT
   date,
-  UNIX_DATE(date) * 1000 * 60 * 60 * 24 AS timestamp,
   client,
   ROUND(APPROX_QUANTILES(bytesTotal, 1001)[OFFSET(101)] / 1024, 2) AS p10,
   ROUND(APPROX_QUANTILES(bytesTotal, 1001)[OFFSET(251)] / 1024, 2) AS p25,
@@ -692,7 +663,6 @@ FROM (
     volume / SUM(volume) OVER (PARTITION BY client) AS pdf
   FROM (
     SELECT
-      date,
       client,
       COUNT(0) AS volume,
       CAST(FLOOR(FLOAT64(summary.bytesVideo) / 10240) * 10 AS INT64) AS bin
@@ -703,7 +673,6 @@ FROM (
       ${params.lens.sql} AND
       is_root_page
     GROUP BY
-      date,
       bin,
       client
   )
@@ -718,7 +687,6 @@ ORDER BY
           query: DataformTemplateBuilder.create((ctx, params) => `
 SELECT
   date,
-  UNIX_DATE(date) * 1000 * 60 * 60 * 24 AS timestamp,
   client,
   ROUND(APPROX_QUANTILES(FLOAT64(summary.bytesVideo), 1001)[OFFSET(101)] / 1024, 2) AS p10,
   ROUND(APPROX_QUANTILES(FLOAT64(summary.bytesVideo), 1001)[OFFSET(251)] / 1024, 2) AS p25,
@@ -757,7 +725,6 @@ FROM (
     volume / SUM(volume) OVER (PARTITION BY client) AS pdf
   FROM (
     SELECT
-      date,
       client,
       COUNT(0) AS volume,
       INT64(payload['_cpu.v8.compile']) AS bin
@@ -768,7 +735,6 @@ FROM (
       ${params.lens.sql} AND
       is_root_page
     GROUP BY
-      date,
       bin,
       client
     HAVING
@@ -785,7 +751,6 @@ ORDER BY
           query: DataformTemplateBuilder.create((ctx, params) => `
 SELECT
   date,
-  UNIX_DATE(date) * 1000 * 60 * 60 * 24 AS timestamp,
   client,
   ROUND(APPROX_QUANTILES(value, 1000)[OFFSET(100)], 2) AS p10,
   ROUND(APPROX_QUANTILES(value, 1000)[OFFSET(250)], 2) AS p25,
@@ -831,7 +796,6 @@ FROM (
     volume / SUM(volume) OVER (PARTITION BY client) AS pdf
   FROM (
     SELECT
-      date,
       client,
       COUNT(0) AS volume,
       FLOOR(FLOAT64(summary.onContentLoaded) / 1000) AS bin
@@ -843,7 +807,6 @@ FROM (
       is_root_page AND
       FLOAT64(summary.onContentLoaded) > 0
     GROUP BY
-      date,
       bin,
       client
   )
@@ -858,7 +821,6 @@ ORDER BY
           query: DataformTemplateBuilder.create((ctx, params) => `
 SELECT
   date,
-  UNIX_DATE(date) * 1000 * 60 * 60 * 24 AS timestamp,
   client,
   ROUND(APPROX_QUANTILES(FLOAT64(summary.onContentLoaded), 1001)[OFFSET(101)], 2) AS p10,
   ROUND(APPROX_QUANTILES(FLOAT64(summary.onContentLoaded), 1001)[OFFSET(251)], 2) AS p25,
@@ -897,7 +859,6 @@ FROM (
     volume / SUM(volume) OVER (PARTITION BY client) AS pdf
   FROM (
     SELECT
-      date,
       client,
       COUNT(0) AS volume,
       CAST(FLOAT64(r.payload['_cpu.EvaluateScript']) / 20 AS INT64) * 20 AS bin
@@ -910,7 +871,6 @@ FROM (
       ${params.lens.sql} AND
       is_root_page
     GROUP BY
-      date,
       bin,
       client
     HAVING
@@ -938,7 +898,6 @@ FROM (
     volume / SUM(volume) OVER (PARTITION BY client) AS pdf
   FROM (
     SELECT
-      date,
       client,
       COUNT(0) AS volume,
       CAST(FLOOR(FLOAT64(payload['_chromeUserTiming.firstContentfulPaint']) / 1000) AS INT64) AS bin
@@ -949,7 +908,6 @@ FROM (
       ${params.lens.sql} AND
       is_root_page
     GROUP BY
-      date,
       bin,
       client
     HAVING
@@ -966,7 +924,6 @@ ORDER BY
           query: DataformTemplateBuilder.create((ctx, params) => `
 SELECT
   date,
-  UNIX_DATE(date) * 1000 * 60 * 60 * 24 AS timestamp,
   client,
   ROUND(APPROX_QUANTILES(FLOAT64(payload['_chromeUserTiming.firstContentfulPaint']), 1001)[OFFSET(101)] / 1024, 2) AS p10,
   ROUND(APPROX_QUANTILES(FLOAT64(payload['_chromeUserTiming.firstContentfulPaint']), 1001)[OFFSET(251)] / 1024, 2) AS p25,
@@ -1006,7 +963,6 @@ FROM (
     volume / SUM(volume) OVER (PARTITION BY client) AS pdf
   FROM (
     SELECT
-      date,
       client,
       COUNT(0) AS volume,
       CAST(FLOOR(FLOAT64(payload._gzip_savings) / (1024 * 2)) * 2 AS INT64) AS bin
@@ -1017,7 +973,6 @@ FROM (
       ${params.lens.sql} AND
       is_root_page
     GROUP BY
-      date,
       bin,
       client
     HAVING
@@ -1034,7 +989,6 @@ ORDER BY
           query: DataformTemplateBuilder.create((ctx, params) => `
 SELECT
   date,
-  UNIX_DATE(date) * 1000 * 60 * 60 * 24 AS timestamp,
   client,
   ROUND(APPROX_QUANTILES(FLOAT64(payload._gzip_savings), 1001)[OFFSET(101)] / 1024, 2) AS p10,
   ROUND(APPROX_QUANTILES(FLOAT64(payload._gzip_savings), 1001)[OFFSET(251)] / 1024, 2) AS p25,
@@ -1072,7 +1026,6 @@ FROM (
     volume / SUM(volume) OVER (PARTITION BY client) AS pdf
   FROM (
     SELECT
-      date,
       client,
       COUNT(0) AS volume,
       FLOOR(FLOAT64(summary.onLoad) / 1000) AS bin
@@ -1084,7 +1037,6 @@ FROM (
       is_root_page AND
       FLOAT64(summary.onLoad) > 0
     GROUP BY
-      date,
       bin,
       client
   )
@@ -1099,7 +1051,6 @@ ORDER BY
           query: DataformTemplateBuilder.create((ctx, params) => `
 SELECT
   date,
-  UNIX_DATE(date) * 1000 * 60 * 60 * 24 AS timestamp,
   client,
   ROUND(APPROX_QUANTILES(FLOAT64(summary.onLoad), 1001)[OFFSET(101)] / 1000, 2) AS p10,
   ROUND(APPROX_QUANTILES(FLOAT64(summary.onLoad), 1001)[OFFSET(251)] / 1000, 2) AS p25,
@@ -1162,7 +1113,6 @@ ORDER BY
           query: DataformTemplateBuilder.create((ctx, params) => `
 SELECT
   date,
-  UNIX_DATE(date) * 1000 * 60 * 60 * 24 AS timestamp,
   client,
   ROUND(APPROX_QUANTILES(FLOAT64(summary.reqCss), 1001)[OFFSET(101)], 2) AS p10,
   ROUND(APPROX_QUANTILES(FLOAT64(summary.reqCss), 1001)[OFFSET(251)], 2) AS p25,
@@ -1225,7 +1175,6 @@ ORDER BY
           query: DataformTemplateBuilder.create((ctx, params) => `
 SELECT
   date,
-  UNIX_DATE(date) * 1000 * 60 * 60 * 24 AS timestamp,
   client,
   ROUND(APPROX_QUANTILES(FLOAT64(summary.reqFont), 1001)[OFFSET(101)], 2) AS p10,
   ROUND(APPROX_QUANTILES(FLOAT64(summary.reqFont), 1001)[OFFSET(251)], 2) AS p25,
@@ -1288,7 +1237,6 @@ ORDER BY
           query: DataformTemplateBuilder.create((ctx, params) => `
 SELECT
   date,
-  UNIX_DATE(date) * 1000 * 60 * 60 * 24 AS timestamp,
   client,
   ROUND(APPROX_QUANTILES(FLOAT64(summary.reqHtml), 1001)[OFFSET(101)], 2) AS p10,
   ROUND(APPROX_QUANTILES(FLOAT64(summary.reqHtml), 1001)[OFFSET(251)], 2) AS p25,
@@ -1351,7 +1299,6 @@ ORDER BY
           query: DataformTemplateBuilder.create((ctx, params) => `
 SELECT
   date,
-  UNIX_DATE(date) * 1000 * 60 * 60 * 24 AS timestamp,
   client,
   ROUND(APPROX_QUANTILES(FLOAT64(summary.reqImg), 1001)[OFFSET(101)], 2) AS p10,
   ROUND(APPROX_QUANTILES(FLOAT64(summary.reqImg), 1001)[OFFSET(251)], 2) AS p25,
@@ -1414,7 +1361,6 @@ ORDER BY
           query: DataformTemplateBuilder.create((ctx, params) => `
 SELECT
   date,
-  UNIX_DATE(date) * 1000 * 60 * 60 * 24 AS timestamp,
   client,
   ROUND(APPROX_QUANTILES(FLOAT64(summary.reqJS), 1001)[OFFSET(101)], 2) AS p10,
   ROUND(APPROX_QUANTILES(FLOAT64(summary.reqJS), 1001)[OFFSET(251)], 2) AS p25,
@@ -1477,7 +1423,6 @@ ORDER BY
           query: DataformTemplateBuilder.create((ctx, params) => `
 SELECT
   date,
-  UNIX_DATE(date) * 1000 * 60 * 60 * 24 AS timestamp,
   client,
   ROUND(APPROX_QUANTILES(FLOAT64(summary.reqOther), 1001)[OFFSET(101)], 2) AS p10,
   ROUND(APPROX_QUANTILES(FLOAT64(summary.reqOther), 1001)[OFFSET(251)], 2) AS p25,
@@ -1540,7 +1485,6 @@ ORDER BY
           query: DataformTemplateBuilder.create((ctx, params) => `
 SELECT
   date,
-  UNIX_DATE(date) * 1000 * 60 * 60 * 24 AS timestamp,
   client,
   ROUND(APPROX_QUANTILES(FLOAT64(summary.reqTotal), 1001)[OFFSET(101)], 2) AS p10,
   ROUND(APPROX_QUANTILES(FLOAT64(summary.reqTotal), 1001)[OFFSET(251)], 2) AS p25,
@@ -1603,7 +1547,6 @@ ORDER BY
           query: DataformTemplateBuilder.create((ctx, params) => `
 SELECT
   date,
-  UNIX_DATE(date) * 1000 * 60 * 60 * 24 AS timestamp,
   client,
   ROUND(APPROX_QUANTILES(FLOAT64(summary.reqVideo), 1001)[OFFSET(101)], 2) AS p10,
   ROUND(APPROX_QUANTILES(FLOAT64(summary.reqVideo), 1001)[OFFSET(251)], 2) AS p25,
@@ -1668,7 +1611,6 @@ ORDER BY
           query: DataformTemplateBuilder.create((ctx, params) => `
 SELECT
   date,
-  UNIX_DATE(date) * 1000 * 60 * 60 * 24 AS timestamp,
   client,
   ROUND(APPROX_QUANTILES(FLOAT64(payload._image_savings), 1001)[OFFSET(101)] / 1024, 2) AS p10,
   ROUND(APPROX_QUANTILES(FLOAT64(payload._image_savings), 1001)[OFFSET(251)] / 1024, 2) AS p25,
@@ -1736,7 +1678,6 @@ ORDER BY
           query: DataformTemplateBuilder.create((ctx, params) => `
 SELECT
   date,
-  UNIX_DATE(date) * 1000 * 60 * 60 * 24 AS timestamp,
   client,
   ROUND(APPROX_QUANTILES(IFNULL(INT64(lighthouse.audits['offscreen-images'].details.overallSavingsBytes), INT64(lighthouse.audits['offscreen-images'].extendedInfo.value.wastedKb) * 1024), 1001)[OFFSET(101)] / 1024, 2) AS p10,
   ROUND(APPROX_QUANTILES(IFNULL(INT64(lighthouse.audits['offscreen-images'].details.overallSavingsBytes), INT64(lighthouse.audits['offscreen-images'].extendedInfo.value.wastedKb) * 1024), 1001)[OFFSET(251)] / 1024, 2) AS p25,
@@ -1803,7 +1744,6 @@ ORDER BY
           query: DataformTemplateBuilder.create((ctx, params) => `
 SELECT
   date,
-  UNIX_DATE(date) * 1000 * 60 * 60 * 24 AS timestamp,
   client,
   ROUND(APPROX_QUANTILES(IFNULL(INT64(lighthouse.audits['uses-optimized-images'].details.overallSavingsBytes), INT64(lighthouse.audits['uses-optimized-images'].extendedInfo.value.wastedKb) * 1024), 1001)[OFFSET(101)] / 1024, 2) AS p10,
   ROUND(APPROX_QUANTILES(IFNULL(INT64(lighthouse.audits['uses-optimized-images'].details.overallSavingsBytes), INT64(lighthouse.audits['uses-optimized-images'].extendedInfo.value.wastedKb) * 1024), 1001)[OFFSET(251)] / 1024, 2) AS p25,
@@ -1867,7 +1807,6 @@ ORDER BY
           query: DataformTemplateBuilder.create((ctx, params) => `
 SELECT
   date,
-  UNIX_DATE(date) * 1000 * 60 * 60 * 24 AS timestamp,
   client,
   ROUND(APPROX_QUANTILES(FLOAT64(payload._SpeedIndex), 1001)[OFFSET(101)] / 1000, 2) AS p10,
   ROUND(APPROX_QUANTILES(FLOAT64(payload._SpeedIndex), 1001)[OFFSET(251)] / 1000, 2) AS p25,
@@ -1934,7 +1873,6 @@ ORDER BY
           query: DataformTemplateBuilder.create((ctx, params) => `
 SELECT
   date,
-  UNIX_DATE(date) * 1000 * 60 * 60 * 24 AS timestamp,
   client,
   ROUND(COUNT(DISTINCT IF(LOWER(LAX_STRING(attr)) = 'lazy', page, NULL)) * 100 / COUNT(DISTINCT page), 2) AS percent
 FROM ${ctx.ref('crawl', 'pages')}
@@ -1963,7 +1901,6 @@ ORDER BY
           query: DataformTemplateBuilder.create((ctx, params) => `
 SELECT
   date,
-  UNIX_DATE(date) * 1000 * 60 * 60 * 24 AS timestamp,
   client,
   ROUND(SUM(IF(LAX_STRING(r.summary.respHttpVersion) = 'HTTP/2', 1, 0)) * 100 / COUNT(0), 2) AS percent
 FROM ${ctx.ref('crawl', 'requests')} r
@@ -1992,7 +1929,6 @@ ORDER BY
           query: DataformTemplateBuilder.create((ctx, params) => `
 SELECT
   date,
-  UNIX_DATE(date) * 1000 * 60 * 60 * 24 AS timestamp,
   client,
   ROUND(
     SUM(
@@ -2033,7 +1969,6 @@ ORDER BY
           query: DataformTemplateBuilder.create((ctx, params) => `
 SELECT
   date,
-  UNIX_DATE(date) * 1000 * 60 * 60 * 24 AS timestamp,
   client,
   ROUND(SUM(IF(LAX_STRING(lighthouse.audits['font-display'].score) IN ('true', '1'), 1, 0)) * 100 / COUNT(0), 2) AS percent
 FROM ${ctx.ref('crawl', 'pages')}
@@ -2063,7 +1998,6 @@ ORDER BY
           query: DataformTemplateBuilder.create((ctx, params) => `
 SELECT
   date,
-  UNIX_DATE(date) * 1000 * 60 * 60 * 24 AS timestamp,
   client,
   ROUND(SUM(IF(LAX_STRING(lighthouse.audits.canonical.score) IN ('true', '1'), 1, 0)) * 100 / COUNT(0), 2) AS percent
 FROM ${ctx.ref('crawl', 'pages')}
@@ -2092,7 +2026,6 @@ ORDER BY
           query: DataformTemplateBuilder.create((ctx, params) => `
 SELECT
   date,
-  UNIX_DATE(date) * 1000 * 60 * 60 * 24 AS timestamp,
   client,
   ROUND(SUM(IF(LAX_STRING(lighthouse.audits['button-name'].score) IN ('true', '1'), 1, 0)) * 100 / COUNT(0), 2) AS percent
 FROM ${ctx.ref('crawl', 'pages')}
@@ -2121,7 +2054,6 @@ ORDER BY
           query: DataformTemplateBuilder.create((ctx, params) => `
 SELECT
   date,
-  UNIX_DATE(date) * 1000 * 60 * 60 * 24 AS timestamp,
   client,
   ROUND(SUM(IF(LAX_STRING(lighthouse.audits.hreflang.score) IN ('true', '1'), 1, 0)) * 100 / COUNT(0), 2) AS percent
 FROM ${ctx.ref('crawl', 'pages')}
@@ -2151,7 +2083,6 @@ ORDER BY
           query: DataformTemplateBuilder.create((ctx, params) => `
 SELECT
   date,
-  UNIX_DATE(date) * 1000 * 60 * 60 * 24 AS timestamp,
   client,
   COUNT(0) AS urls
 FROM ${ctx.ref('crawl', 'pages')}
@@ -2178,7 +2109,6 @@ ORDER BY
           query: DataformTemplateBuilder.create((ctx, params) => `
 SELECT
   date,
-  UNIX_DATE(date) * 1000 * 60 * 60 * 24 AS timestamp,
   client,
   SUM(IF(feat.id IS NOT NULL, 1, 0)) AS num_urls,
   ROUND(SUM(IF(feat.id IS NOT NULL, 1, 0)) / COUNT(0) * 100, 5) AS percent
@@ -2209,7 +2139,6 @@ ORDER BY
           query: DataformTemplateBuilder.create((ctx, params) => `
 SELECT
   date,
-  UNIX_DATE(date) * 1000 * 60 * 60 * 24 AS timestamp,
   client,
   ROUND(SUM(IF(LAX_STRING(lighthouse.audits['font-size'].score) IN ('true', '1'), 1, 0)) * 100 / COUNT(0), 2) AS percent
 FROM ${ctx.ref('crawl', 'pages')}
@@ -2238,7 +2167,6 @@ ORDER BY
           query: DataformTemplateBuilder.create((ctx, params) => `
 SELECT
   date,
-  UNIX_DATE(date) * 1000 * 60 * 60 * 24 AS timestamp,
   client,
   ROUND(SUM(IF(LAX_STRING(lighthouse.audits['color-contrast'].score) IN ('true', '1'), 1, 0)) * 100 / COUNT(0), 2) AS percent
 FROM ${ctx.ref('crawl', 'pages')}
@@ -2267,7 +2195,6 @@ ORDER BY
           query: DataformTemplateBuilder.create((ctx, params) => `
 SELECT
   date,
-  UNIX_DATE(date) * 1000 * 60 * 60 * 24 AS timestamp,
   client,
   ROUND(SUM(IF(LAX_STRING(lighthouse.audits['image-alt'].score) IN ('true', '1'), 1, 0)) * 100 / COUNT(0), 2) AS percent
 FROM ${ctx.ref('crawl', 'pages')}
@@ -2296,7 +2223,6 @@ ORDER BY
           query: DataformTemplateBuilder.create((ctx, params) => `
 SELECT
   date,
-  UNIX_DATE(date) * 1000 * 60 * 60 * 24 AS timestamp,
   client,
   ROUND(SUM(IF(LAX_STRING(lighthouse.audits.label.score) IN ('true', '1'), 1, 0)) * 100 / COUNT(0), 2) AS percent
 FROM ${ctx.ref('crawl', 'pages')}
@@ -2325,7 +2251,6 @@ ORDER BY
           query: DataformTemplateBuilder.create((ctx, params) => `
 SELECT
   date,
-  UNIX_DATE(date) * 1000 * 60 * 60 * 24 AS timestamp,
   client,
   ROUND(SUM(IF(LAX_STRING(lighthouse.audits['link-name'].score) IN ('true', '1'), 1, 0)) * 100 / COUNT(0), 2) AS percent
 FROM ${ctx.ref('crawl', 'pages')}
@@ -2362,7 +2287,6 @@ LANGUAGE js AS """
 
 SELECT
   date,
-  UNIX_DATE(date) * 1000 * 60 * 60 * 24 AS timestamp,
   client,
   ROUND(APPROX_QUANTILES(score, 1000)[OFFSET(100)], 2) AS p10,
   ROUND(APPROX_QUANTILES(score, 1000)[OFFSET(250)], 2) AS p25,
@@ -2401,7 +2325,6 @@ ORDER BY
           query: DataformTemplateBuilder.create((ctx, params) => `
 SELECT
   date,
-  UNIX_DATE(date) * 1000 * 60 * 60 * 24 AS timestamp,
   client,
   SUM(IF(feat.id IS NOT NULL, 1, 0)) AS num_urls,
   ROUND(SUM(IF(feat.id IS NOT NULL, 1, 0)) / COUNT(0) * 100, 5) AS percent
@@ -2432,7 +2355,6 @@ ORDER BY
           query: DataformTemplateBuilder.create((ctx, params) => `
 SELECT
   date,
-  UNIX_DATE(date) * 1000 * 60 * 60 * 24 AS timestamp,
   client,
   SUM(IF(feat.id IS NOT NULL, 1, 0)) AS num_urls,
   ROUND(SUM(IF(feat.id IS NOT NULL, 1, 0)) / COUNT(0) * 100, 5) AS percent
@@ -2463,7 +2385,6 @@ ORDER BY
           query: DataformTemplateBuilder.create((ctx, params) => `
 SELECT
   date,
-  UNIX_DATE(date) * 1000 * 60 * 60 * 24 AS timestamp,
   client,
   SUM(IF(feat.id IS NOT NULL, 1, 0)) AS num_urls,
   ROUND(SUM(IF(feat.id IS NOT NULL, 1, 0)) / COUNT(0) * 100, 5) AS percent
@@ -2494,7 +2415,6 @@ ORDER BY
           query: DataformTemplateBuilder.create((ctx, params) => `
 SELECT
   date,
-  UNIX_DATE(date) * 1000 * 60 * 60 * 24 AS timestamp,
   client,
   SUM(IF(feat.id IS NOT NULL, 1, 0)) AS num_urls,
   ROUND(SUM(IF(feat.id IS NOT NULL, 1, 0)) / COUNT(0) * 100, 5) AS percent
@@ -2525,7 +2445,6 @@ ORDER BY
           query: DataformTemplateBuilder.create((ctx, params) => `
 SELECT
   date,
-  UNIX_DATE(date) * 1000 * 60 * 60 * 24 AS timestamp,
   client,
   SUM(IF(feat.id IS NOT NULL, 1, 0)) AS num_urls,
   ROUND(SUM(IF(feat.id IS NOT NULL, 1, 0)) / COUNT(0) * 100, 5) AS percent
@@ -2556,7 +2475,6 @@ ORDER BY
           query: DataformTemplateBuilder.create((ctx, params) => `
 SELECT
   date,
-  UNIX_DATE(date) * 1000 * 60 * 60 * 24 AS timestamp,
   client,
   ROUND(SUM(IF(LAX_STRING(lighthouse.audits['link-text'].score) IN ('true', '1'), 1, 0)) * 100 / COUNT(0), 2) AS percent
 FROM ${ctx.ref('crawl', 'pages')}
@@ -2585,7 +2503,6 @@ ORDER BY
           query: DataformTemplateBuilder.create((ctx, params) => `
 SELECT
   date,
-  UNIX_DATE(date) * 1000 * 60 * 60 * 24 AS timestamp,
   client,
   SUM(IF(feat.id IS NOT NULL, 1, 0)) AS num_urls,
   ROUND(SUM(IF(feat.id IS NOT NULL, 1, 0)) / COUNT(0) * 100, 5) AS percent
@@ -2616,7 +2533,6 @@ ORDER BY
           query: DataformTemplateBuilder.create((ctx, params) => `
 SELECT
   date,
-  UNIX_DATE(date) * 1000 * 60 * 60 * 24 AS timestamp,
   client,
   SUM(IF(feat.id IS NOT NULL, 1, 0)) AS num_urls,
   ROUND(SUM(IF(feat.id IS NOT NULL, 1, 0)) / COUNT(0) * 100, 5) AS percent
@@ -2647,7 +2563,6 @@ ORDER BY
           query: DataformTemplateBuilder.create((ctx, params) => `
 SELECT
   date,
-  UNIX_DATE(date) * 1000 * 60 * 60 * 24 AS timestamp,
   client,
   SUM(IF(feat.id IS NOT NULL, 1, 0)) AS num_urls,
   ROUND(SUM(IF(feat.id IS NOT NULL, 1, 0)) / COUNT(0) * 100, 5) AS percent
@@ -2678,7 +2593,6 @@ ORDER BY
           query: DataformTemplateBuilder.create((ctx, params) => `
 SELECT
   date,
-  UNIX_DATE(date) * 1000 * 60 * 60 * 24 AS timestamp,
   client,
   SUM(IF(feat.id IS NOT NULL, 1, 0)) AS num_urls,
   ROUND(SUM(IF(feat.id IS NOT NULL, 1, 0)) / COUNT(0) * 100, 5) AS percent
@@ -2709,7 +2623,6 @@ ORDER BY
           query: DataformTemplateBuilder.create((ctx, params) => `
 SELECT
   date,
-  UNIX_DATE(date) * 1000 * 60 * 60 * 24 AS timestamp,
   client,
   SUM(IF(feat.id IS NOT NULL, 1, 0)) AS num_urls,
   ROUND(SUM(IF(feat.id IS NOT NULL, 1, 0)) / COUNT(0) * 100, 5) AS percent
@@ -2740,7 +2653,6 @@ ORDER BY
           query: DataformTemplateBuilder.create((ctx, params) => `
 SELECT
   date,
-  UNIX_DATE(date) * 1000 * 60 * 60 * 24 AS timestamp,
   client,
   SUM(IF(feat.id IS NOT NULL, 1, 0)) AS num_urls,
   ROUND(SUM(IF(feat.id IS NOT NULL, 1, 0)) / COUNT(0) * 100, 5) AS percent
@@ -2772,7 +2684,6 @@ ORDER BY
           query: DataformTemplateBuilder.create((ctx, params) => `
 SELECT
   date,
-  UNIX_DATE(date) * 1000 * 60 * 60 * 24 AS timestamp,
   client,
   SUM(IF(feat.id = '990' OR feat.feature = 'ServiceWorkerControlledPage', 1, 0)) AS num_urls,
   ROUND(SUM(IF(feat.id = '990' OR feat.feature = 'ServiceWorkerControlledPage', 1, 0)) / COUNT(0) * 100, 5) AS percent
@@ -2804,7 +2715,6 @@ ORDER BY
           query: DataformTemplateBuilder.create((ctx, params) => `
 SELECT
   date,
-  UNIX_DATE(date) * 1000 * 60 * 60 * 24 AS timestamp,
   client,
   SUM(IF(feat.id = '3018' OR feat.feature = 'WebSocketStreamConstructor', 1, 0)) AS num_urls,
   ROUND(SUM(IF(feat.id = '3018' OR feat.feature = 'WebSocketStreamConstructor', 1, 0)) / COUNT(0) * 100, 5) AS percent
