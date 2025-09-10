@@ -341,7 +341,7 @@ async function importHistogramData() {
     allFailedTasks.push(...dateResult.failedTasks)
   }
 
-  console.log(`\n=== FINAL SUMMARY ===`)
+  console.log('\n=== FINAL SUMMARY ===')
   console.log(`Dates processed: ${dates.filter(d => !CONFIG.skipDates.includes(d)).length}`)
   console.log(`Total files successful: ${totalSuccess}`)
   console.log(`Total files not found: ${totalNotFound}`)
@@ -349,7 +349,7 @@ async function importHistogramData() {
   console.log(`Total rows uploaded: ${totalRows.toLocaleString()}`)
 
   if (allFailedTasks.length > 0) {
-    console.log(`\n=== FAILED TASKS (for BACKLOG) ===`)
+    console.log('\n=== FAILED TASKS (for BACKLOG) ===')
     allFailedTasks.forEach(filename => console.log(`  '${filename}',`))
   }
 }

@@ -21,22 +21,6 @@ const lenses = [
   'wordpress/'
 ]
 
-const dates = (function () {
-  const dates = []
-  for (let year = 2016; year <= 2025; year++) {
-    for (let month = 1; month <= 12; month++) {
-      dates.push(`${year}_${String(month).padStart(2, '0')}_01`)
-      if (year <= 2018) {
-        dates.push(`${year}_${String(month).padStart(2, '0')}_15`)
-      }
-      if (year === 2025 && month === 1) {
-        break
-      }
-    }
-  }
-  return dates
-})()
-
 const histogramMetrics = new Set([
   'a11yButtonName',
   'a11yColorContrast',
