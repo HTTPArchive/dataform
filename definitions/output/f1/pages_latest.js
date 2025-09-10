@@ -7,8 +7,8 @@ publish('pages_latest', {
     clusterBy: ['client', 'is_root_page', 'rank', 'page']
   },
   tags: ['crawl_complete']
-}).preOps(`
-SET @@RESERVATION='${constants.reservation_id}';
+}).preOps(ctx => `
+${reservations.reservation_setter(ctx)}
 `).query(ctx => `
 SELECT
   date,

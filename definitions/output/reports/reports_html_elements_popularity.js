@@ -1,5 +1,3 @@
-const pastMonth = constants.fnPastMonth(constants.currentMonth)
-
 publish('html_elements_popularity', {
   schema: 'reports',
   type: 'incremental',
@@ -18,7 +16,7 @@ try {
 ''';
 
 DELETE FROM ${ctx.self()}
-WHERE date = '${pastMonth}';
+WHERE date = '${constants.currentMonth}';
 `).query(ctx => `
 WITH pages_data AS (
   SELECT
@@ -29,7 +27,7 @@ WITH pages_data AS (
     custom_metrics.element_count
   FROM ${ctx.ref('crawl', 'pages')}
   WHERE
-    date = '${pastMonth}' ${constants.devRankFilter}
+    date = '${constants.currentMonth}' ${constants.devRankFilter}
 ),
 
 totals AS (
@@ -69,9 +67,9 @@ SELECT
       "destination": "cloud_storage",
       "config": {
         "bucket": "${constants.bucket}",
-        "name": "${constants.storagePath}${pastMonth.replaceAll('-', '_')}/htmlElementPopularity.json"
+        "name": "${constants.storagePath}${constants.currentMonth.replaceAll('-', '_')}/htmlElementPopularity.json"
       },
-      "query": "SELECT * EXCEPT(date) FROM ${ctx.self()} WHERE date = '${pastMonth}'"
+      "query": "SELECT * EXCEPT(date) FROM ${ctx.self()} WHERE date = '${constants.currentMonth}'"
     }'''
   );
 `)

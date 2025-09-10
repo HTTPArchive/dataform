@@ -2,6 +2,8 @@
 assert('corrupted_technology_values')
   .tags(['crawl_complete'])
   .query(ctx => `
+${reservations.reservation_setter(ctx)}
+
 SELECT
   /*
     date,
@@ -28,6 +30,20 @@ GROUP BY
 ORDER BY cnt_pages DESC
 */
 HAVING cnt_pages > 200
+  `)
+
+assert('pages_per_client')
+  .tags(['crawl_complete'])
+  .query(ctx => `
+SELECT
+  client,
+  COUNT(DISTINCT page) AS cnt_pages
+FROM ${ctx.ref('crawl_staging', 'pages')}
+WHERE
+  date = '${constants.currentMonth}'
+GROUP BY
+  client
+HAVING cnt_pages < 20000000
   `)
 
 publish('pages', {
@@ -82,7 +98,7 @@ publish('pages', {
   tags: ['crawl_complete'],
   dependOnDependencyAssertions: true
 }).preOps(ctx => `
-SET @@RESERVATION='${constants.reservation_id}';
+${reservations.reservation_setter(ctx)}
 
 DELETE FROM ${ctx.self()}
 WHERE date = '${constants.currentMonth}' AND
