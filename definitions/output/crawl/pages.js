@@ -2,8 +2,6 @@
 assert('corrupted_technology_values')
   .tags(['crawl_complete'])
   .query(ctx => `
-${reservations.reservation_setter(ctx)}
-
 SELECT
   /*
     date,

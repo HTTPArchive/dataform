@@ -20,7 +20,6 @@ const RESERVATION_CONFIG = [
     tag: 'on_demand',
     reservation: 'none',
     actions: [
-      'httparchive.dataform_assertions.corrupted_technology_values'
     ]
   }
 ]
