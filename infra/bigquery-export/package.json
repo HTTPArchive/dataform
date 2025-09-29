@@ -9,7 +9,7 @@
   "type": "module",
   "dependencies": {
     "@google-cloud/bigquery": "8.1.1",
-    "@google-cloud/firestore": "7.11.4"
+    "@google-cloud/firestore": "7.11.6"
   },
   "author": "@max-ostapenko"
 }
