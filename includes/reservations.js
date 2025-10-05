@@ -1,4 +1,4 @@
-const reservations = require('@masthead-data/dataform-plugin')
+const reservations = require('@masthead-data/dataform-package')
 
 const RESERVATION_CONFIG = [
   {
