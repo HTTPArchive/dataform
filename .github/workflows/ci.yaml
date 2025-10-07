@@ -27,7 +27,7 @@ jobs:
           persist-credentials: false
 
       - name: Lint Code Base
-        uses: super-linter/super-linter/slim@v8.1.0
+        uses: super-linter/super-linter/slim@v8.2.0
         env:
           DEFAULT_BRANCH: main
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -36,6 +36,8 @@ jobs:
           VALIDATE_MARKDOWN_PRETTIER: false
           VALIDATE_CHECKOV: false
           VALIDATE_GIT_COMMITLINT: false
+          VALIDATE_BIOME_FORMAT: false
+          VALIDATE_BIOME_LINT: false
 
   dependabot:
     name: Dependabot auto-merge
