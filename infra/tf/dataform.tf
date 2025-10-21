@@ -22,7 +22,8 @@ locals {
   dataform_service_account_roles = [
     "roles/bigquery.user",
     "roles/bigquery.connectionUser",
-    "roles/dataform.serviceAgent",
+    "roles/bigquery.dataViewer",
+    "roles/bigquery.resourceAdmin",
   ]
 }
 
