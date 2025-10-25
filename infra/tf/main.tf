@@ -72,9 +72,4 @@ module "masthead_agent" {
     dataplex      = true
     analytics_hub = true
   }
-
-  # Custom labels for resource management
-  labels = {
-    team = "dataops"
-  }
 }
