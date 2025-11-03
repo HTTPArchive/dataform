@@ -8,7 +8,7 @@
   },
   "dependencies": {
     "@dataform/core": "3.0.35",
-    "@masthead-data/dataform-package": "0.0.1"
+    "@masthead-data/dataform-package": "0.1.0"
   },
   "devDependencies": {
     "eslint": "^9.38.0",
