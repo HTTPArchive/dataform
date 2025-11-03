@@ -7,12 +7,12 @@
     "superlint": "docker run --platform linux/amd64 -e DEFAULT_BRANCH=main -e VALIDATE_GIT_COMMITLINT=false -e VALIDATE_TERRAFORM_TERRASCAN=false -e VALIDATE_TERRAFORM_TFLINT=false -e FIX_JSON_PRETTIER=true -e IGNORE_GITIGNORED_FILES=true -e VALIDATE_ALL_CODEBASE=true -e VALIDATE_JSCPD=false -e RUN_LOCAL=true -v ./:/tmp/lint ghcr.io/super-linter/super-linter:slim-latest"
   },
   "dependencies": {
-    "@dataform/core": "3.0.35",
-    "@masthead-data/dataform-package": "0.0.1"
+    "@dataform/core": "3.0.36",
+    "@masthead-data/dataform-package": "0.1.0"
   },
   "devDependencies": {
-    "eslint": "^9.38.0",
-    "globals": "^16.4.0",
+    "eslint": "^9.39.0",
+    "globals": "^16.5.0",
     "markdownlint-cli": "0.45.0"
   },
   "markdownlint": {
