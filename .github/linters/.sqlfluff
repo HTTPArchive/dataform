@@ -1,2 +1,9 @@
 [sqlfluff]
 dialect = bigquery
+
+[sqlfluff:layout]
+max_line_length = 200
+tab_space_size = 2
+comma_style = leading
+indent_unit = spaces
+indent_width = 2
