@@ -1,4 +1,10 @@
-SELECT * FROM `httparchive.region-us.INFORMATION_SCHEMA.EFFECTIVE_PROJECT_OPTIONS`;
+SELECT
+  project_id,
+  option_name,
+  option_value,
+  option_type,
+  
+FROM `httparchive.region-us.INFORMATION_SCHEMA.EFFECTIVE_PROJECT_OPTIONS`;
 
 ALTER PROJECT httparchive SET OPTIONS (
   `region-us.default_sql_dialect_option` = 'only_google_sql',
