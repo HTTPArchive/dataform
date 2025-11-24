@@ -2,8 +2,8 @@ SELECT
   project_id,
   option_name,
   option_value,
-  option_type,
-  
+  option_type
+
 FROM `httparchive.region-us.INFORMATION_SCHEMA.EFFECTIVE_PROJECT_OPTIONS`;
 
 ALTER PROJECT httparchive SET OPTIONS (
