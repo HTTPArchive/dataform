@@ -13,14 +13,20 @@ updates:
       - "/infra/dataform-service"
     schedule:
       interval: "weekly"
+    cooldown:
+      default-days: 2
 
   - package-ecosystem: "terraform"
     directories:
       - "/infra/tf/"
     schedule:
       interval: "weekly"
+    cooldown:
+      default-days: 2
 
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
+    cooldown:
+      default-days: 2
