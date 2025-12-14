@@ -30,6 +30,20 @@ ORDER BY cnt_pages DESC
 HAVING cnt_pages > 200
   `)
 
+assert('pages_per_client')
+  .tags(['crawl_complete'])
+  .query(ctx => `
+SELECT
+  client,
+  COUNT(DISTINCT page) AS cnt_pages
+FROM ${ctx.ref('crawl_staging', 'pages')}
+WHERE
+  date = '${constants.currentMonth}'
+GROUP BY
+  client
+HAVING cnt_pages < 20000000
+  `)
+
 publish('pages', {
   type: 'incremental',
   protected: true,
@@ -82,7 +96,7 @@ publish('pages', {
   tags: ['crawl_complete'],
   dependOnDependencyAssertions: true
 }).preOps(ctx => `
-SET @@RESERVATION='projects/httparchive/locations/US/reservations/enterprise';
+${reservations.reservation_setter(ctx)}
 
 DELETE FROM ${ctx.self()}
 WHERE date = '${constants.currentMonth}' AND

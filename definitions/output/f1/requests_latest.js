@@ -8,7 +8,7 @@ publish('requests_latest', {
   },
   tags: ['crawl_complete']
 }).preOps(ctx => `
-SET @@RESERVATION='projects/httparchive/locations/US/reservations/enterprise';
+${reservations.reservation_setter(ctx)}
 `).query(ctx => `
 SELECT
   date,

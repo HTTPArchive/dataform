@@ -1,6 +1,0 @@
-# Ignore node_modules and other files that shouldn't be in the Docker context
-node_modules
-.git
-.gitignore
-.DS_Store
-*.md

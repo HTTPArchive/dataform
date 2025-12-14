@@ -38,7 +38,7 @@ publish('requests', {
   },
   tags: ['crawl_complete']
 }).preOps(ctx => `
-SET @@RESERVATION='projects/httparchive/locations/US/reservations/enterprise';
+${reservations.reservation_setter(ctx)}
 
 FOR client_var IN (SELECT * FROM UNNEST(['desktop', 'mobile']) AS value) DO
   FOR is_root_page_var IN (SELECT * FROM UNNEST([TRUE, FALSE]) AS value) DO
