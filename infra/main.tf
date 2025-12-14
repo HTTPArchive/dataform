@@ -18,40 +18,29 @@ terraform {
 }
 
 provider "google" {
-  project               = local.project
-  region                = local.region
+  project               = var.project
+  region                = var.region
   user_project_override = true
-  billing_project       = local.project
-}
-
-locals {
-  function_identity = "cloud-function@httparchive.iam.gserviceaccount.com"
+  billing_project       = var.project
 }
 
 
 module "bigquery_export" {
-  source = "./bigquery_export"
+  source = "./bigquery-export"
 
-  project           = local.project
-  region            = local.region
-  function_identity = local.function_identity
+  project           = var.project
+  region            = var.region
+  function_identity = var.function_identity
   function_name     = "bigquery-export"
 }
 
-module "functions" {
-  source            = "./functions"
-  project           = local.project
-  function_identity = local.function_identity
-  edit_datasets     = local.edit_datasets
-}
-
 module "dataform_service" {
-  source = "./dataform_service"
+  source = "./dataform-service"
 
-  project           = local.project
-  region            = local.region
-  location          = local.location
-  function_identity = local.function_identity
+  project           = var.project
+  region            = var.region
+  location          = var.location
+  function_identity = var.function_identity
   function_name     = "dataform-service"
 }
 
@@ -60,7 +49,7 @@ module "masthead_agent" {
   # source  = "masthead-data/masthead-agent/google"
   # version = "~> 0.1.3"
 
-  project_id = local.project
+  project_id = var.project
 
   enable_privatelogviewer_role = false
   enable_apis                  = false

@@ -1,6 +1,6 @@
 resource "google_bigquery_analytics_hub_data_exchange" "default" {
   data_exchange_id                    = "httparchive"
-  location                            = local.location
+  location                            = var.location
   display_name                        = "HTTP Archive"
   description                         = "The HTTP Archive is an open source project that tracks how the web is built. Historical data is provided to show how the web is constantly evolving, and the project is frequently used for research by the web community, scholars and industry leaders."
   primary_contact                     = "https://httparchive.org/"
@@ -12,8 +12,8 @@ resource "google_bigquery_analytics_hub_data_exchange" "default" {
 }
 
 resource "google_bigquery_analytics_hub_data_exchange_iam_member" "member" {
-  project          = local.project
-  location         = local.location
+  project          = var.project
+  location         = var.location
   data_exchange_id = google_bigquery_analytics_hub_data_exchange.default.data_exchange_id
   role             = "roles/analyticshub.viewer"
   member           = "allUsers"
@@ -22,12 +22,12 @@ resource "google_bigquery_analytics_hub_data_exchange_iam_member" "member" {
 resource "google_bigquery_analytics_hub_listing" "crawl" {
   data_exchange_id = google_bigquery_analytics_hub_data_exchange.default.data_exchange_id
   listing_id       = "crawl"
-  location         = local.location
-  project          = local.project
+  location         = var.location
+  project          = var.project
   display_name     = "Web Crawls"
   categories       = ["CATEGORY_SCIENCE_AND_RESEARCH"]
   bigquery_dataset {
-    dataset = "projects/${local.project_number}/datasets/crawl"
+    dataset = "projects/${var.project_number}/datasets/crawl"
   }
   request_access                      = "https://har.fyi/guides/getting-started/#setting-up-bigquery-to-access-the-http-archive"
   description                         = "A comprehensive dataset tracking how the web is built. We regularly crawl top websites, capturing detailed resource metadata, web platform API usage, and execution traces. This dataset offers in-depth insights into web performance, trends, and technologies."
@@ -43,8 +43,8 @@ resource "google_bigquery_analytics_hub_listing" "crawl" {
 resource "google_bigquery_analytics_hub_listing_iam_member" "member" {
   for_each = toset(["roles/analyticshub.viewer", "roles/analyticshub.subscriber"])
 
-  project          = local.project
-  location         = local.location
+  project          = var.project
+  location         = var.location
   data_exchange_id = google_bigquery_analytics_hub_data_exchange.default.data_exchange_id
   listing_id       = google_bigquery_analytics_hub_listing.crawl.listing_id
   role             = each.value

@@ -2,8 +2,8 @@ resource "google_monitoring_alert_policy" "dataform_trigger" {
   combiner              = "OR"
   display_name          = "Dataform Trigger Function Error"
   enabled               = true
-  notification_channels = ["projects/${local.project}/notificationChannels/5647028675917298338"]
-  project               = local.project
+  notification_channels = ["projects/${var.project}/notificationChannels/5647028675917298338"]
+  project               = var.project
   severity              = "CRITICAL"
   user_labels           = {}
   alert_strategy {
@@ -34,8 +34,8 @@ resource "google_monitoring_alert_policy" "dataform_export" {
   combiner              = "OR"
   display_name          = "Dataform Export Function Error"
   enabled               = true
-  notification_channels = ["projects/${local.project}/notificationChannels/5647028675917298338"]
-  project               = local.project
+  notification_channels = ["projects/${var.project}/notificationChannels/5647028675917298338"]
+  project               = var.project
   severity              = "CRITICAL"
   user_labels           = {}
   alert_strategy {
@@ -66,8 +66,8 @@ resource "google_monitoring_alert_policy" "dataform_workflow" {
   combiner              = "OR"
   display_name          = "Dataform Workflow Invocation Failed"
   enabled               = true
-  notification_channels = ["projects/${local.project}/notificationChannels/5647028675917298338"]
-  project               = local.project
+  notification_channels = ["projects/${var.project}/notificationChannels/5647028675917298338"]
+  project               = var.project
   severity              = "CRITICAL"
   documentation {
     content = "Workflows source: https://github.com/HTTPArchive/dataform/tree/main/"
