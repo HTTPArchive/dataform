@@ -12,7 +12,7 @@
     "@google-cloud/firestore": "8.0.0"
   },
   "author": "@max-ostapenko",
-    "engines": {
+  "engines": {
     "node": ">=22.0.0"
   }
 }
