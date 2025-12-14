@@ -37,7 +37,7 @@ resource "google_cloud_run_v2_service" "dataform_service" {
 
     service_account                  = var.function_identity
     timeout                          = "60s"
-    max_instance_request_concurrency = 1
+    max_instance_request_concurrency = 80
   }
 
   traffic {
