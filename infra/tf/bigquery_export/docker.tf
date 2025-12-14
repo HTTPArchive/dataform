@@ -1,4 +1,3 @@
-
 # Get current Google Cloud access token
 data "google_client_config" "default" {}
 
@@ -11,20 +10,25 @@ provider "docker" {
   }
 }
 
-# Calculate hash of source files to determine if rebuild is needed
-locals {
-  source_files = fileset(path.root, "../${var.function_name}/*")
-  source_hash  = substr(sha1(join("", [for f in local.source_files : filesha1(f)])), 0, 8)
+# Calculate hash of source files using git (respects .gitignore)
+data "external" "source_hash" {
+  program = [
+    "bash",
+    "-c",
+    "cd ../${var.function_name}/ && echo '{\"hash\":\"'$(git ls-files -s | sha1sum | cut -c1-8)'\"}'"
+  ]
 }
 
 # Build Docker image
 resource "docker_image" "function_image" {
-  name = "${var.region}-docker.pkg.dev/${var.project}/dataform/${var.function_name}:${local.source_hash}"
+  name = "${var.region}-docker.pkg.dev/${var.project}/dataform/${var.function_name}"
 
   build {
     context    = "../${var.function_name}/"
-    dockerfile = "Dockerfile"
     platform   = "linux/amd64"
+  }
+  triggers = {
+    source_hash = data.external.source_hash.result.hash
   }
 }
 
