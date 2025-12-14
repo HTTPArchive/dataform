@@ -21,14 +21,12 @@ data "external" "source_hash" {
 
 # Build Docker image
 resource "docker_image" "function_image" {
-  name = "${var.region}-docker.pkg.dev/${var.project}/dataform/${var.function_name}"
+  # hash added to image tag to force rebuilds ans service image updates when source changes
+  name = "${var.region}-docker.pkg.dev/${var.project}/dataform/${var.function_name}:${data.external.source_hash.result.hash}"
 
   build {
     context    = "../${var.function_name}/"
     platform   = "linux/amd64"
-  }
-  triggers = {
-    source_hash = data.external.source_hash.result.hash
   }
 }
 
