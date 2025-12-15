@@ -1,6 +1,6 @@
-resource "google_monitoring_alert_policy" "dataform_trigger" {
+resource "google_monitoring_alert_policy" "dataform_service_error" {
   combiner              = "OR"
-  display_name          = "Dataform Trigger Function Error"
+  display_name          = "Dataform Service Error"
   enabled               = true
   notification_channels = ["projects/${var.project}/notificationChannels/5647028675917298338"]
   project               = var.project
@@ -17,22 +17,21 @@ resource "google_monitoring_alert_policy" "dataform_trigger" {
     display_name = "Log match condition"
     condition_matched_log {
       filter           = <<EOF
-resource.type="cloud_function"
-resource.labels.function_name="dataform-trigger"
+resource.type="cloud_run_revision"
+resource.labels.service_name="dataform-service"
 severity=ERROR
 EOF
       label_extractors = {}
     }
   }
   documentation {
-    content = "Function source: https://github.com/HTTPArchive/dataform/tree/main/infra/dataform-trigger"
+    content = "Function source: https://github.com/HTTPArchive/dataform/tree/main/infra/dataform-service"
   }
 }
 
-
-resource "google_monitoring_alert_policy" "dataform_export" {
+resource "google_monitoring_alert_policy" "bigquery_export_error" {
   combiner              = "OR"
-  display_name          = "Dataform Export Function Error"
+  display_name          = "BigQuery Export Error"
   enabled               = true
   notification_channels = ["projects/${var.project}/notificationChannels/5647028675917298338"]
   project               = var.project
@@ -49,18 +48,17 @@ resource "google_monitoring_alert_policy" "dataform_export" {
     display_name = "Log match condition"
     condition_matched_log {
       filter           = <<EOF
-resource.type="cloud_function"
-resource.labels.function_name="dataform-export"
+resource.type="cloud_run_job"
+resource.labels.job_name="bigquery-export"
 severity=ERROR
 EOF
       label_extractors = {}
     }
   }
   documentation {
-    content = "Function source: https://github.com/HTTPArchive/dataform/tree/main/infra/dataform-export"
+    content = "Function source: https://github.com/HTTPArchive/dataform/tree/main/infra/bigquery-export"
   }
 }
-
 
 resource "google_monitoring_alert_policy" "dataform_workflow" {
   combiner              = "OR"
