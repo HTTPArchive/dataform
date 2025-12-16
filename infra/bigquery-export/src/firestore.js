@@ -2,7 +2,7 @@ import { Firestore } from '@google-cloud/firestore'
 import { BigQueryExport } from './bigquery.js'
 
 export class FirestoreBatch {
-  constructor () {
+  constructor() {
     this.firestore = new Firestore({
       gaxOptions: {
         grpc: {
@@ -29,7 +29,7 @@ export class FirestoreBatch {
   }
 
   // Memory monitoring utility
-  logMemoryUsage (operation = '') {
+  logMemoryUsage(operation = '') {
     const used = process.memoryUsage()
     const memoryInfo = {
       rss: Math.round(used.rss / 1024 / 1024 * 100) / 100,
@@ -50,7 +50,7 @@ export class FirestoreBatch {
   }
 
   // Enhanced reset with memory cleanup
-  reset () {
+  reset() {
     this.processedDocs = 0
     this.totalDocs = 0
 
@@ -73,7 +73,7 @@ export class FirestoreBatch {
     this.logMemoryUsage('after reset')
   }
 
-  createBulkWriter (operation) {
+  createBulkWriter(operation) {
     const bulkWriter = this.firestore.bulkWriter()
 
     bulkWriter.maxBatchSize = 500 // Reduce batch size for memory efficiency
@@ -84,7 +84,7 @@ export class FirestoreBatch {
       console.warn(`${operation} operation failed${progressInfo}:`, error.message)
 
       // Retry on transient errors, fail on permanent ones
-      const retryableErrors = ['deadline-exceeded', 'unavailable', 'resource-exhausted']
+      const retryableErrors = ['deadline-exceeded', 'unavailable', 'resource-exhausted', 'aborted']
       return retryableErrors.includes(error.code)
     })
 
@@ -107,7 +107,7 @@ export class FirestoreBatch {
     return bulkWriter
   }
 
-  buildQuery (collectionRef) {
+  buildQuery(collectionRef) {
     const queryMap = {
       report: () => {
         console.info(`Deleting documents from ${this.collectionName} for date ${this.date}`)
@@ -127,7 +127,7 @@ export class FirestoreBatch {
     return queryBuilder()
   }
 
-  async getDocumentCount (query) {
+  async getDocumentCount(query) {
     try {
       const countSnapshot = await query.count().get()
       return countSnapshot.data().count
@@ -137,7 +137,7 @@ export class FirestoreBatch {
     }
   }
 
-  async batchDelete () {
+  async batchDelete() {
     console.info('Starting batch deletion...')
     const startTime = Date.now()
     this.reset()
@@ -188,7 +188,7 @@ export class FirestoreBatch {
     console.info(`Deletion complete. Total docs deleted: ${this.processedDocs}. Time: ${duration} seconds`)
   }
 
-  async streamFromBigQuery (rowStream) {
+  async streamFromBigQuery(rowStream) {
     console.info('Starting BigQuery to Firestore transfer...')
     const startTime = Date.now()
     this.reset()
@@ -239,7 +239,7 @@ export class FirestoreBatch {
     console.info(`Transfer to ${this.collectionName} complete. Total rows processed: ${this.processedDocs}. Time: ${duration} seconds`)
   }
 
-  async export (query, exportConfig) {
+  async export(query, exportConfig) {
     console.log(`Starting export to ${exportConfig.collection}...`)
     this.logMemoryUsage('at start')
 
