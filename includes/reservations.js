@@ -2,7 +2,7 @@ const reservations = require('@masthead-data/dataform-package')
 
 const RESERVATION_CONFIG = [
   {
-    tag: 'high_slots',
+    tag: 'reservation',
     reservation: 'projects/httparchive/locations/US/reservations/pipeline',
     actions: [
       'httparchive.crawl.pages',
@@ -10,17 +10,6 @@ const RESERVATION_CONFIG = [
       'httparchive.crawl.parsed_css',
       'httparchive.f1.pages_latest',
       'httparchive.f1.requests_latest'
-    ]
-  },
-  {
-    tag: 'low_slots',
-    reservation: null,
-    actions: []
-  },
-  {
-    tag: 'on_demand',
-    reservation: 'none',
-    actions: [
     ]
   }
 ]
