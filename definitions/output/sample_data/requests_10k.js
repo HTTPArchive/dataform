@@ -1,4 +1,4 @@
-const columns = descriptions.columns.requests;
+const columns = descriptions.columns.requests
 
 publish('requests_10k', {
   type: 'table',

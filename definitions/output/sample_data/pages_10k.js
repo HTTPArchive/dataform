@@ -1,4 +1,4 @@
-const columns = descriptions.columns.pages;
+const columns = descriptions.columns.pages
 
 publish('pages_10k', {
   type: 'table',

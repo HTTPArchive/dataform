@@ -1,4 +1,4 @@
-const columns = descriptions.columns.pages;
+const columns = descriptions.columns.pages
 
 // See https://github.com/HTTPArchive/dataform/issues/43
 assert('corrupted_technology_values')

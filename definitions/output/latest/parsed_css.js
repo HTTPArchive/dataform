@@ -1,4 +1,4 @@
-const columns = descriptions.columns.parsed_css;
+const columns = descriptions.columns.parsed_css
 
 publish('parsed_css', {
   type: 'view',

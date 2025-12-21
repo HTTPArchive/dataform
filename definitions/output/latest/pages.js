@@ -1,4 +1,4 @@
-const columns = descriptions.columns.pages;
+const columns = descriptions.columns.pages
 
 publish('pages', {
   type: 'view',
@@ -26,4 +26,4 @@ WHERE
   /* We should never be more than 60 days old hopefully! */
   date >= DATE_SUB(CURRENT_DATE(), INTERVAL 61 DAY) AND
   date <= CURRENT_DATE()
-`);
+`)
