@@ -1,3 +1,5 @@
+const columns = descriptions.columns.requests;
+
 publish('requests_10k', {
   type: 'table',
   schema: 'sample_data',
@@ -5,6 +7,7 @@ publish('requests_10k', {
     partitionBy: 'date',
     clusterBy: ['client', 'is_root_page', 'rank', 'type']
   },
+  columns: columns,
   tags: ['crawl_complete']
 }).query(ctx => `
 SELECT *
