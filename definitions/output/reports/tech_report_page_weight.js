@@ -83,7 +83,7 @@ GROUP BY
       }'''
     );
 
-  // legacy export for tech-report-apis
+  -- legacy export for tech-report-apis
   SELECT
     reports.run_export_job(
       JSON '''{
