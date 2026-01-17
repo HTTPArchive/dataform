@@ -1,0 +1,59 @@
+name: Terraform Apply on Changes
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'infra/**'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'infra/**'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  terraform:
+    name: Terraform
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Authenticate with Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          project_id: 'httparchive'
+          credentials_json: '${{ secrets.GCP_SA_KEY }}'
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3.1.2
+
+      - name: Terraform Format Check
+        working-directory: ./infra
+        run: terraform fmt -check
+
+      - name: Initialize Terraform
+        working-directory: ./infra
+        run: terraform init
+
+      - name: Validate Terraform
+        working-directory: ./infra
+        run: terraform validate
+
+      - name: Plan Terraform
+        working-directory: ./infra
+        run: terraform plan -out=tfplan
+
+      - name: Apply Terraform
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        working-directory: ./infra
+        run: terraform apply -auto-approve tfplan
