@@ -96,7 +96,7 @@ GROUP BY
       JSON '''{
         "destination": "firestore",
         "config": {
-          "database": "tech-report-api-${constants.environment}",
+          "database": "tech-report-apis-${constants.environment}",
           "collection": "lighthouse",
           "type": "report",
           "date": "${pastMonth}"

@@ -120,7 +120,7 @@ GROUP BY
       JSON '''{
         "destination": "firestore",
         "config": {
-          "database": "tech-report-api-${constants.environment}",
+          "database": "tech-report-apis-${constants.environment}",
           "collection": "core_web_vitals",
           "type": "report",
           "date": "${pastMonth}"
