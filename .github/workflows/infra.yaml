@@ -6,11 +6,6 @@ on:
       - main
     paths:
       - 'infra/**'
-  pull_request:
-    branches:
-      - main
-    paths:
-      - 'infra/**'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
