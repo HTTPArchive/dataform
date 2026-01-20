@@ -59,8 +59,6 @@ publish('pages', {
   tags: ['crawl_complete'],
   dependOnDependencyAssertions: true
 }).preOps(ctx => `
-${reservations.reservation_setter(ctx)}
-
 DELETE FROM ${ctx.self()}
 WHERE date = '${constants.currentMonth}' AND
   client = 'desktop';
