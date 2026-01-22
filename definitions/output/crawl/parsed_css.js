@@ -12,8 +12,6 @@ publish('parsed_css', {
   columns: columns,
   tags: ['crawl_complete']
 }).preOps(ctx => `
-${reservations.reservation_setter(ctx)}
-
 DELETE FROM ${ctx.self()}
 WHERE date = '${constants.currentMonth}'
   AND client = 'desktop';
