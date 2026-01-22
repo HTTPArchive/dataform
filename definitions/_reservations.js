@@ -1,4 +1,4 @@
-const reservations = require('@masthead-data/dataform-package')
+const { autoAssignActions } = require('@masthead-data/dataform-package')
 
 const RESERVATION_CONFIG = [
   {
@@ -14,8 +14,4 @@ const RESERVATION_CONFIG = [
   }
 ]
 
-const reservation_setter = reservations.createReservationSetter(RESERVATION_CONFIG)
-
-module.exports = {
-  reservation_setter
-}
+autoAssignActions(RESERVATION_CONFIG)

@@ -7,9 +7,7 @@ publish('pages_latest', {
     clusterBy: ['client', 'is_root_page', 'rank', 'page']
   },
   tags: ['crawl_complete']
-}).preOps(ctx => `
-${reservations.reservation_setter(ctx)}
-`).query(ctx => `
+}).query(ctx => `
 SELECT
   date,
   client,
