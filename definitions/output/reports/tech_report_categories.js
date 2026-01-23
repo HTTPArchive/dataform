@@ -108,16 +108,16 @@ FROM (
   GROUP BY client
 )
 `).postOps(ctx => `
-  SELECT
-    reports.run_export_job(
-      JSON '''{
-        "destination": "firestore",
-        "config": {
-          "database": "tech-report-api-${constants.environment}",
-          "collection": "categories",
-          "type": "dict"
-        },
-        "query": "SELECT * FROM ${ctx.self()}"
-      }'''
-    );
-  `)
+SELECT
+  reports.run_export_job(
+    JSON '''{
+      "destination": "firestore",
+      "config": {
+        "database": "tech-report-api-${constants.environment}",
+        "collection": "categories",
+        "type": "dict"
+      },
+      "query": "SELECT * FROM ${ctx.self()}"
+    }'''
+  );
+`)

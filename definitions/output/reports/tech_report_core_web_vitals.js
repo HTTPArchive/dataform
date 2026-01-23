@@ -100,32 +100,32 @@ GROUP BY
   technology,
   version
 `).postOps(ctx => `
-  SELECT
-    reports.run_export_job(
-      JSON '''{
-        "destination": "firestore",
-        "config": {
-          "database": "tech-report-api-${constants.environment}",
-          "collection": "core_web_vitals",
-          "type": "report",
-          "date": "${pastMonth}"
-        },
-        "query": "SELECT STRING(date) AS date, * EXCEPT(date) FROM ${ctx.self()} WHERE date = '${pastMonth}'"
-      }'''
-    );
+SELECT
+  reports.run_export_job(
+    JSON '''{
+      "destination": "firestore",
+      "config": {
+        "database": "tech-report-api-${constants.environment}",
+        "collection": "core_web_vitals",
+        "type": "report",
+        "date": "${pastMonth}"
+      },
+      "query": "SELECT STRING(date) AS date, * EXCEPT(date) FROM ${ctx.self()} WHERE date = '${pastMonth}'"
+    }'''
+  );
 
-    -- legacy export to tech-report-apis database
-    SELECT
-    reports.run_export_job(
-      JSON '''{
-        "destination": "firestore",
-        "config": {
-          "database": "tech-report-apis-${constants.environment}",
-          "collection": "core_web_vitals",
-          "type": "report",
-          "date": "${pastMonth}"
-        },
-        "query": "SELECT STRING(date) AS date, * EXCEPT(date, version) FROM ${ctx.self()} WHERE date = '${pastMonth}' AND version = 'ALL'"
-      }'''
-    );
-  `)
+  -- legacy export to tech-report-apis database
+  SELECT
+  reports.run_export_job(
+    JSON '''{
+      "destination": "firestore",
+      "config": {
+        "database": "tech-report-apis-${constants.environment}",
+        "collection": "core_web_vitals",
+        "type": "report",
+        "date": "${pastMonth}"
+      },
+      "query": "SELECT STRING(date) AS date, * EXCEPT(date, version) FROM ${ctx.self()} WHERE date = '${pastMonth}' AND version = 'ALL'"
+    }'''
+  );
+`)
