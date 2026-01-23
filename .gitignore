@@ -1,4 +1,5 @@
-node_modules/
 .DS_Store
-infra/tf/.terraform/
+.vscode/
+**/node_modules/
+**/.terraform/
 .env

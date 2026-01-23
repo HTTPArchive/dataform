@@ -82,4 +82,19 @@ GROUP BY
         "query": "SELECT STRING(date) AS date, * EXCEPT(date) FROM ${ctx.self()} WHERE date = '${pastMonth}'"
       }'''
     );
+
+  -- legacy export for tech-report-apis
+  SELECT
+    reports.run_export_job(
+      JSON '''{
+        "destination": "firestore",
+        "config": {
+          "database": "tech-report-apis-${constants.environment}",
+          "collection": "page_weight",
+          "type": "report",
+          "date": "${pastMonth}"
+        },
+        "query": "SELECT STRING(date) AS date, * EXCEPT(date, version) FROM ${ctx.self()} WHERE date = '${pastMonth}' AND version = 'ALL'"
+      }'''
+    );
   `)
