@@ -20,6 +20,10 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
 
       - name: Authenticate with Google Cloud
         uses: google-github-actions/auth@v3
