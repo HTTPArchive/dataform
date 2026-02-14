@@ -24,7 +24,6 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-
       - name: Authenticate with Google Cloud
         uses: google-github-actions/auth@v3
         with:
