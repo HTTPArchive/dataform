@@ -11,7 +11,7 @@
     "@masthead-data/dataform-package": "0.2.0"
   },
   "devDependencies": {
-    "eslint": "9.39.2",
+    "eslint": "10.0.0",
     "globals": "17.3.0",
     "markdownlint-cli": "0.47.0",
     "@dataform/cli": "3.0.45"
