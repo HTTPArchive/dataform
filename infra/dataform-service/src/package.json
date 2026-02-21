@@ -7,9 +7,9 @@
   "dependencies": {
     "@google-cloud/bigquery": "8.1.1",
     "@google-cloud/dataform": "2.2.1",
-    "@google-cloud/functions-framework": "^4.0.1",
+    "@google-cloud/functions-framework": "^5.0.1",
     "@google-cloud/run": "3.0.1",
-    "@google-cloud/storage": "7.17.3"
+    "@google-cloud/storage": "7.19.0"
   },
   "scripts": {
     "start": "npx functions-framework --target=dataform-service --signature-type=http --port=${PORT:-8080}",
