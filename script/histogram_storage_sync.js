@@ -110,6 +110,11 @@ async function uploadToBigQuery(rows) {
       reject(error)
     })
 
+    dataStream.on('error', (error) => {
+      console.error('Source stream error during upload:', error.message)
+      reject(error)
+    })
+
     dataStream.pipe(writeStream)
   })
 }
