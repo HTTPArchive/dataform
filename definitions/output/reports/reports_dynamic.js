@@ -24,7 +24,7 @@ const EXPORT_CONFIG = {
   bucket: constants.bucket,
   storagePath: constants.storagePath,
   dataset: 'reports',
-  testSuffix: '.json'
+  fileFormat: '.json'
 }
 
 // Date range for report generation
@@ -54,7 +54,7 @@ function buildExportPath(reportConfig) {
     throw new Error(`Unknown SQL type: ${sql.type}`)
   }
 
-  return objectPath + EXPORT_CONFIG.testSuffix
+  return objectPath + EXPORT_CONFIG.fileFormat
 }
 
 /**
@@ -74,17 +74,19 @@ function buildExportQuery(reportConfig) {
       WHERE date = '${date}'
         AND metric = '${metric.id}'
         AND lens = '${lens.name}'
-      ORDER BY bin ASC
+      ORDER BY client, bin ASC
     `
   } else if (sql.type === 'timeseries') {
     query = `
       SELECT
-        FORMAT_DATE('%Y_%m_%d', date) AS date,
+        UNIX_DATE(date) * 1000 * 60 * 60 * 24 AS timestamp,
         * EXCEPT(date, metric, lens)
       FROM \`${EXPORT_CONFIG.dataset}.${tableName}\`
-      WHERE metric = '${metric.id}'
+      WHERE
+        date = '${date}'
+        AND metric = '${metric.id}'
         AND lens = '${lens.name}'
-      ORDER BY date DESC
+      ORDER BY date, client DESC
     `
   } else {
     throw new Error(`Unknown SQL type: ${sql.type}`)
@@ -110,7 +112,7 @@ function createReportConfig(date, metric, sql, lensName, lensSQL) {
     sql,
     lens: { name: lensName, sql: lensSQL },
     devRankFilter: constants.devRankFilter,
-    tableName: `${metric.id}_${sql.type}`
+    tableName: sql.type === 'timeseries' ? sql.type : `${metric.id}_${sql.type}`
   }
 }
 
@@ -180,6 +182,7 @@ INSERT INTO ${EXPORT_CONFIG.dataset}.${tableName}
 --*/
 
 SELECT
+  DATE('${date}') AS date,
   '${metric.id}' AS metric,
   '${lens.name}' AS lens,
   *
