@@ -14,7 +14,7 @@
     "eslint": "10.0.0",
     "globals": "17.3.0",
     "markdownlint-cli": "0.47.0",
-    "@dataform/cli": "3.0.45"
+    "@dataform/cli": "3.0.46"
   },
   "markdownlint": {
     "default": true,
