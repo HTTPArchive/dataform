@@ -40,21 +40,22 @@ const DATE_RANGE = {
  * @returns {string} - Cloud Storage object path
  */
 function buildExportPath(reportConfig) {
-  const { sql, date, metric } = reportConfig
+  const { sql, date, metric, lens } = reportConfig
+  const lensPath = lens && lens.name ? `${lens.name}/` : ''
   let objectPath = EXPORT_CONFIG.storagePath
 
   if (sql.type === 'histogram') {
-    // Histogram exports are organized by date folders
+    // Histogram exports are organized under date and lens folders
     const dateFolder = date.replaceAll('-', '_')
-    objectPath += `${dateFolder}/${metric.id}`
+    objectPath += `${dateFolder}/${lensPath}${metric.id}${EXPORT_CONFIG.fileFormat}`
   } else if (sql.type === 'timeseries') {
-    // Timeseries exports are organized by metric
-    objectPath += metric.id
+    // Timeseries exports are organized under lens folders
+    objectPath += `${lensPath}${metric.id}${EXPORT_CONFIG.fileFormat}`
   } else {
     throw new Error(`Unknown SQL type: ${sql.type}`)
   }
 
-  return objectPath + EXPORT_CONFIG.fileFormat
+  return objectPath
 }
 
 /**
@@ -64,8 +65,8 @@ function buildExportPath(reportConfig) {
  */
 function buildExportQuery(reportConfig) {
   const { sql, date, metric, lens, tableName } = reportConfig
-
   let query
+
   if (sql.type === 'histogram') {
     query = `
       SELECT
@@ -83,8 +84,7 @@ function buildExportQuery(reportConfig) {
         * EXCEPT(date, metric, lens)
       FROM \`${EXPORT_CONFIG.dataset}.${tableName}\`
       WHERE
-        date = '${date}'
-        AND metric = '${metric.id}'
+        metric = '${metric.id}'
         AND lens = '${lens.name}'
       ORDER BY date, client DESC
     `
@@ -106,13 +106,22 @@ function buildExportQuery(reportConfig) {
  * @returns {Object} - Complete report configuration
  */
 function createReportConfig(date, metric, sql, lensName, lensSQL) {
+  let tableName
+  if (sql.type === 'timeseries') {
+    tableName = sql.type
+  } else if (sql.type === 'histogram') {
+    tableName = `${metric.id}_${sql.type}`
+  } else {
+    throw new Error(`Unknown SQL type: ${sql.type}`)
+  }
+
   return {
     date,
     metric,
     sql,
     lens: { name: lensName, sql: lensSQL },
     devRankFilter: constants.devRankFilter,
-    tableName: sql.type === 'timeseries' ? sql.type : `${metric.id}_${sql.type}`
+    tableName: tableName
   }
 }
 
@@ -150,8 +159,10 @@ function generateReportConfigurations() {
  * @returns {string} - Operation name
  */
 function createOperationName(reportConfig) {
-  const { tableName, date, lens } = reportConfig
-  return `${tableName}_${date}_${lens.name}`
+  const { sql, date, lens, metric } = reportConfig
+  const lensSuffix = lens && lens.name ? `_${lens.name}` : ''
+
+  return `${metric.id}_${sql.type}_${date}${lensSuffix}`
 }
 
 /**
@@ -182,10 +193,11 @@ INSERT INTO ${EXPORT_CONFIG.dataset}.${tableName}
 --*/
 
 SELECT
+  client,
   DATE('${date}') AS date,
   '${metric.id}' AS metric,
   '${lens.name}' AS lens,
-  *
+  * EXCEPT(client)
 FROM (
   ${sql.query(ctx, reportConfig)}
 );
@@ -207,6 +219,7 @@ SELECT reports.run_export_job(job_config);
 
 // Generate all report configurations
 const reportConfigurations = generateReportConfigurations()
+
 
 // Create Dataform operations for each report configuration
 reportConfigurations.forEach(reportConfig => {
