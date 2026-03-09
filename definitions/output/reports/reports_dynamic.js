@@ -227,6 +227,6 @@ reportConfigurations.forEach(reportConfig => {
   operate(operationName, {
     disabled: true,
   })
-    .tags(['crawl_complete', 'crawl_reports'])
+    .tags(['crawl_reports'])
     .queries(ctx => generateOperationSQL(ctx, reportConfig))
 })
