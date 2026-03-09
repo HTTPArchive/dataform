@@ -99,6 +99,31 @@ const config = {
           `)
         }
       ]
+    },
+    llmsTxtAdoption: {
+      SQL: [
+        {
+          type: 'timeseries',
+          query: DataformTemplateBuilder.create((ctx, params) => `
+            SELECT
+              client,
+              ROUND(SAFE_DIVIDE(
+                COUNTIF(SAFE.BOOL(custom_metrics.other.llms_txt_validation.valid)),
+                COUNT(0)
+              ) * 100, 2) AS pct_pages
+            FROM ${ctx.ref('crawl', 'pages')}
+            WHERE
+              date = '${params.date}'
+              AND is_root_page
+              ${params.lens.sql}
+              ${params.devRankFilter}
+            GROUP BY
+              client
+            ORDER BY
+              client
+          `)
+        }
+      ]
     }
   }
 };
