@@ -5,100 +5,48 @@ description: Add new metrics to HTTPArchive reports config. USE FOR adding perfo
 
 # Adding Metrics to HTTPArchive Reports
 
-## Documentation Reference
+## Documentation
 
-See [reports.md](../../../reports.md) for complete architecture, troubleshooting, and configuration details.
+**See [reports.md](../../../reports.md)** for complete guide including:
+- Architecture and processing details
+- Quick Decision Guide table
+- Required SQL patterns checklist
+- SQL pattern reference (adoption, percentiles, binning)
+- Complete examples
+- Troubleshooting
 
-## Quick Implementation
+## Quick Start
 
-Add metrics to `includes/reports.js` in the `config._metrics` object. The system automatically generates reports across all lenses (all, top1k, wordpress, etc.).
+1. Open `includes/reports.js`, find `config._metrics` (line ~42)
+2. Choose type: **Timeseries** (adoption/percentiles) or **Histogram** (distributions)
+3. Add metric with required patterns: `date`, `is_root_page`, `${params.lens.sql}`, `${params.devRankFilter}`, `${ctx.ref('crawl', 'pages')}`, `GROUP BY client`
+4. Run `get_errors` to verify
 
-## Metric Type Selection
+## Key Rules
 
-| Type | Use For | Don't Use For |
-|------|---------|---------------|
-| **Timeseries** | Percentiles, adoption rates, trends, **boolean/presence metrics** | N/A (most versatile) |
-| **Histogram** | Continuous value distributions (page weight, load times) | Boolean/binary (only 2 states) |
+- **Boolean/adoption metrics**: Timeseries ONLY (histogram meaningless for 2 states)
+- **Continuous metrics**: Both histogram + timeseries
+- **Use safe functions**: `SAFE_DIVIDE()`, `SAFE.BOOL()` for custom metrics
+- **Filter zeros**: Add `AND metric > 0` before percentile calculations
 
-**Key Rule:** Always use timeseries for boolean/adoption metrics; histogram only for continuous distributions.
-
-## Required SQL Patterns
-
-Every metric MUST include:
-- `date = '${params.date}'`
-- `AND is_root_page`
-- `${params.lens.sql}`
-- `${params.devRankFilter}`
-- `${ctx.ref('crawl', 'pages')}`
-- `GROUP BY client ORDER BY client`
-
-## Quick Patterns
-
-### Timeseries - Adoption/Percentage
-```sql
-ROUND(SAFE_DIVIDE(COUNTIF(condition), COUNT(0)) * 100, 2) AS pct_pages
-```
-
-### Timeseries - Percentiles
-```sql
-ROUND(APPROX_QUANTILES(FLOAT64(metric), 1001)[OFFSET(101)] / 1024, 2) AS p10,
-ROUND(APPROX_QUANTILES(FLOAT64(metric), 1001)[OFFSET(251)] / 1024, 2) AS p25,
-ROUND(APPROX_QUANTILES(FLOAT64(metric), 1001)[OFFSET(501)] / 1024, 2) AS p50,
-ROUND(APPROX_QUANTILES(FLOAT64(metric), 1001)[OFFSET(751)] / 1024, 2) AS p75,
-ROUND(APPROX_QUANTILES(FLOAT64(metric), 1001)[OFFSET(901)] / 1024, 2) AS p90
--- Add: AND FLOAT64(metric) > 0 in WHERE for continuous metrics
-```
-
-### Histogram - Distribution Bins
-```sql
--- Core binning pattern in innermost subquery:
-CAST(FLOOR(FLOAT64(metric) / bin_size) * bin_size AS INT64) AS bin,
-COUNT(0) AS volume
--- Wrap with pdf: volume / SUM(volume) OVER (PARTITION BY client)
--- Wrap with cdf: SUM(pdf) OVER (PARTITION BY client ORDER BY bin)
-```
-
-## Examples
+## Minimal Example
 
 ```javascript
-llmsTxtAdoption: {
+metricName: {
   SQL: [
     {
-      type: 'timeseries',
+      type: 'timeseries',  // or 'histogram'
       query: DataformTemplateBuilder.create((ctx, params) => `
-        SELECT
-          client,
-          ROUND(SAFE_DIVIDE(
-            COUNTIF(SAFE.BOOL(custom_metrics.other.llms_txt_validation.valid)),
-            COUNT(0)
-          ) * 100, 2) AS pct_pages
+        SELECT client, /* your calculations */
         FROM ${ctx.ref('crawl', 'pages')}
-        WHERE
-          date = '${params.date}'
-          AND is_root_page
-          ${params.lens.sql}
-          ${params.devRankFilter}
-        GROUP BY client
-        ORDER BY client
+        WHERE date = '${params.date}' AND is_root_page
+          ${params.lens.sql} ${params.devRankFilter}
+        GROUP BY client ORDER BY client
       `)
     }
   ]
 }
 ```
 
-See [reports.md](../../../reports.md) for complete histogram + timeseries examples.
-
-## Implementation
-
-1. Open `includes/reports.js`, locate `config._metrics` (line ~42)
-2. Add metric before closing `}` of `_metrics`
-3. Use patterns above for timeseries/histogram structure
-4. Include all required SQL patterns
-5. Run `get_errors` to verify
-
-## Key Notes
-
-- **Continuous metrics:** Add `AND metric > 0` before percentile calculations
-- **Custom metrics:** Use `SAFE.BOOL()` and `SAFE_DIVIDE()` for safety
-- **Auto-processing:** Metrics run across all lenses automatically
+See [reports.md](../../../reports.md) for complete patterns and examples.
 
