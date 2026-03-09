@@ -30,8 +30,8 @@ const EXPORT_CONFIG = {
 // Date range for report generation
 // Adjust these dates to update reports retrospectively
 const DATE_RANGE = {
-  startDate: constants.currentMonth, // '2025-07-01'
-  endDate: constants.currentMonth    // '2025-07-01'
+  startDate:  '2026-01-01', // constants.currentMonth, // '2026-01-01' //todo reset dates
+  endDate: '2026-01-01' // constants.currentMonth    // '2026-01-01'
 }
 
 /**
@@ -107,9 +107,7 @@ function buildExportQuery(reportConfig) {
  */
 function createReportConfig(date, metric, sql, lensName, lensSQL) {
   let tableName
-  if (sql.type === 'timeseries') {
-    tableName = sql.type
-  } else if (sql.type === 'histogram') {
+  if (sql.type === 'timeseries' || sql.type === 'histogram') {
     tableName = `${metric.id}_${sql.type}`
   } else {
     throw new Error(`Unknown SQL type: ${sql.type}`)
@@ -177,20 +175,21 @@ function generateOperationSQL(ctx, reportConfig) {
   return `
 DECLARE job_config JSON;
 
-/* First report run - uncomment to create table
+--/* First report run - uncomment to create table
 CREATE TABLE IF NOT EXISTS ${EXPORT_CONFIG.dataset}.${tableName}
 PARTITION BY date
 CLUSTER BY metric, lens, client
 AS
-*/
+--*/
 
---/* Subsequent report run
+/* Subsequent report run
 DELETE FROM ${EXPORT_CONFIG.dataset}.${tableName}
 WHERE date = '${date}'
   AND metric = '${metric.id}'
   AND lens = '${lens.name}';
+
 INSERT INTO ${EXPORT_CONFIG.dataset}.${tableName}
---*/
+*/
 
 SELECT
   client,

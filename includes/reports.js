@@ -99,7 +99,12 @@ const config = {
           `)
         }
       ]
-    },
+    }
+  }
+};
+
+// todo: merge configs
+const config_backup = {
     ttci: {
       SQL: [
         {
@@ -2521,7 +2526,7 @@ const config = {
       ]
     }
   }
-}
+
 
 const lenses = {
   all: '',
