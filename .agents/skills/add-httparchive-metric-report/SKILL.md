@@ -8,6 +8,7 @@ description: Add new metrics to HTTPArchive reports config. USE FOR adding perfo
 ## Documentation
 
 **See [reports.md](../../../reports.md)** for complete guide including:
+
 - Architecture and processing details
 - Quick Decision Guide table
 - Required SQL patterns checklist
@@ -35,18 +36,19 @@ description: Add new metrics to HTTPArchive reports config. USE FOR adding perfo
 metricName: {
   SQL: [
     {
-      type: 'timeseries',  // or 'histogram'
-      query: DataformTemplateBuilder.create((ctx, params) => `
+      type: "timeseries", // or 'histogram'
+      query: DataformTemplateBuilder.create(
+        (ctx, params) => `
         SELECT client, /* your calculations */
-        FROM ${ctx.ref('crawl', 'pages')}
+        FROM ${ctx.ref("crawl", "pages")}
         WHERE date = '${params.date}' AND is_root_page
           ${params.lens.sql} ${params.devRankFilter}
         GROUP BY client ORDER BY client
-      `)
-    }
-  ]
+      `,
+      ),
+    },
+  ];
 }
 ```
 
 See [reports.md](../../../reports.md) for complete patterns and examples.
-

@@ -13,12 +13,13 @@ Identify and remove BigQuery tables that contribute to storage costs but have no
 
 Masthead Data uses lineage analysis to identify tables, but relies on visible pipeline references. Modification timestamps are critical:
 
-| Type | Definition | Indicators | Watch for |
-|------|------------|------------|---|
-| **Dead-end** | Regularly updated, no downstream consumption | Updated but never read in 30+ days | External writers outside lineage graph (manual jobs, independent pipelines) |
-| **Unused** | No upstream or downstream activity | No reads/writes in 30+ days | Recent `lastModifiedTime` despite "Unused" flag suggests external writer—**do not drop without verification** |
+| Type         | Definition                                   | Indicators                         | Watch for                                                                                                     |
+| ------------ | -------------------------------------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| **Dead-end** | Regularly updated, no downstream consumption | Updated but never read in 30+ days | External writers outside lineage graph (manual jobs, independent pipelines)                                   |
+| **Unused**   | No upstream or downstream activity           | No reads/writes in 30+ days        | Recent `lastModifiedTime` despite "Unused" flag suggests external writer—**do not drop without verification** |
 
 ### Key Signal
+
 If a table is flagged `Unused` **and** has a recent modification timestamp, something outside Masthead's visibility is writing to it. This always warrants investigation before dropping.
 
 ## When to Use
@@ -60,6 +61,7 @@ ORDER BY savings_usd_30d DESC" > storage_waste.csv
 **Note:** Sorting by `savings_usd_30d` instead of `total_tib` prioritizes high-impact targets for review.
 
 **Alternative: Use Masthead UI**
+
 - Navigate to [Dictionary page](https://app.mastheadata.com/dictionary?tab=Tables&deadEnd=true)
 - Filter by `Dead-end` or `Unused` labels
 - Export table list for review
@@ -67,11 +69,13 @@ ORDER BY savings_usd_30d DESC" > storage_waste.csv
 ### Step 2: Review and Decide
 
 Review `storage_waste.csv` and add a `status` column with values:
+
 - `keep` - Table is needed
 - `to drop` - Safe to remove
 - `investigate` - Needs further analysis
 
 **Review criteria:**
+
 - Is this a backup or archive table? (consider alternative storage)
 - Is there a downstream dependency not captured in lineage?
 - Is this table part of an active experiment or migration?
@@ -94,6 +98,7 @@ bash drop_tables.sh
 ```
 
 **Safe mode (dry-run first):**
+
 ```bash
 # Add --dry-run flag to each command
 sed 's/bq rm/bq rm --dry-run/' drop_tables.sh > drop_tables_dryrun.sh
@@ -103,17 +108,18 @@ bash drop_tables_dryrun.sh
 ### Step 4: Verify Savings
 
 After 24-48 hours, check storage reduction in Masthead:
+
 - [Storage Cost Insights](https://app.mastheadata.com/costs?tab=Storage+costs)
 - Compare before/after storage size and costs
 
 ## Decision Framework
 
-| Monthly Savings | Action | Recency Check |
-|-----------------|--------|---------------|
-| < $10 | Consider keeping (low ROI) | Skip if `lastModifiedTime` > 12 months old (hygiene only) |
-| $10-$100 | Review and drop if unused | Check modification date; recent writes require owner verification |
-| $100-$1000 | Priority review, likely drop | Mandatory verification if modified in last 30 days |
-| > $1000 | Immediate investigation required | Always verify external writer before any action |
+| Monthly Savings | Action                           | Recency Check                                                     |
+| --------------- | -------------------------------- | ----------------------------------------------------------------- |
+| < $10           | Consider keeping (low ROI)       | Skip if `lastModifiedTime` > 12 months old (hygiene only)         |
+| $10-$100        | Review and drop if unused        | Check modification date; recent writes require owner verification |
+| $100-$1000      | Priority review, likely drop     | Mandatory verification if modified in last 30 days                |
+| > $1000         | Immediate investigation required | Always verify external writer before any action                   |
 
 ## Key Notes
 
