@@ -21,27 +21,26 @@ Automatically assign Dataform actions to BigQuery slot reservations based on pri
 Reservations are configured in `definitions/_reservations.js`:
 
 ```javascript
-const { autoAssignActions } = require('@masthead-data/dataform-package')
+const { autoAssignActions } = require("@masthead-data/dataform-package");
 
 const RESERVATION_CONFIG = [
   {
-    tag: 'reservation',                    // Human-readable identifier
-    reservation: 'projects/.../reservations/...', // BigQuery reservation path
-    actions: [                             // Models assigned to this tier
-      'httparchive.crawl.pages',
-      'httparchive.f1.pages_latest'
-    ]
+    tag: "reservation", // Human-readable identifier
+    reservation: "projects/.../reservations/...", // BigQuery reservation path
+    actions: [
+      // Models assigned to this tier
+      "httparchive.crawl.pages",
+      "httparchive.f1.pages_latest",
+    ],
   },
   {
-    tag: 'on_demand',
-    reservation: 'none',                   // On-demand pricing
-    actions: [
-      'httparchive.sample_data.pages_10k'
-    ]
-  }
-]
+    tag: "on_demand",
+    reservation: "none", // On-demand pricing
+    actions: ["httparchive.sample_data.pages_10k"],
+  },
+];
 
-autoAssignActions(RESERVATION_CONFIG)
+autoAssignActions(RESERVATION_CONFIG);
 ```
 
 ## Implementation Steps
@@ -54,8 +53,9 @@ autoAssignActions(RESERVATION_CONFIG)
 
 1. Open `definitions/_reservations.js`
 2. Add or move actions between reservation tiers:
-   - **Reserved slots** (`reservation: 'projects/...'`): Critical, high-priority, SLA-sensitive workloads
-   - **On-demand** (`reservation: 'none'`): Low-priority, ad-hoc, or experimental workloads
+
+- **Reserved slots** (`reservation: 'projects/...'`): Critical, high-priority, SLA-sensitive workloads
+- **On-demand** (`reservation: 'none'`): Low-priority, ad-hoc, or experimental workloads
 
 ### Step 3: Verify Changes
 
@@ -69,12 +69,12 @@ grep -r "\.actions" definitions/_reservations.js
 
 ## Decision Criteria
 
-| Factor | Reserved Slots | On-Demand |
-|--------|----------------|-----------|
-| **Priority** | High, SLA-bound | Low, flexible |
-| **Frequency** | Regular, scheduled | Ad-hoc, occasional |
-| **Cost Pattern** | Predictable usage | Variable, sporadic |
-| **Impact** | Critical pipelines | Experimental, samples |
+| Factor           | Reserved Slots     | On-Demand             |
+| ---------------- | ------------------ | --------------------- |
+| **Priority**     | High, SLA-bound    | Low, flexible         |
+| **Frequency**    | Regular, scheduled | Ad-hoc, occasional    |
+| **Cost Pattern** | Predictable usage  | Variable, sporadic    |
+| **Impact**       | Critical pipelines | Experimental, samples |
 
 ## Key Notes
 
