@@ -106,14 +106,6 @@ After 24-48 hours, check storage reduction in Masthead:
 - [Storage Cost Insights](https://app.mastheadata.com/costs?tab=Storage+costs)
 - Compare before/after storage size and costs
 
-## Alternative: Notebook-based Workflow
-
-For interactive review with Google Sheets integration:
-
-1. Use notebook at: `github.com/masthead-data/templates/blob/main/notebooks/save_on_unused_storage.ipynb`
-2. Export results to Google Sheets for team review
-3. Pull back reviewed data and execute drops
-
 ## Decision Framework
 
 | Monthly Savings | Action | Recency Check |
