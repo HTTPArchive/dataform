@@ -40,7 +40,6 @@ variable "edit_datasets" {
 
     // Reports
     "blink_features",
-    "core_web_vitals", // TODO: Remove after tech report migration
     "reports",
 
     // Flattened tables for F1

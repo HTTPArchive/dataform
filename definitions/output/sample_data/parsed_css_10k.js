@@ -1,3 +1,5 @@
+const columns = descriptions.columns.parsed_css
+
 publish('parsed_css_10k', {
   type: 'table',
   schema: 'sample_data',
@@ -5,6 +7,7 @@ publish('parsed_css_10k', {
     partitionBy: 'date',
     clusterBy: ['client', 'is_root_page', 'rank', 'page']
   },
+  columns: columns,
   tags: ['crawl_complete']
 }).query(ctx => `
 SELECT *

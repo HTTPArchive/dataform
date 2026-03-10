@@ -6,7 +6,7 @@ The test repository is used [for development and testing purposes](https://cloud
 
 Pipeline can be [run manually](https://cloud.google.com/dataform/docs/code-lifecycle) from the Dataform UI.
 
-[Configuration](./tf/dataform.tf)
+[Configuration](./infra/dataform.tf)
 
 ## Dataform Development Workspace
 

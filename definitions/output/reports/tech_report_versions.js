@@ -16,16 +16,16 @@ WHERE
   AND geo = 'ALL'
   ${constants.devRankFilter}
 `).postOps(ctx => `
-  SELECT
-    reports.run_export_job(
-      JSON '''{
-        "destination": "firestore",
-        "config": {
-          "database": "tech-report-api-${constants.environment}",
-          "collection": "versions",
-          "type": "dict"
-        },
-        "query": "SELECT * FROM ${ctx.self()}"
-      }'''
-    );
-  `)
+SELECT
+  reports.run_export_job(
+    JSON '''{
+      "destination": "firestore",
+      "config": {
+        "database": "tech-report-api-${constants.environment}",
+        "collection": "versions",
+        "type": "dict"
+      },
+      "query": "SELECT * FROM ${ctx.self()}"
+    }'''
+  );
+`)

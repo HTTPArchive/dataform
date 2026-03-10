@@ -1,3 +1,5 @@
+const columns = descriptions.columns.parsed_css
+
 publish('parsed_css', {
   type: 'incremental',
   protected: true,
@@ -7,20 +9,9 @@ publish('parsed_css', {
     clusterBy: ['client', 'is_root_page', 'rank', 'page'],
     requirePartitionFilter: true
   },
-  columns: {
-    date: 'YYYY-MM-DD format of the HTTP Archive monthly crawl',
-    client: 'Test environment: desktop or mobile',
-    page: 'The URL of the page being tested',
-    is_root_page: 'Whether the page is the root of the origin.',
-    root_page: 'The URL of the root page being tested',
-    rank: 'Site popularity rank, from CrUX',
-    url: 'The URL of the request',
-    css: 'The parsed CSS, in JSON format'
-  },
+  columns: columns,
   tags: ['crawl_complete']
 }).preOps(ctx => `
-${reservations.reservation_setter(ctx)}
-
 DELETE FROM ${ctx.self()}
 WHERE date = '${constants.currentMonth}'
   AND client = 'desktop';

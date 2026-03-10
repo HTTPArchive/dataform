@@ -22,7 +22,8 @@ export default [
         ctx: 'readonly',
         constants: 'readonly',
         reports: 'readonly',
-        reservations: 'readonly'
+        reservations: 'readonly',
+        descriptions: 'readonly'
       }
     },
     rules: {

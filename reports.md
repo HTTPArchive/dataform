@@ -30,13 +30,24 @@ The system supports two types of SQL queries:
 - **Output**: Contains `bin`, `volume`, `pdf`, `cdf` columns
 - **Use case**: Page weight distributions, performance metric distributions
 - **Export path**: `reports/{date_folder}/{metric_id}_test.json`
+- **⚠️ Do NOT use for**: Boolean/binary metrics (present/not present) - only two states don't create meaningful distributions
 
 #### 2. Timeseries
 
 - **Purpose**: Trend analysis over time
 - **Output**: Contains percentile data (p10, p25, p50, p75, p90) with timestamps
-- **Use case**: Performance trends, adoption over time
+- **Use case**: Performance trends, adoption over time, **boolean/adoption metrics**
 - **Export path**: `reports/{metric_id}_test.json`
+
+### Quick Decision Guide
+
+| Metric Type | Use Timeseries | Use Histogram | Use Both |
+|-------------|----------------|---------------|----------|
+| Boolean/Adoption (present/not present) | ✅ Always | ❌ Never | ❌ |
+| Percentage/Rate | ✅ Yes | ❌ Rarely useful | ❌ |
+| Continuous values (bytes, time, count) | ✅ For percentiles | ✅ For distribution | ✅ Often |
+
+**Key Rule**: Always use timeseries for boolean/adoption metrics; histogram only for continuous distributions.
 
 ### Lenses (Data Filters)
 
@@ -59,7 +70,15 @@ Lenses allow filtering data by different criteria:
 
 ## How to Add a New Report
 
-### Step 1: Define Your Metric
+### Step 1: Choose Your Metric Type
+
+Determine which SQL type(s) to use based on your metric:
+
+- **Boolean/Adoption metrics** (e.g., feature presence, file exists): Use timeseries only
+- **Continuous metrics** (e.g., page weight, load time): Use both histogram and timeseries
+- **Percentages/Rates**: Use timeseries only
+
+### Step 2: Define Your Metric
 
 Add your metric to the `_metrics` object in `includes/reports.js`:
 
@@ -169,6 +188,54 @@ Your SQL template receives these parameters:
 - `timestamp` - Unix timestamp in milliseconds
 - `p10`, `p25`, `p50`, `p75`, `p90` - Percentile values
 
+### Required SQL Patterns
+
+Every metric query **MUST** include these patterns:
+
+```sql
+WHERE
+  date = '${params.date}'           -- Date filter
+  AND is_root_page                  -- Root page filter
+  ${params.lens.sql}                -- Lens filtering
+  ${params.devRankFilter}           -- Dev environment sampling
+-- Use:
+${ctx.ref('crawl', 'pages')}        -- Proper table reference
+GROUP BY client
+ORDER BY client
+```
+
+### SQL Pattern Reference
+
+#### Adoption/Percentage Metrics (Timeseries)
+
+```sql
+ROUND(SAFE_DIVIDE(
+  COUNTIF(condition),
+  COUNT(0)
+) * 100, 2) AS pct_pages
+```
+
+#### Percentile Distributions (Timeseries)
+
+```sql
+ROUND(APPROX_QUANTILES(FLOAT64(metric), 1001)[OFFSET(101)] / 1024, 2) AS p10,
+ROUND(APPROX_QUANTILES(FLOAT64(metric), 1001)[OFFSET(251)] / 1024, 2) AS p25,
+ROUND(APPROX_QUANTILES(FLOAT64(metric), 1001)[OFFSET(501)] / 1024, 2) AS p50,
+ROUND(APPROX_QUANTILES(FLOAT64(metric), 1001)[OFFSET(751)] / 1024, 2) AS p75,
+ROUND(APPROX_QUANTILES(FLOAT64(metric), 1001)[OFFSET(901)] / 1024, 2) AS p90
+-- Important: Add WHERE condition: AND FLOAT64(metric) > 0 for continuous metrics
+```
+
+#### Distribution Binning (Histogram)
+
+```sql
+-- Innermost subquery:
+CAST(FLOOR(FLOAT64(metric) / bin_size) * bin_size AS INT64) AS bin,
+COUNT(0) AS volume
+-- Wrap with: volume / SUM(volume) OVER (PARTITION BY client) AS pdf
+-- Wrap with: SUM(pdf) OVER (PARTITION BY client ORDER BY bin) AS cdf
+```
+
 ### Best Practices
 
 1. **Filter root pages**: Always include `AND is_root_page` unless you specifically need all pages
@@ -176,6 +243,7 @@ Your SQL template receives these parameters:
 3. **Use consistent binning**: For histograms, use logical bin sizes (e.g., 100KB increments for page weight)
 4. **Optimize performance**: Use appropriate WHERE clauses and avoid expensive operations
 5. **Test with dev filters**: Your queries should work with the development rank filter
+6. **Use safe functions**: `SAFE.BOOL()` for custom metrics, `SAFE_DIVIDE()` for percentages
 
 ## Lenses
 
@@ -256,7 +324,46 @@ const EXPORT_CONFIG = {
 
 ## Examples
 
-### Adding a JavaScript Bundle Size Metric
+### Example 1: Adding an Adoption Metric (Boolean/Presence)
+
+For metrics that track whether a feature/file exists (present or not present), use **timeseries only**:
+
+```javascript
+llmsTxtAdoption: {
+  SQL: [
+    {
+      type: 'timeseries',
+      query: DataformTemplateBuilder.create((ctx, params) => `
+        SELECT
+          client,
+          ROUND(SAFE_DIVIDE(
+            COUNTIF(SAFE.BOOL(custom_metrics.other.llms_txt_validation.valid)),
+            COUNT(0)
+          ) * 100, 2) AS pct_pages
+        FROM ${ctx.ref('crawl', 'pages')}
+        WHERE
+          date = '${params.date}'
+          AND is_root_page
+          ${params.lens.sql}
+          ${params.devRankFilter}
+        GROUP BY client
+        ORDER BY client
+      `)
+    }
+  ]
+}
+```
+
+**Key points:**
+
+- Uses `SAFE_DIVIDE()` to avoid division by zero
+- Uses `SAFE.BOOL()` for accessing custom_metrics that may not exist
+- Returns `pct_pages` as the adoption percentage
+- No histogram - boolean metrics don't have meaningful distributions
+
+### Example 2: Adding a Continuous Metric (Histogram + Timeseries)
+
+For metrics with continuous values (bytes, time, count), use both histogram and timeseries:
 
 ```javascript
 jsBytes: {
@@ -332,4 +439,10 @@ jsBytes: {
 }
 ```
 
-This would automatically generate reports for JavaScript bundle sizes across all lenses and the configured date range.
+**Key points:**
+
+- Histogram shows distribution across bins (50KB increments)
+- Timeseries shows percentiles over time (p10, p25, p50, p75, p90)
+- Both queries filter out zero values: `AND INT64(summary.bytesJS) > 0`
+- Uses nested CTEs for clear structure
+- Automatically generates reports for JavaScript bundle sizes across all lenses and the configured date range
