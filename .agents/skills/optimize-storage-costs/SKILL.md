@@ -11,10 +11,15 @@ Identify and remove BigQuery tables that contribute to storage costs but have no
 
 ## Table Categories
 
-| Type | Definition | Indicators |
-|------|------------|------------|
-| **Dead-end** | Regularly updated, no downstream consumption | Updated but never read in 30+ days |
-| **Unused** | No upstream or downstream activity | No reads/writes in 30+ days |
+Masthead Data uses lineage analysis to identify tables, but relies on visible pipeline references. Modification timestamps are critical:
+
+| Type | Definition | Indicators | Watch for |
+|------|------------|------------|---|
+| **Dead-end** | Regularly updated, no downstream consumption | Updated but never read in 30+ days | External writers outside lineage graph (manual jobs, independent pipelines) |
+| **Unused** | No upstream or downstream activity | No reads/writes in 30+ days | Recent `lastModifiedTime` despite "Unused" flag suggests external writer—**do not drop without verification** |
+
+### Key Signal
+If a table is flagged `Unused` **and** has a recent modification timestamp, something outside Masthead's visibility is writing to it. This always warrants investigation before dropping.
 
 ## When to Use
 
@@ -26,7 +31,7 @@ Identify and remove BigQuery tables that contribute to storage costs but have no
 ## Prerequisites
 
 - Masthead Data agent v0.2.7+ installed (for accurate lineage)
-- Access to Masthead insights dataset: `masthead-prod.{DATASET_NAME}.insights`
+- Access to Masthead insights dataset: `masthead-prod.httparchive.insights`
 - BigQuery permissions to query insights and drop tables
 
 ## Implementation Steps
@@ -43,13 +48,16 @@ bq query --project_id=YOUR_PROJECT --use_legacy_sql=false --format=csv \
   SAFE.INT64(overview.num_bytes) / POW(1024, 4) AS total_tib,
   SAFE.FLOAT64(overview.cost_30d) AS cost_usd_30d,
   SAFE.FLOAT64(overview.savings_30d) AS savings_usd_30d
-FROM \`masthead-prod.{DATASET_NAME}.insights\`
+FROM \`masthead-prod.httparchive.insights\`
 WHERE category = 'Cost'
   AND subtype IN ('Dead end table', 'Unused table')
   AND overview.num_bytes IS NOT NULL
   AND SAFE.FLOAT64(overview.savings_30d) > 10
-ORDER BY total_tib DESC" > storage_waste.csv
+  AND target_resource NOT LIKE '%analytics_%'  -- Filter out low-impact GA intraday tables
+ORDER BY savings_usd_30d DESC" > storage_waste.csv
 ```
+
+**Note:** Sorting by `savings_usd_30d` instead of `total_tib` prioritizes high-impact targets for review.
 
 **Alternative: Use Masthead UI**
 - Navigate to [Dictionary page](https://app.mastheadata.com/dictionary?tab=Tables&deadEnd=true)
@@ -67,6 +75,8 @@ Review `storage_waste.csv` and add a `status` column with values:
 - Is this a backup or archive table? (consider alternative storage)
 - Is there a downstream dependency not captured in lineage?
 - Is this table part of an active experiment or migration?
+- **For repo-managed projects:** Search the codebase (e.g., `grep` for table name in model definitions, scripts) to confirm ownership. Table naming can be misleading (e.g., `cwv_tech_*` may seem like current outputs but could be legacy).
+- **Check for disabled producers:** If a Dataform `publish()` has `disabled: true` but the underlying BigQuery table still exists and has recent modifications, either the table is abandoned or an external process took over—both warrant investigation.
 
 ### Step 3: Drop Approved Tables
 
@@ -106,16 +116,17 @@ For interactive review with Google Sheets integration:
 
 ## Decision Framework
 
-| Monthly Savings | Action |
-|-----------------|--------|
-| < $10 | Consider keeping (low ROI) |
-| $10-$100 | Review and drop if unused |
-| $100-$1000 | Priority review, likely drop |
-| > $1000 | Immediate investigation required |
+| Monthly Savings | Action | Recency Check |
+|-----------------|--------|---------------|
+| < $10 | Consider keeping (low ROI) | Skip if `lastModifiedTime` > 12 months old (hygiene only) |
+| $10-$100 | Review and drop if unused | Check modification date; recent writes require owner verification |
+| $100-$1000 | Priority review, likely drop | Mandatory verification if modified in last 30 days |
+| > $1000 | Immediate investigation required | Always verify external writer before any action |
 
 ## Key Notes
 
 - **Dead-end tables** may indicate pipeline issues - investigate before dropping
+- **Unused tables with recent modifications** are the highest-priority investigate cases. The gap between Masthead's "no lineage" and actual writes means an external dependency exists.
 - Tables can be restored from time travel (7 days) or fail-safe (7 days after time travel)
 - Consider archiving to Cloud Storage if compliance requires retention
 - Coordinate with data teams before dropping shared datasets
