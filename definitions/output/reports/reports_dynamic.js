@@ -41,7 +41,7 @@ const DATE_RANGE = {
  */
 function buildExportPath(reportConfig) {
   const { sql, date, metric, lens } = reportConfig
-  const lensPath = lens && lens.name ? `${lens.name}/` : ''
+  const lensPath = lens && lens.name && lens.name !== 'all' ? `${lens.name}/` : ''
   let objectPath = EXPORT_CONFIG.storagePath
 
   if (sql.type === 'histogram') {
