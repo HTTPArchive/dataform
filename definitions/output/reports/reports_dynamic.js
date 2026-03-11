@@ -30,8 +30,8 @@ const EXPORT_CONFIG = {
 // Date range for report generation
 // Adjust these dates to update reports retrospectively
 const DATE_RANGE = {
-  startDate:  '2026-01-01', // constants.currentMonth, // '2026-01-01' //todo reset dates
-  endDate: '2026-01-01' // constants.currentMonth    // '2026-01-01'
+  startDate: constants.currentMonth,
+  endDate: constants.currentMonth
 }
 
 /**
@@ -135,8 +135,10 @@ function generateReportConfigurations() {
     date >= DATE_RANGE.startDate;
     date = constants.fnPastMonth(date)) {
 
+    const whitelistedMetrics = availableMetrics.Array.filter(metric => metric.enabled) // TODO: reports are whitelisted during migration
+
     // For each available metric
-    availableMetrics.forEach(metric => {
+    whitelistMetrics.forEach(metric => {
       // For each SQL type (histogram, timeseries)
       metric.SQL.forEach(sql => {
         // For each available lens (all, top1k, wordpress, etc.)

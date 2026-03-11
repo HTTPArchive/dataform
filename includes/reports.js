@@ -100,7 +100,8 @@ const config = {
         }
       ]
     },
-    llmsTxtAdoption: {
+    llmsTxt: {
+      enabled: true,
       SQL: [
         {
           type: 'timeseries',
@@ -125,11 +126,7 @@ const config = {
         }
       ]
     }
-  }
-};
-
-// todo: merge configs
-const config_backup = {
+  },
   ttci: {
     SQL: [
       {

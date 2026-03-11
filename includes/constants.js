@@ -21,7 +21,7 @@ const [
   ]
   : ['', '']
 const bucket = 'httparchive'
-const storagePath = 'reports/test/' // todo: restore path
+const storagePath = 'reports/'
 
 module.exports = {
   today,
