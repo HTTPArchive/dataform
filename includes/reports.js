@@ -111,7 +111,7 @@ const config = {
               ROUND(SAFE_DIVIDE(
                 COUNTIF(SAFE.BOOL(custom_metrics.other.llms_txt_validation.valid)),
                 COUNT(0)
-              ) * 100, 2) AS pct_pages
+              ) * 100, 2) AS percent
             FROM ${ctx.ref('crawl', 'pages')}
             WHERE
               date = '${params.date}'
