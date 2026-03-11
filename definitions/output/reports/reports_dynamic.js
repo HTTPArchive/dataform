@@ -80,7 +80,7 @@ function buildExportQuery(reportConfig) {
   } else if (sql.type === 'timeseries') {
     query = `
       SELECT
-        UNIX_DATE(date) * 1000 * 60 * 60 * 24 AS timestamp,
+        CAST(UNIX_DATE(date) * 1000 * 60 * 60 * 24 AS STRING) AS timestamp,
         FORMAT_DATE('%Y_%m_%d', date) AS date,
         * EXCEPT(date, metric, lens)
       FROM \`${EXPORT_CONFIG.dataset}.${tableName}\`
