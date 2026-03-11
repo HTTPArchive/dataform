@@ -177,31 +177,40 @@ function generateOperationSQL(ctx, reportConfig) {
   return `
 DECLARE job_config JSON;
 
---/* First report run - uncomment to create table
+-- Run analysis once
+CREATE TEMP TABLE ${tableName}_temp AS (
+  ${sql.query(ctx, reportConfig)}
+);
+
+-- Create table on first run (schema only, no data)
 CREATE TABLE IF NOT EXISTS ${EXPORT_CONFIG.dataset}.${tableName}
 PARTITION BY date
 CLUSTER BY metric, lens, client
 AS
---*/
-
-/* Subsequent report run
-DELETE FROM ${EXPORT_CONFIG.dataset}.${tableName}
-WHERE date = '${date}'
-  AND metric = '${metric.id}'
-  AND lens = '${lens.name}';
-
-INSERT INTO ${EXPORT_CONFIG.dataset}.${tableName}
-*/
-
 SELECT
   client,
   DATE('${date}') AS date,
   '${metric.id}' AS metric,
   '${lens.name}' AS lens,
   * EXCEPT(client)
-FROM (
-  ${sql.query(ctx, reportConfig)}
-);
+FROM ${tableName}_temp
+WHERE FALSE;
+
+-- Delete existing data for this partition
+DELETE FROM ${EXPORT_CONFIG.dataset}.${tableName}
+WHERE date = '${date}'
+  AND metric = '${metric.id}'
+  AND lens = '${lens.name}';
+
+-- Insert fresh data
+INSERT INTO ${EXPORT_CONFIG.dataset}.${tableName}
+SELECT
+  client,
+  DATE('${date}') AS date,
+  '${metric.id}' AS metric,
+  '${lens.name}' AS lens,
+  * EXCEPT(client)
+FROM ${tableName}_temp;
 
 SET job_config = TO_JSON(
   STRUCT(
