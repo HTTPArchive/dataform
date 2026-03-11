@@ -135,10 +135,10 @@ function generateReportConfigurations() {
     date >= DATE_RANGE.startDate;
     date = constants.fnPastMonth(date)) {
 
-    const whitelistedMetrics = availableMetrics.Array.filter(metric => metric.enabled) // TODO: reports are whitelisted during migration
+    const whitelistedMetrics = availableMetrics.filter(metric => metric.enabled) // TODO: reports are whitelisted during migration
 
     // For each available metric
-    whitelistMetrics.forEach(metric => {
+    whitelistedMetrics.forEach(metric => {
       // For each SQL type (histogram, timeseries)
       metric.SQL.forEach(sql => {
         // For each available lens (all, top1k, wordpress, etc.)
@@ -227,7 +227,6 @@ reportConfigurations.forEach(reportConfig => {
   const operationName = createOperationName(reportConfig)
 
   operate(operationName, {
-    disabled: true,
   })
     .tags(['crawl_reports'])
     .queries(ctx => generateOperationSQL(ctx, reportConfig))
