@@ -81,6 +81,7 @@ function buildExportQuery(reportConfig) {
     query = `
       SELECT
         UNIX_DATE(date) * 1000 * 60 * 60 * 24 AS timestamp,
+        FORMAT_DATE('%Y_%m_%d', date) AS date,
         * EXCEPT(date, metric, lens)
       FROM \`${EXPORT_CONFIG.dataset}.${tableName}\`
       WHERE
