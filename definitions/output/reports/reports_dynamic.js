@@ -221,13 +221,11 @@ SELECT reports.run_export_job(job_config);
 // Generate all report configurations
 const reportConfigurations = generateReportConfigurations()
 
-
 // Create Dataform operations for each report configuration
 reportConfigurations.forEach(reportConfig => {
   const operationName = createOperationName(reportConfig)
 
-  operate(operationName, {
-  })
-    .tags(['crawl_reports'])
+  operate(operationName)
+    .tags(['crawl_complete'])
     .queries(ctx => generateOperationSQL(ctx, reportConfig))
 })
