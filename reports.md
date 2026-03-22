@@ -41,8 +41,8 @@ The system supports two types of SQL queries:
 
 ### Quick Decision Guide
 
-| Metric Type                            | Use Timeseries    | Use Histogram      | Use Both |
-| -------------------------------------- | ----------------- | ------------------ | -------- |
+| Metric Type                            | Use Timeseries     | Use Histogram       | Use Both  |
+| -------------------------------------- | ------------------ | ------------------- | --------- |
 | Boolean/Adoption (present/not present) | ✅ Always          | ❌ Never            | ❌        |
 | Percentage/Rate                        | ✅ Yes             | ❌ Rarely useful    | ❌        |
 | Continuous values (bytes, time, count) | ✅ For percentiles | ✅ For distribution | ✅ Often  |
