@@ -18,7 +18,7 @@ description: Add new metrics to HTTPArchive reports config. USE FOR adding perfo
 
 ## Quick Start
 
-1. Open `includes/reports.js`, find `config._metrics` (line ~42)
+1. Open `includes/reports.js`, find `config._metrics`
 2. Choose type: **Timeseries** (adoption/percentiles) or **Histogram** (distributions)
 3. Add metric with required patterns: `date`, `is_root_page`, `${params.lens.sql}`, `${params.devRankFilter}`, `${ctx.ref('crawl', 'pages')}`, `GROUP BY client`
 4. Run `get_errors` to verify
