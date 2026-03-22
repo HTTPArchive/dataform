@@ -41,11 +41,11 @@ The system supports two types of SQL queries:
 
 ### Quick Decision Guide
 
-| Metric Type | Use Timeseries | Use Histogram | Use Both |
-|-------------|----------------|---------------|----------|
-| Boolean/Adoption (present/not present) | ✅ Always | ❌ Never | ❌ |
-| Percentage/Rate | ✅ Yes | ❌ Rarely useful | ❌ |
-| Continuous values (bytes, time, count) | ✅ For percentiles | ✅ For distribution | ✅ Often |
+| Metric Type                            | Use Timeseries     | Use Histogram       | Use Both  |
+| -------------------------------------- | ------------------ | ------------------- | --------- |
+| Boolean/Adoption (present/not present) | ✅ Always          | ❌ Never            | ❌        |
+| Percentage/Rate                        | ✅ Yes             | ❌ Rarely useful    | ❌        |
+| Continuous values (bytes, time, count) | ✅ For percentiles | ✅ For distribution | ✅ Often  |
 
 **Key Rule**: Always use timeseries for boolean/adoption metrics; histogram only for continuous distributions.
 
