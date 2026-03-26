@@ -14,7 +14,8 @@
   "scripts": {
     "start": "npx functions-framework --target=dataform-service --signature-type=http --port=${PORT:-8080}",
     "start_dev": "npx functions-framework --target=dataform-service --signature-type=http --port=8080 --debug",
-    "build": "docker build -t dataform-service ."
+    "build": "docker build -t dataform-service .",
+    "test": "node --test"
   },
   "engines": {
     "node": ">=22.0.0"
