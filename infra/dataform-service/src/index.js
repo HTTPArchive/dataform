@@ -1,7 +1,7 @@
 import functions from '@google-cloud/functions-framework'
 
 import { BigQueryExport } from './bigquery.js'
-import { callRunJob } from './cloud_run.js'
+import * as cloud_run from './cloud_run.js'
 import { getCompilationResults, runWorkflow } from './dataform.js'
 import { StorageUpload } from './storage.js'
 
@@ -101,7 +101,7 @@ async function handleExport (req, res) {
     } else if (destination === 'firestore') {
       console.info('Firestore export')
       const jobName = `projects/${projectId}/locations/${location}/jobs/${jobId}`
-      await callRunJob(jobName, payload)
+      await internals.callRunJob(jobName, payload)
     } else {
       throw new Error('Bad Request: destination unknown')
     }
@@ -191,7 +191,7 @@ async function handleTrigger (req, res) {
 async function executeAction (actionName, actionArgs) {
   if (actionName === 'runDataformRepo') {
     console.info(`Executing action: ${actionName}`)
-    await runDataformRepo(actionArgs)
+    await internals.runDataformRepo(actionArgs)
   }
 }
 
@@ -240,6 +240,13 @@ async function mainHandler (req, res) {
     })
   }
 }
+
+const internals = {
+  callRunJob: cloud_run.callRunJob,
+  runDataformRepo
+}
+
+export { internals, handleExport, mainHandler }
 
 /**
  * Main entry point for the combined Dataform service.
