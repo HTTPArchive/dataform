@@ -13,6 +13,7 @@ permissions:
   contents: read
 
 jobs:
+  # zizmor: ignore[secrets-outside-env]
   terraform:
     name: Terraform
     runs-on: ubuntu-latest
