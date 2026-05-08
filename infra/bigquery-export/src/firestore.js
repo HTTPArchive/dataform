@@ -188,6 +188,18 @@ export class FirestoreBatch {
     console.info(`Deletion complete. Total docs deleted: ${this.processedDocs}. Time: ${duration} seconds`)
   }
 
+  normalizeRow (value) {
+    if (value === null || value === undefined || value instanceof Date) return value
+    if (typeof value === 'bigint') return Number(value)
+    if (Array.isArray(value)) return value.map(v => this.normalizeRow(v))
+    if (typeof value === 'object') {
+      return Object.fromEntries(
+        Object.entries(value).map(([k, v]) => [k, this.normalizeRow(v)])
+      )
+    }
+    return value
+  }
+
   async streamFromBigQuery(rowStream) {
     console.info('Starting BigQuery to Firestore transfer...')
     const startTime = Date.now()
@@ -204,7 +216,7 @@ export class FirestoreBatch {
       for await (const row of rowStream) {
         // Add document to BulkWriter
         const docRef = collectionRef.doc()
-        this.bulkWriter.set(docRef, row)
+        this.bulkWriter.set(docRef, this.normalizeRow(row))
 
         rowCount++
         this.totalDocs = rowCount // Update totalDocs for progress tracking
