@@ -1,11 +1,11 @@
 resource "google_alloydb_cluster" "default" {
-  provider     = google-beta
-  cluster_id   = "default"
-  location     = var.region
-  project      = var.project
+  provider   = google-beta
+  cluster_id = "default"
+  location   = var.region
+  project    = var.project
 
-  cluster_type       = "PRIMARY"
-  database_version   = "POSTGRES_17"
+  cluster_type     = "PRIMARY"
+  database_version = "POSTGRES_17"
 
   psc_config {
     psc_enabled = true
@@ -17,7 +17,7 @@ resource "google_alloydb_cluster" "default" {
 
   lifecycle {
     prevent_destroy = true
-    ignore_changes  = [
+    ignore_changes = [
       subscription_type,
       automated_backup_policy,
       continuous_backup_config,
@@ -27,29 +27,29 @@ resource "google_alloydb_cluster" "default" {
 }
 
 resource "google_alloydb_instance" "primary" {
-  provider       = google-beta
-  cluster        = google_alloydb_cluster.default.name
-  instance_id    = "primary"
-  instance_type  = "PRIMARY"
+  provider      = google-beta
+  cluster       = google_alloydb_cluster.default.name
+  instance_id   = "primary"
+  instance_type = "PRIMARY"
 
   machine_config {
-    cpu_count = 8
+    cpu_count    = 8
     machine_type = "n2-highmem-8"
   }
 
   database_flags = {
-    "alloydb.iam_authentication" = "on"
-    "bigquery_fdw.enabled"       = "on"
+    "alloydb.iam_authentication"                           = "on"
+    "bigquery_fdw.enabled"                                 = "on"
     "google_columnar_engine.auto_columnarization_schedule" = "EVERY 7 DAYS"
-    "google_columnar_engine.enable_auto_columnarization" = "on"
-    "google_columnar_engine.enable_columnar_scan" = "on"
-    "google_columnar_engine.enabled" = "on"
-    "google_columnar_engine.memory_size_in_mb" = "4800"
-    "google_columnar_engine.refresh_threshold_percentage" = "50"
-    "google_columnar_engine.refresh_threshold_scan_count" = "5"
-    "google_job_scheduler.maintenance_cpu_percentage" = "20"
-    "google_job_scheduler.max_parallel_workers_per_job" = "2"
-    "password.enforce_complexity" = "on"
+    "google_columnar_engine.enable_auto_columnarization"   = "on"
+    "google_columnar_engine.enable_columnar_scan"          = "on"
+    "google_columnar_engine.enabled"                       = "on"
+    "google_columnar_engine.memory_size_in_mb"             = "4800"
+    "google_columnar_engine.refresh_threshold_percentage"  = "50"
+    "google_columnar_engine.refresh_threshold_scan_count"  = "5"
+    "google_job_scheduler.maintenance_cpu_percentage"      = "20"
+    "google_job_scheduler.max_parallel_workers_per_job"    = "2"
+    "password.enforce_complexity"                          = "on"
   }
 
   client_connection_config {
