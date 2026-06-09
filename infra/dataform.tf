@@ -7,7 +7,7 @@ resource "google_dataform_repository" "crawl_data" {
   npmrc_environment_variables_secret_version = null
   project                                    = var.project
   region                                     = var.region
-  service_account                            = null
+  service_account                            = var.function_identity
   git_remote_settings {
     authentication_token_secret_version = "${google_secret_manager_secret_iam_member.dataform_secret_access.secret_id}/versions/latest"
     default_branch                      = "main"
