@@ -41,5 +41,5 @@ resource "google_service_account_iam_member" "dataform_act-as-iam" {
 resource "google_secret_manager_secret_iam_member" "dataform_secret_access" {
   secret_id = "projects/${var.project_number}/secrets/GitHub_max-ostapenko_dataform_PAT"
   role      = "roles/secretmanager.secretAccessor"
-  member    = "serviceAccount:${var.function_identity}"
+  member    = "serviceAccount:${var.dataform_service_account_email}"
 }
