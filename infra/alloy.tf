@@ -38,12 +38,12 @@ resource "google_alloydb_instance" "primary" {
   }
 
   database_flags = {
-    "alloydb.iam_authentication"                           = "on"
-    "bigquery_fdw.enabled"                                 = "on"
-    "google_columnar_engine.enable_auto_columnarization"   = "on"
-    "google_columnar_engine.enable_columnar_scan"          = "on"
-    "google_columnar_engine.enabled"                       = "on"
-    "password.enforce_complexity"                          = "on"
+    "alloydb.iam_authentication"                         = "on"
+    "bigquery_fdw.enabled"                               = "on"
+    "google_columnar_engine.enable_auto_columnarization" = "on"
+    "google_columnar_engine.enable_columnar_scan"        = "on"
+    "google_columnar_engine.enabled"                     = "on"
+    "password.enforce_complexity"                        = "on"
   }
 
   client_connection_config {
