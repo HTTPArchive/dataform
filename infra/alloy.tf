@@ -70,14 +70,14 @@ locals {
 
 # Grant BigQuery access to the AlloyDB service account
 resource "google_project_iam_member" "alloydb_bq_data_viewer" {
-  project = var.project
-  role    = "roles/bigquery.dataViewer"
-  member  = "serviceAccount:${local.alloydb_sa}"
-}
+  for_each = toset([
+    "roles/bigquery.dataViewer",
+    "roles/bigquery.readSessionUser",
+    "roles/bigquery.jobUser",
+  ])
 
-resource "google_project_iam_member" "alloydb_bq_read_session_user" {
   project = var.project
-  role    = "roles/bigquery.readSessionUser"
+  role    = each.key
   member  = "serviceAccount:${local.alloydb_sa}"
 }
 
