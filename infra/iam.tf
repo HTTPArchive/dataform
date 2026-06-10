@@ -21,7 +21,7 @@ resource "google_bigquery_dataset_iam_member" "dataform_dataset_editor_role" {
 
   dataset_id = each.value
   role       = "roles/bigquery.dataEditor"
-  member     = "serviceAccount:${var.dataform_service_account_email}"
+  member     = "serviceAccount:${var.function_identity}"
 }
 
 resource "google_project_iam_member" "dataform_default_roles" {
@@ -29,7 +29,13 @@ resource "google_project_iam_member" "dataform_default_roles" {
 
   project = var.project
   role    = each.value
-  member  = "serviceAccount:${var.dataform_service_account_email}"
+  member  = "serviceAccount:${var.function_identity}"
+}
+
+resource "google_service_account_iam_member" "dataform_act-as-iam" {
+  service_account_id = "projects/${var.project}/serviceAccounts/${var.function_identity}"
+  role               = "roles/iam.serviceAccountUser"
+  member             = "serviceAccount:${var.dataform_service_account_email}"
 }
 
 resource "google_secret_manager_secret_iam_member" "dataform_secret_access" {

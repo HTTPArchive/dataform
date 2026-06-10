@@ -76,8 +76,8 @@ technology_stats AS (
 SELECT
   category,
   description,
-  desktop_origins,
-  mobile_origins,
+  category_stats.desktop_origins,
+  category_stats.mobile_origins,
   STRING_AGG(technology, ', ' ORDER BY technology_stats.mobile_origins DESC) AS technologies
 FROM category_stats
 INNER JOIN technology_stats

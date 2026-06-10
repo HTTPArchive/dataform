@@ -41,7 +41,7 @@ flowchart TD
 ## Components
 
 | Component | Service | Repo / Config |
-|---|---|---|
+| --- | --- | --- |
 | Workflow orchestration | Cloud Run (`dataform-service`) | `dataform/infra/main.tf` |
 | Dataform pipelines | Dataform (`HTTPArchive/dataform`) | `dataform/infra/dataform.tf` |
 | BigQuery export | Cloud Run Job (`bigquery-export`) | `dataform/infra/main.tf` |
@@ -55,7 +55,7 @@ flowchart TD
 ## Data Sources per API Endpoint
 
 | Endpoint | Backend |
-|---|---|
+| --- | --- |
 | `/technologies`, `/categories`, `/versions` | Firestore (`tech-report-api-prod`) |
 | `/ranks`, `/geos` | AlloyDB (`tech_report_ranks`, `tech_report_geos`) |
 | `/cwv-distribution` | BigQuery (`crawl` dataset, direct query) |
