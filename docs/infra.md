@@ -40,7 +40,7 @@ flowchart TD
 
 ## Components
 
-| Component | Service | Repo / Config |
+| Component | Service | Repository / Config |
 | --- | --- | --- |
 | Workflow orchestration | Cloud Run (`dataform-service`) | `dataform/infra/main.tf` |
 | Dataform pipelines | Dataform (`HTTPArchive/dataform`) | `dataform/infra/dataform.tf` |
