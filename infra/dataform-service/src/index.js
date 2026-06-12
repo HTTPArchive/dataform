@@ -95,9 +95,9 @@ async function handleExport (req, res) {
       console.info('Cloud Storage export')
       console.log(query, config)
 
-      const data = await bigquery.queryResults(query)
+      const stream = await bigquery.queryResultsStream(query)
       const storage = new StorageUpload(config.bucket)
-      await storage.exportToJson(data, config.name)
+      await storage.exportToJson(stream, config.name)
     } else if (destination === 'firestore') {
       console.info('Firestore export')
       const jobName = `projects/${projectId}/locations/${location}/jobs/${jobId}`
