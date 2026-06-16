@@ -37,7 +37,7 @@ resource "google_cloud_run_v2_job" "bigquery_export" {
         resources {
           limits = {
             cpu    = "2"
-            memory = "4Gi"
+            memory = "8Gi"
           }
         }
         env {
