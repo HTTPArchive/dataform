@@ -127,10 +127,10 @@ async function downloadAndParseFile(filename, date, lensPath, metric) {
       date,
       metric,
       lens: lensName(lensPath),
-      bin: Math.round(Number(item.bin)),
-      volume: Math.round(Number(item.volume)),
-      pdf: Number(item.pdf),
-      cdf: Number(item.cdf)
+      bin: (item.bin === null || item.bin === undefined || item.bin === '') ? null : Math.round(Number(item.bin)),
+      volume: (item.volume === null || item.volume === undefined || item.volume === '') ? null : Math.round(Number(item.volume)),
+      pdf: (item.pdf === null || item.pdf === undefined || item.pdf === '') ? null : Number(item.pdf),
+      cdf: (item.cdf === null || item.cdf === undefined || item.cdf === '') ? null : Number(item.cdf)
     }))
     return { filename, success: true, rows, rowCount: rows.length, isNotFound: false }
   } catch (error) {

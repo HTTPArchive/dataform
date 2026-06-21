@@ -76,7 +76,7 @@ function mapRow(item, lensPath, metricId, metricKeys) {
     lens: lensName(lensPath)
   }
   for (const key of metricKeys) {
-    row[key] = Number(item[key])
+    row[key] = (item[key] === null || item[key] === undefined || item[key] === '') ? null : Number(item[key])
   }
   return row
 }
