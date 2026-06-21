@@ -29,7 +29,7 @@ The system supports two types of SQL queries:
 - **Purpose**: Distribution analysis with binned data
 - **Output**: Contains `bin`, `volume`, `pdf`, `cdf` columns
 - **Use case**: Page weight distributions, performance metric distributions
-- **Export path**: `reports/{date_folder}/{metric_id}_test.json`
+- **Export path**: `reports/{date_folder}/{metric_id}.json`
 - **⚠️ Do NOT use for**: Boolean/binary metrics (present/not present) - only two states don't create meaningful distributions
 
 #### 2. Timeseries
@@ -37,7 +37,7 @@ The system supports two types of SQL queries:
 - **Purpose**: Trend analysis over time
 - **Output**: Contains percentile data (p10, p25, p50, p75, p90) with timestamps
 - **Use case**: Performance trends, adoption over time, **boolean/adoption metrics**
-- **Export path**: `reports/{metric_id}_test.json`
+- **Export path**: `reports/{metric_id}.json`
 
 ### Quick Decision Guide
 
@@ -160,7 +160,7 @@ Your SQL template receives these parameters:
 ```javascript
 {
   date: '2025-07-01',           // Current processing date
-  devRankFilter: 'AND rank <= 10000', // Development filter
+  devRankFilter: 'AND rank <= 10000', // Sampling filter
   lens: {
     name: 'top1k',              // Lens name
     sql: 'AND rank <= 1000'     // Lens SQL filter
@@ -197,7 +197,7 @@ WHERE
   date = '${params.date}'           -- Date filter
   AND is_root_page                  -- Root page filter
   ${params.lens.sql}                -- Lens filtering
-  ${params.devRankFilter}           -- Dev environment sampling
+  ${params.devRankFilter}           -- Sampling filter
 -- Use:
 ${ctx.ref('crawl', 'pages')}        -- Proper table reference
 GROUP BY client
@@ -307,7 +307,7 @@ const EXPORT_CONFIG = {
   bucket: 'your-storage-bucket',
   storagePath: 'reports/',
   dataset: 'reports',
-  testSuffix: '.json'
+  fileFormat: '.json'
 }
 ```
 

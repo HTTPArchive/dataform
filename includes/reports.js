@@ -101,7 +101,6 @@ const config = {
                   date = '${params.date}'
                   AND is_root_page
                   ${params.lens.sql}
-                  ${params.devRankFilter}
                 GROUP BY
                   bin,
                   client
@@ -128,7 +127,6 @@ const config = {
               AND is_root_page
               ${params.lens.sql}
               AND FLOAT64(summary.bytesCss) > 0
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
@@ -153,7 +151,6 @@ const config = {
               date = '${params.date}'
               AND is_root_page
               ${params.lens.sql}
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
@@ -184,7 +181,6 @@ const config = {
                   date = '${params.date}'
                   AND is_root_page
                   ${params.lens.sql}
-                  ${params.devRankFilter}
                 GROUP BY
                   bin,
                   client
@@ -211,7 +207,6 @@ const config = {
               AND is_root_page
               ${params.lens.sql}
               AND FLOAT64(summary.bytesFont) > 0
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
@@ -242,7 +237,6 @@ const config = {
                   date = '${params.date}'
                   AND is_root_page
                   ${params.lens.sql}
-                  ${params.devRankFilter}
                 GROUP BY
                   bin,
                   client
@@ -269,7 +263,6 @@ const config = {
               AND is_root_page
               ${params.lens.sql}
               AND FLOAT64(summary.bytesImg) > 0
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
@@ -300,7 +293,6 @@ const config = {
                   date = '${params.date}'
                   AND is_root_page
                   ${params.lens.sql}
-                  ${params.devRankFilter}
                 GROUP BY
                   bin,
                   client
@@ -327,7 +319,6 @@ const config = {
               AND is_root_page
               ${params.lens.sql}
               AND FLOAT64(summary.bytesJS) > 0
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
@@ -358,7 +349,6 @@ const config = {
                   date = '${params.date}'
                   AND is_root_page
                   ${params.lens.sql}
-                  ${params.devRankFilter}
                 GROUP BY
                   bin,
                   client
@@ -385,7 +375,6 @@ const config = {
               AND is_root_page
               ${params.lens.sql}
               AND INT64(summary.bytesTotal) > 0
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
@@ -422,7 +411,6 @@ const config = {
                   date = '${params.date}'
                   AND is_root_page
                   ${params.lens.sql}
-                  ${params.devRankFilter}
                 GROUP BY
                   bin,
                   client
@@ -460,7 +448,6 @@ const config = {
                 date = '${params.date}'
                 AND is_root_page
                 ${params.lens.sql}
-                ${params.devRankFilter}
             )
             GROUP BY
               client
@@ -485,7 +472,6 @@ const config = {
               date = '${params.date}'
               AND is_root_page
               ${params.lens.sql}
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
@@ -510,7 +496,6 @@ const config = {
               date = '${params.date}'
               AND is_root_page
               ${params.lens.sql}
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
@@ -542,7 +527,6 @@ const config = {
                   date = '${params.date}'
                   AND is_root_page
                   ${params.lens.sql}
-                  ${params.devRankFilter}
                 GROUP BY
                   bin,
                   client
@@ -578,7 +562,6 @@ const config = {
                 AND is_root_page
                 ${params.lens.sql}
                 AND lighthouse IS NOT NULL AND TO_JSON_STRING(lighthouse) != '{}'
-                ${params.devRankFilter}
             )
             GROUP BY
               client
@@ -610,7 +593,6 @@ const config = {
                   date = '${params.date}'
                   AND is_root_page
                   ${params.lens.sql}
-                  ${params.devRankFilter}
                 GROUP BY
                   bin,
                   client
@@ -637,7 +619,6 @@ const config = {
               AND is_root_page
               ${params.lens.sql}
               AND FLOAT64(summary.bytesVideo) > 0
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
@@ -668,7 +649,6 @@ const config = {
                   date = '${params.date}'
                   AND is_root_page
                   ${params.lens.sql}
-                  ${params.devRankFilter}
                 GROUP BY
                   bin,
                   client
@@ -701,7 +681,6 @@ const config = {
                 AND is_root_page
                 ${params.lens.sql}
                 AND INT64(payload['_cpu.v8.compile']) IS NOT NULL AND INT64(payload['_cpu.v8.compile']) >= 0
-                ${params.devRankFilter}
             )
             GROUP BY
               client
@@ -734,7 +713,6 @@ const config = {
                   AND is_root_page
                   ${params.lens.sql}
                   AND FLOAT64(summary.onContentLoaded) > 0
-                  ${params.devRankFilter}
                 GROUP BY
                   bin,
                   client
@@ -761,7 +739,6 @@ const config = {
               AND is_root_page
               ${params.lens.sql}
               AND FLOAT64(summary.onContentLoaded) > 0
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
@@ -794,7 +771,6 @@ const config = {
                   date = '${params.date}'
                   AND is_root_page
                   ${params.lens.sql}
-                  ${params.devRankFilter}
                 GROUP BY
                   bin,
                   client
@@ -831,7 +807,6 @@ const config = {
                   date = '${params.date}'
                   AND is_root_page
                   ${params.lens.sql}
-                  ${params.devRankFilter}
                 GROUP BY
                   bin,
                   client
@@ -859,7 +834,6 @@ const config = {
               date = '${params.date}'
               AND is_root_page
               ${params.lens.sql}
-              ${params.devRankFilter}
             GROUP BY
               client
             HAVING
@@ -892,7 +866,6 @@ const config = {
                   date = '${params.date}'
                   AND is_root_page
                   ${params.lens.sql}
-                  ${params.devRankFilter}
                 GROUP BY
                   bin,
                   client
@@ -920,7 +893,6 @@ const config = {
               date = '${params.date}'
               AND is_root_page
               ${params.lens.sql}
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
@@ -952,7 +924,6 @@ const config = {
                   AND is_root_page
                   ${params.lens.sql}
                   AND FLOAT64(summary.onLoad) > 0
-                  ${params.devRankFilter}
                 GROUP BY
                   bin,
                   client
@@ -979,7 +950,6 @@ const config = {
               AND is_root_page
               ${params.lens.sql}
               AND FLOAT64(summary.onLoad) > 0
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
@@ -1010,7 +980,6 @@ const config = {
                   date = '${params.date}'
                   AND is_root_page
                   ${params.lens.sql}
-                  ${params.devRankFilter}
                 GROUP BY
                   bin,
                   client
@@ -1037,7 +1006,6 @@ const config = {
               AND is_root_page
               ${params.lens.sql}
               AND FLOAT64(summary.reqCss) > 0
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
@@ -1068,7 +1036,6 @@ const config = {
                   date = '${params.date}'
                   AND is_root_page
                   ${params.lens.sql}
-                  ${params.devRankFilter}
                 GROUP BY
                   bin,
                   client
@@ -1095,7 +1062,6 @@ const config = {
               AND is_root_page
               ${params.lens.sql}
               AND FLOAT64(summary.reqFont) > 0
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
@@ -1126,7 +1092,6 @@ const config = {
                   date = '${params.date}'
                   AND is_root_page
                   ${params.lens.sql}
-                  ${params.devRankFilter}
                 GROUP BY
                   bin,
                   client
@@ -1153,7 +1118,6 @@ const config = {
               AND is_root_page
               ${params.lens.sql}
               AND FLOAT64(summary.reqHtml) > 0
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
@@ -1184,7 +1148,6 @@ const config = {
                   date = '${params.date}'
                   AND is_root_page
                   ${params.lens.sql}
-                  ${params.devRankFilter}
                 GROUP BY
                   bin,
                   client
@@ -1211,7 +1174,6 @@ const config = {
               AND is_root_page
               ${params.lens.sql}
               AND FLOAT64(summary.reqImg) > 0
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
@@ -1242,7 +1204,6 @@ const config = {
                   date = '${params.date}'
                   AND is_root_page
                   ${params.lens.sql}
-                  ${params.devRankFilter}
                 GROUP BY
                   bin,
                   client
@@ -1269,7 +1230,6 @@ const config = {
               AND is_root_page
               ${params.lens.sql}
               AND FLOAT64(summary.reqJS) > 0
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
@@ -1300,7 +1260,6 @@ const config = {
                   date = '${params.date}'
                   AND is_root_page
                   ${params.lens.sql}
-                  ${params.devRankFilter}
                 GROUP BY
                   bin,
                   client
@@ -1327,7 +1286,6 @@ const config = {
               AND is_root_page
               ${params.lens.sql}
               AND FLOAT64(summary.reqOther) > 0
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
@@ -1358,7 +1316,6 @@ const config = {
                   date = '${params.date}'
                   AND is_root_page
                   ${params.lens.sql}
-                  ${params.devRankFilter}
                 GROUP BY
                   bin,
                   client
@@ -1385,7 +1342,6 @@ const config = {
               AND is_root_page
               ${params.lens.sql}
               AND FLOAT64(summary.reqTotal) > 0
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
@@ -1416,7 +1372,6 @@ const config = {
                   date = '${params.date}'
                   AND is_root_page
                   ${params.lens.sql}
-                  ${params.devRankFilter}
                 GROUP BY
                   bin,
                   client
@@ -1443,7 +1398,6 @@ const config = {
               AND is_root_page
               ${params.lens.sql}
               AND FLOAT64(summary.reqVideo) > 0
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
@@ -1474,7 +1428,6 @@ const config = {
                   date = '${params.date}'
                   AND is_root_page
                   ${params.lens.sql}
-                  ${params.devRankFilter}
                 GROUP BY
                   bin,
                   client
@@ -1502,7 +1455,6 @@ const config = {
               date = '${params.date}'
               AND is_root_page
               ${params.lens.sql}
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
@@ -1536,7 +1488,6 @@ const config = {
                   date = '${params.date}'
                   AND is_root_page
                   ${params.lens.sql}
-                  ${params.devRankFilter}
                 GROUP BY
                   bin,
                   client
@@ -1564,7 +1515,6 @@ const config = {
               date = '${params.date}'
               AND is_root_page
               ${params.lens.sql}
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
@@ -1598,7 +1548,6 @@ const config = {
                   date = '${params.date}'
                   AND is_root_page
                   ${params.lens.sql}
-                  ${params.devRankFilter}
                 GROUP BY
                   bin,
                   client
@@ -1626,7 +1575,6 @@ const config = {
               date = '${params.date}'
               AND is_root_page
               ${params.lens.sql}
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
@@ -1657,7 +1605,6 @@ const config = {
                   date = '${params.date}'
                   AND is_root_page
                   ${params.lens.sql}
-                  ${params.devRankFilter}
                 GROUP BY
                   bin,
                   client
@@ -1685,7 +1632,6 @@ const config = {
               date = '${params.date}'
               AND is_root_page
               ${params.lens.sql}
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
@@ -1717,7 +1663,6 @@ const config = {
                   AND is_root_page
                   ${params.lens.sql}
                   AND INT64(summary._connections) > 0
-                  ${params.devRankFilter}
                 GROUP BY
                   bin,
                   client
@@ -1745,7 +1690,6 @@ const config = {
               date = '${params.date}' AND date > '2016-01-01'
               AND is_root_page
               ${params.lens.sql}
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
@@ -1769,7 +1713,6 @@ const config = {
               date = '${params.date}'
               AND is_root_page
               ${params.lens.sql}
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
@@ -1805,7 +1748,6 @@ const config = {
               date = '${params.date}'
               AND is_root_page
               ${params.lens.sql}
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
@@ -1829,7 +1771,6 @@ const config = {
               ${params.lens.sql}
               AND lighthouse IS NOT NULL AND TO_JSON_STRING(lighthouse) != '{}'
               AND LAX_STRING(lighthouse.audits['font-display'].score) IS NOT NULL
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
@@ -1852,7 +1793,6 @@ const config = {
               AND is_root_page
               ${params.lens.sql}
               AND lighthouse IS NOT NULL AND TO_JSON_STRING(lighthouse) != '{}' AND
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
@@ -1875,7 +1815,6 @@ const config = {
               AND is_root_page
               ${params.lens.sql}
               AND lighthouse IS NOT NULL AND TO_JSON_STRING(lighthouse) != '{}'
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
@@ -1898,7 +1837,6 @@ const config = {
               AND is_root_page
               ${params.lens.sql}
               AND lighthouse IS NOT NULL AND TO_JSON_STRING(lighthouse) != '{}' AND LAX_STRING(lighthouse.audits.hreflang.score) IS NOT NULL
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
@@ -1920,7 +1858,6 @@ const config = {
               date = '${params.date}'
               AND is_root_page
               ${params.lens.sql}
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
@@ -1945,7 +1882,6 @@ const config = {
               date = '${params.date}'
               AND is_root_page
               ${params.lens.sql}
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
@@ -1969,7 +1905,6 @@ const config = {
               AND is_root_page
               ${params.lens.sql}
               AND lighthouse IS NOT NULL AND LAX_STRING(lighthouse.audits['font-size'].score) IS NOT NULL
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
@@ -1992,7 +1927,6 @@ const config = {
               AND is_root_page
               ${params.lens.sql}
               AND lighthouse IS NOT NULL AND TO_JSON_STRING(lighthouse) != '{}'
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
@@ -2015,7 +1949,6 @@ const config = {
               AND is_root_page
               ${params.lens.sql}
               AND lighthouse IS NOT NULL AND TO_JSON_STRING(lighthouse) != '{}'
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
@@ -2038,7 +1971,6 @@ const config = {
               AND is_root_page
               ${params.lens.sql}
               AND lighthouse IS NOT NULL AND TO_JSON_STRING(lighthouse) != '{}'
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
@@ -2061,7 +1993,6 @@ const config = {
               AND is_root_page
               ${params.lens.sql}
               AND lighthouse IS NOT NULL AND TO_JSON_STRING(lighthouse) != '{}'
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
@@ -2092,7 +2023,6 @@ const config = {
                 AND is_root_page
                 ${params.lens.sql}
                 AND lighthouse IS NOT NULL AND TO_JSON_STRING(lighthouse) != '{}'
-                ${params.devRankFilter}
             )
             GROUP BY
               client
@@ -2118,7 +2048,6 @@ const config = {
               date = '${params.date}'
               AND is_root_page
               ${params.lens.sql}
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
@@ -2144,7 +2073,6 @@ const config = {
               date = '${params.date}'
               AND is_root_page
               ${params.lens.sql}
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
@@ -2170,7 +2098,6 @@ const config = {
               date = '${params.date}'
               AND is_root_page
               ${params.lens.sql}
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
@@ -2196,7 +2123,6 @@ const config = {
               date = '${params.date}'
               AND is_root_page
               ${params.lens.sql}
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
@@ -2222,7 +2148,6 @@ const config = {
               date = '${params.date}'
               AND is_root_page
               ${params.lens.sql}
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
@@ -2246,7 +2171,6 @@ const config = {
               AND is_root_page
               ${params.lens.sql}
               AND lighthouse IS NOT NULL AND LAX_STRING(lighthouse.audits['link-text'].score) IS NOT NULL
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
@@ -2271,7 +2195,6 @@ const config = {
               date = '${params.date}'
               AND is_root_page
               ${params.lens.sql}
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
@@ -2297,7 +2220,6 @@ const config = {
               date = '${params.date}'
               AND is_root_page
               ${params.lens.sql}
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
@@ -2323,7 +2245,6 @@ const config = {
               date = '${params.date}'
               AND is_root_page
               ${params.lens.sql}
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
@@ -2349,7 +2270,6 @@ const config = {
               date = '${params.date}'
               AND is_root_page
               ${params.lens.sql}
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
@@ -2375,7 +2295,6 @@ const config = {
               date = '${params.date}'
               AND is_root_page
               ${params.lens.sql}
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
@@ -2402,7 +2321,6 @@ const config = {
               date = '${params.date}'
               AND is_root_page
               ${params.lens.sql}
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
@@ -2429,7 +2347,6 @@ const config = {
               date = '${params.date}'
               AND is_root_page
               ${params.lens.sql}
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
@@ -2456,7 +2373,6 @@ const config = {
               date = '${params.date}'
               AND is_root_page
               ${params.lens.sql}
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
