@@ -4,3 +4,5 @@
 **/.terraform/
 .env
 infra/alloydb-auth-proxy
+.df-credentials.json
+
