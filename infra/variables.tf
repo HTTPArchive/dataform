@@ -60,3 +60,10 @@ variable "dataform_service_account_roles" {
     "roles/bigquery.resourceAdmin",
   ]
 }
+
+variable "notification_channel_id" {
+  description = "GCP monitoring notification channel ID"
+  type        = string
+  default     = "1661619523289991065"
+}
+

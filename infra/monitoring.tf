@@ -2,7 +2,7 @@ resource "google_monitoring_alert_policy" "dataform_service_error" {
   combiner              = "OR"
   display_name          = "Dataform Service Error"
   enabled               = true
-  notification_channels = ["projects/${var.project}/notificationChannels/5647028675917298338"]
+  notification_channels = ["projects/${var.project}/notificationChannels/${var.notification_channel_id}"]
   project               = var.project
   severity              = "CRITICAL"
   user_labels           = {}
@@ -33,7 +33,7 @@ resource "google_monitoring_alert_policy" "bigquery_export_error" {
   combiner              = "OR"
   display_name          = "BigQuery Export Error"
   enabled               = true
-  notification_channels = ["projects/${var.project}/notificationChannels/5647028675917298338"]
+  notification_channels = ["projects/${var.project}/notificationChannels/${var.notification_channel_id}"]
   project               = var.project
   severity              = "CRITICAL"
   user_labels           = {}
@@ -64,7 +64,7 @@ resource "google_monitoring_alert_policy" "dataform_workflow" {
   combiner              = "OR"
   display_name          = "BigQuery Workflow Failed"
   enabled               = true
-  notification_channels = ["projects/${var.project}/notificationChannels/5647028675917298338"]
+  notification_channels = ["projects/${var.project}/notificationChannels/${var.notification_channel_id}"]
   project               = var.project
   severity              = "CRITICAL"
   documentation {
@@ -96,7 +96,7 @@ resource "google_monitoring_alert_policy" "dataform_workflow_complete" {
   combiner              = "OR"
   display_name          = "BigQuery Workflow Complete (CrUX or crawl)"
   enabled               = true
-  notification_channels = ["projects/${var.project}/notificationChannels/5647028675917298338"]
+  notification_channels = ["projects/${var.project}/notificationChannels/${var.notification_channel_id}"]
   project               = var.project
   user_labels           = {}
   alert_strategy {
