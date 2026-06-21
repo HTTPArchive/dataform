@@ -80,7 +80,6 @@ class DataformTemplateBuilder {
 const config = {
   _metrics: {
     bytesCss: {
-      enabled: true,
       SQL: [
         {
           type: 'histogram',
@@ -139,7 +138,6 @@ const config = {
       ]
     },
     llmsTxt: {
-      enabled: true,
       SQL: [
         {
           type: 'timeseries',
@@ -165,7 +163,6 @@ const config = {
       ]
     },
     bytesFont: {
-      enabled: true,
       SQL: [
         {
           type: 'histogram',
@@ -224,7 +221,6 @@ const config = {
       ]
     },
     bytesImg: {
-      enabled: true,
       SQL: [
         {
           type: 'histogram',
@@ -283,7 +279,6 @@ const config = {
       ]
     },
     bytesJs: {
-      enabled: true,
       SQL: [
         {
           type: 'histogram',
@@ -342,7 +337,6 @@ const config = {
       ]
     },
     bytesTotal: {
-      enabled: true,
       SQL: [
         {
           type: 'histogram',
