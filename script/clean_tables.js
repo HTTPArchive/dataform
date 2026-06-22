@@ -32,7 +32,7 @@ async function clean() {
     .filter(name => name.endsWith('_timeseries') || HISTOGRAM_TABLES.includes(name))
 
   console.log(`Found ${targetTables.length} tables to truncate. Running concurrently (limit 20)...`)
-  
+
   await mapLimit(targetTables, 20, async (name) => {
     console.log(`Truncating reports.${name}...`)
     try {

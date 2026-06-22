@@ -156,7 +156,7 @@ async function runVerification() {
 
     // Compare first 3 bins, last bin, and total counts
     console.log(`  Comparing histograms (GCS had ${gcsRows.length} bins | BQ has ${bqRows.length} bins):`)
-    
+
     if (gcsRows.length !== bqRows.length) {
       console.log(`    ✗ Mismatch in bin count: GCS = ${gcsRows.length} | BQ = ${bqRows.length}`)
     } else {
