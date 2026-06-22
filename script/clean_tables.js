@@ -10,19 +10,19 @@ const HISTOGRAM_TABLES = [
 ].map(t => `${t}_histogram`)
 // Concurrency helper
 async function mapLimit(items, limit, fn) {
-  const results = [];
-  const executing = new Set();
+  const results = []
+  const executing = new Set()
   for (const item of items) {
-    const p = Promise.resolve().then(() => fn(item));
-    results.push(p);
-    executing.add(p);
-    const clean = () => executing.delete(p);
-    p.then(clean, clean);
+    const p = Promise.resolve().then(() => fn(item))
+    results.push(p)
+    executing.add(p)
+    const clean = () => executing.delete(p)
+    p.then(clean, clean)
     if (executing.size >= limit) {
-      await Promise.race(executing);
+      await Promise.race(executing)
     }
   }
-  return Promise.all(results);
+  return Promise.all(results)
 }
 
 async function clean() {
