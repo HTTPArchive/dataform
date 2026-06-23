@@ -360,7 +360,7 @@ export class FirestoreBatch {
           failedAttempts: error.failedAttempts
         }
         console.error(`❌ Export to ${exportConfig.collection} failed:`, cleanError)
-        throw new Error(`Export failed at document ${cleanError.documentPath}: ${cleanError.message} (code: ${cleanError.code})`)
+        throw new Error(`Export failed at document ${cleanError.documentPath}: ${cleanError.message} (code: ${cleanError.code})`, { cause: error })
       }
 
       console.error(`❌ Export to ${exportConfig.collection} failed:`, error)

@@ -41,7 +41,7 @@ async function runVerification() {
     console.log(`  BQ Table:   reports.${bqTable}`)
 
     // Get GCS row
-    let gcsRow = null
+    let gcsRow
     try {
       const [content] = await storage.bucket(CONFIG.bucket).file(gcsPath).download()
       const data = JSON.parse(content.toString())
@@ -59,7 +59,7 @@ async function runVerification() {
     }
 
     // Get BQ row
-    let bqRow = null
+    let bqRow
     try {
       const query = `
         SELECT * FROM \`${CONFIG.datasetId}.${bqTable}\`
@@ -133,7 +133,7 @@ async function runVerification() {
     }
 
     // Get BQ rows
-    let bqRows = []
+    let bqRows
     try {
       const query = `
         SELECT bin, volume, pdf, cdf FROM \`${CONFIG.datasetId}.${bqTable}\`
