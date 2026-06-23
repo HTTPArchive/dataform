@@ -5,10 +5,22 @@ import { Readable } from 'stream'
 // Configuration
 const CONFIG = {
   storage: { bucket: 'httparchive', prefix: 'reports/' },
-  bigquery: { projectId: 'httparchive', datasetId: 'reports', tableId: 'histogram1' },
+  bigquery: { projectId: 'httparchive', datasetId: 'reports' },
   skipDates: []
 }
 
+// All metrics that have histogram files in GCS.
+// These all share the same schema: client, date, metric, lens, bin, volume, pdf, cdf.
+const METRICS = [
+  'bootupJs', 'bytesCss', 'bytesFont', 'bytesHtml', 'bytesImg', 'bytesJs',
+  'bytesOther', 'bytesTotal', 'bytesVideo', 'compileJs', 'cruxCls', 'cruxDcl',
+  'cruxFcp', 'cruxFp', 'cruxInp', 'cruxLcp', 'cruxOl', 'cruxTtfb', 'dcl',
+  'evalJs', 'fcp', 'gzipSavings', 'imgSavings', 'offscreenImages', 'ol',
+  'optimizedImages', 'reqCss', 'reqFont', 'reqHtml', 'reqImg', 'reqJs',
+  'reqOther', 'reqTotal', 'reqVideo', 'speedIndex', 'tcp', 'ttci'
+]
+
+// Files to retry after a failed run — add paths from "Failed tasks" output.
 const BACKLOG = []
 /*
 
@@ -17,7 +29,9 @@ const BACKLOG = []
 const storage = new Storage()
 const bigquery = new BigQuery({ projectId: CONFIG.bigquery.projectId })
 
+// GCS lens path prefix → BQ lens name (mirrors reports.js lenses config)
 const lenses = ['', 'drupal/', 'magento/', 'top100k/', 'top10k/', 'top1k/', 'top1m/', 'wordpress/']
+const lensName = (lensPath) => lensPath === '' ? 'all' : lensPath.replace('/', '')
 
 // Generate dates: HTTPArchive collection schedule
 function generateHTTPArchiveDates(startDate, endDate) {
@@ -25,14 +39,8 @@ function generateHTTPArchiveDates(startDate, endDate) {
   const start = new Date(startDate)
   const end = new Date(endDate)
 
-  // Validate dates
-  if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-    throw new Error('Invalid date format. Use YYYY-MM-DD format.')
-  }
-
-  if (start > end) {
-    throw new Error('Start date must be before or equal to end date.')
-  }
+  if (isNaN(start.getTime()) || isNaN(end.getTime())) throw new Error('Invalid date format. Use YYYY-MM-DD.')
+  if (start > end) throw new Error('Start date must be before or equal to end date.')
 
   const startYear = start.getFullYear()
   const startMonth = start.getMonth() + 1
@@ -40,323 +48,235 @@ function generateHTTPArchiveDates(startDate, endDate) {
   const endMonth = end.getMonth() + 1
 
   for (let year = startYear; year <= endYear; year++) {
-    const monthStart = (year === startYear) ? startMonth : 1
-    const monthEnd = (year === endYear) ? endMonth : 12
-
+    const monthStart = year === startYear ? startMonth : 1
+    const monthEnd = year === endYear ? endMonth : 12
     for (let month = monthStart; month <= monthEnd; month++) {
-      const monthStr = String(month).padStart(2, '0')
-
-      // Always include 1st of month
-      const firstDate = `${year}-${monthStr}-01`
-      if (firstDate >= startDate && firstDate <= endDate) {
-        dates.push(firstDate)
-      }
-
-      // Add 15th for years 2010-2018 (HTTPArchive historical pattern)
+      const mm = String(month).padStart(2, '0')
+      const d1 = `${year}-${mm}-01`
+      if (d1 >= startDate && d1 <= endDate) dates.push(d1)
+      // HTTPArchive collected bi-monthly before 2019
       if (year <= 2018) {
-        const fifteenthDate = `${year}-${monthStr}-15`
-        if (fifteenthDate >= startDate && fifteenthDate <= endDate) {
-          dates.push(fifteenthDate)
-        }
+        const d15 = `${year}-${mm}-15`
+        if (d15 >= startDate && d15 <= endDate) dates.push(d15)
       }
     }
   }
-
   return dates.sort()
 }
 
 const dates = generateHTTPArchiveDates('2011-06-01', '2025-07-01')
 
-const histogramMetrics = [
-  'bytesCss', 'bytesImg', 'bytesJs', 'bytesOther', 'bytesTotal', 'evalJs', 'gzipSavings', 'speedIndex', 'dcl',
-  'bootupJs', 'bytesFont', 'bytesHtml', 'bytesVideo', 'compileJs', 'fcp', 'imgSavings', 'offscreenImages', 'ol',
-  'optimizedImages', 'reqCss', 'reqFont', 'reqHtml', 'reqImg', 'reqJs', 'reqOther', 'reqTotal', 'reqVideo',
-  'tcp', 'ttci', 'cruxTtfb', 'cruxOl', 'cruxLcp', 'cruxInp', 'cruxFp', 'cruxFcp', 'cruxDcl', 'cruxCls'
-]
-
-const SCHEMA = [
-  { name: 'date', type: 'DATE' },
-  { name: 'lens', type: 'STRING' },
+// Histogram schema is identical across all metrics — matches Dataform DDL exactly.
+// bin/volume are INT64 (Dataform uses CAST/COUNT producing INT64).
+const HISTOGRAM_SCHEMA = [
   { name: 'client', type: 'STRING' },
+  { name: 'date', type: 'DATE' },
   { name: 'metric', type: 'STRING' },
-  { name: 'bin', type: 'FLOAT64' },
-  { name: 'volume', type: 'FLOAT64' },
-  { name: 'cdf', type: 'FLOAT64' },
-  { name: 'pdf', type: 'FLOAT64' }
+  { name: 'lens', type: 'STRING' },
+  { name: 'bin', type: 'INT64' },
+  { name: 'volume', type: 'INT64' },
+  { name: 'pdf', type: 'FLOAT64' },
+  { name: 'cdf', type: 'FLOAT64' }
 ]
 
 const downloadObject = async (filename) =>
   (await storage.bucket(CONFIG.storage.bucket).file(filename).download()).toString()
 
-async function uploadToBigQuery(rows) {
+async function uploadToBigQuery(rows, tableId) {
   return new Promise((resolve, reject) => {
-    const table = bigquery.dataset(CONFIG.bigquery.datasetId).table(CONFIG.bigquery.tableId)
+    const table = bigquery.dataset(CONFIG.bigquery.datasetId).table(tableId)
     const jsonlData = rows.map(row => JSON.stringify(row)).join('\n')
     const dataStream = Readable.from([jsonlData])
 
     const writeStream = table.createWriteStream({
       sourceFormat: 'NEWLINE_DELIMITED_JSON',
-      schema: { fields: SCHEMA },
+      schema: { fields: HISTOGRAM_SCHEMA },
       writeDisposition: 'WRITE_APPEND',
       createDisposition: 'CREATE_IF_NEEDED'
     })
 
-    writeStream.on('complete', () => {
-      resolve()
-    })
-
-    writeStream.on('error', (error) => {
-      console.error('Upload failed:', error.message)
-      reject(error)
-    })
-
-    dataStream.on('error', (error) => {
-      console.error('Source stream error during upload:', error.message)
-      reject(error)
-    })
-
+    writeStream.on('complete', () => resolve())
+    writeStream.on('error', reject)
+    dataStream.on('error', reject)
     dataStream.pipe(writeStream)
   })
 }
 
-async function downloadAndParseFile(filename, date, lens, metric) {
+// Concurrency helper
+async function mapLimit(items, limit, fn) {
+  const results = []
+  const executing = new Set()
+  for (const item of items) {
+    const p = Promise.resolve().then(() => fn(item))
+    results.push(p)
+    executing.add(p)
+    const clean = () => executing.delete(p)
+    p.then(clean, clean)
+    if (executing.size >= limit) {
+      await Promise.race(executing)
+    }
+  }
+  return Promise.all(results)
+}
+
+async function downloadAndParseFile(filename, date, lensPath, metric) {
   try {
     const data = await downloadObject(filename)
     const rows = JSON.parse(data).map(item => ({
-      date,
-      lens: lens.replace('/', ''),
       client: item.client,
+      date,
       metric,
-      bin: item.bin,
-      volume: item.volume,
-      cdf: item.cdf,
-      pdf: item.pdf
+      lens: lensName(lensPath),
+      bin: (item.bin === null || item.bin === undefined || item.bin === '') ? null : Math.round(Number(item.bin)),
+      volume: (item.volume === null || item.volume === undefined || item.volume === '') ? null : Math.round(Number(item.volume)),
+      pdf: (item.pdf === null || item.pdf === undefined || item.pdf === '') ? null : Number(item.pdf),
+      cdf: (item.cdf === null || item.cdf === undefined || item.cdf === '') ? null : Number(item.cdf)
     }))
-
-    return {
-      filename,
-      success: true,
-      rows,
-      rowCount: rows.length,
-      error: null,
-      isNotFound: false
-    }
+    return { filename, success: true, rows, rowCount: rows.length, isNotFound: false }
   } catch (error) {
     return {
-      filename,
-      success: false,
-      rows: [],
-      rowCount: 0,
+      filename, success: false, rows: [], rowCount: 0,
       error: error.message,
       isNotFound: error.code === 404 || error.message.includes('No such object')
     }
   }
 }
 
-async function processBacklogFile(filename) {
-  // Extract metadata from filename: reports/[lens]/YYYY_MM_DD/metric.json
-  const match = filename.match(/reports\/(?:([^/]+)\/)?(\d{4}_\d{2}_\d{2})\/(.+?)(?:\.json)?$/)
-  if (!match) {
-    console.error(`Invalid backlog filename format: ${filename}`)
-    return { filename, success: false, error: 'Invalid format' }
-  }
+async function importMetricHistogram(metric) {
+  const tableId = `${metric}_histogram`
 
-  const [, lensPath = '', dateStr, metric] = match
-  const date = dateStr.replace(/_/g, '-')
-  const lens = lensPath
-
-  // Ensure filename has .json extension
-  const fullFilename = filename.endsWith('.json') ? filename : `${filename}.json`
-
-  const result = await downloadAndParseFile(fullFilename, date, lens, metric)
-
-  // For backlog processing, upload immediately (single files)
-  if (result.success && result.rows.length > 0) {
-    try {
-      await uploadToBigQuery(result.rows)
-      return { ...result, uploaded: true }
-    } catch (error) {
-      return { ...result, success: false, error: error.message, uploaded: false }
+  try {
+    const table = bigquery.dataset(CONFIG.bigquery.datasetId).table(tableId)
+    const [metadata] = await table.getMetadata()
+    const numRows = Number(metadata.numRows)
+    if (numRows > 0) {
+      console.log(`=== Skipping ${metric} (table reports.${tableId} already has ${numRows.toLocaleString()} rows) ===`)
+      return { metric, totalRows: numRows, totalSuccess: 0, totalNotFound: 0, totalErrors: 0, allFailedTasks: [] }
+    }
+  } catch (error) {
+    if (error.code !== 404) {
+      console.warn(`  Warning checking metadata for ${tableId}: ${error.message}`)
     }
   }
 
-  return result
-}
+  console.log(`=== Starting ${metric} → reports.${tableId} ===`)
 
-async function processImportTask(task) {
-  const { date, lens, metric, filename } = task
-  const result = await downloadAndParseFile(filename, date, lens, metric)
+  let totalSuccess = 0, totalNotFound = 0, totalErrors = 0
+  const allFailedTasks = []
+  let totalUploadedRows = 0
 
-  return {
-    ...task,
-    ...result
+  // Chunk dates into groups of 15
+  const dateChunks = []
+  const chunkSize = 15
+  for (let i = 0; i < dates.length; i += chunkSize) {
+    dateChunks.push(dates.slice(i, i + chunkSize))
   }
+
+  for (let chunkIdx = 0; chunkIdx < dateChunks.length; chunkIdx++) {
+    const chunkDates = dateChunks[chunkIdx]
+    const tasks = []
+    for (const date of chunkDates) {
+      if (CONFIG.skipDates.includes(date)) continue
+      for (const lensPath of lenses) {
+        const filename = `${CONFIG.storage.prefix}${lensPath}${date.replace(/-/g, '_')}/${metric}.json`
+        tasks.push({ filename, date, lensPath, metric })
+      }
+    }
+
+    if (!tasks.length) continue
+
+    // Download files in this chunk concurrently with a limit of 40
+    const results = await mapLimit(tasks, 40, async (task) => {
+      return downloadAndParseFile(task.filename, task.date, task.lensPath, task.metric)
+    })
+
+    const chunkRows = []
+    for (const r of results) {
+      if (r.success) {
+        for (const row of r.rows) {
+          chunkRows.push(row)
+        }
+        totalSuccess++
+      } else if (r.isNotFound) {
+        totalNotFound++
+      } else {
+        totalErrors++
+        allFailedTasks.push(r.filename)
+        console.error(`  ✗ ${r.filename}: ${r.error}`)
+      }
+    }
+
+    if (chunkRows.length > 0) {
+      try {
+        await uploadToBigQuery(chunkRows, tableId)
+        totalUploadedRows += chunkRows.length
+      } catch (error) {
+        console.error(`  ✗ ERROR uploading chunk ${chunkIdx + 1}/${dateChunks.length} to ${tableId}: ${error.message}`)
+        totalErrors += totalSuccess
+        for (const r of results) {
+          if (r.success) allFailedTasks.push(r.filename)
+        }
+      }
+    }
+  }
+
+  if (totalUploadedRows > 0) {
+    console.log(`  ✓ ${metric}: completed uploading ${totalUploadedRows.toLocaleString()} rows total (${totalSuccess} lenses found, ${totalNotFound} not found, ${totalErrors} errors)`)
+  } else {
+    console.log(`  ${metric}: no data found`)
+  }
+
+  if (allFailedTasks.length) {
+    console.log(`  Failed tasks for ${metric}:`)
+    allFailedTasks.forEach(f => console.log(`    '${f}',`))
+  }
+
+  return { metric, totalRows: totalUploadedRows, totalSuccess, totalNotFound, totalErrors, allFailedTasks }
 }
 
 async function processBacklog() {
-  if (!BACKLOG || BACKLOG.length === 0) {
-    console.log('No backlog files to process')
-    return
-  }
-
+  if (!BACKLOG.length) return
   console.log(`\nProcessing ${BACKLOG.length} backlog files...`)
-
-  let successCount = 0
-  let failCount = 0
+  let ok = 0, fail = 0
 
   for (const filename of BACKLOG) {
-    const result = await processBacklogFile(filename)
+    const match = filename.match(/reports\/(?:([^/]+)\/)?(\d{4}_\d{2}_\d{2})\/(.+?)(?:\.json)?$/)
+    if (!match) { console.log(`✗ ${filename}: invalid format`); fail++; continue }
 
-    if (result.success) {
-      console.log(`✓ ${result.filename} (${result.rowCount} rows)`)
-      successCount++
+    const [, lensPath = '', dateStr, metric] = match
+    const date = dateStr.replace(/_/g, '-')
+    const fullFilename = filename.endsWith('.json') ? filename : `${filename}.json`
+    const result = await downloadAndParseFile(fullFilename, date, lensPath, metric)
+
+    if (result.success && result.rows.length > 0) {
+      try {
+        await uploadToBigQuery(result.rows, `${metric}_histogram`)
+        console.log(`✓ ${filename} (${result.rowCount} rows)`)
+        ok++
+      } catch (e) {
+        console.log(`✗ ${filename}: ${e.message}`)
+        fail++
+      }
     } else {
-      console.log(`✗ ${result.filename}: ${result.error}`)
-      failCount++
+      console.log(`✗ ${filename}: ${result.error}`)
+      fail++
     }
   }
-
-  console.log(`\nBacklog completed: ${successCount} successful, ${failCount} failed\n`)
-}
-
-async function processDateData(date) {
-  console.log(`\nProcessing date: ${date}`)
-
-  const allRows = []
-  let totalSuccess = 0
-  let totalNotFound = 0
-  let totalErrors = 0
-  const failedTasks = []
-
-  // Process each metric sequentially
-  for (const metric of histogramMetrics) {
-    console.log(`  Processing metric: ${metric} (${histogramMetrics.indexOf(metric) + 1}/${histogramMetrics.length})`)
-
-    // Download all lenses for this metric in parallel
-    const lensPromises = lenses.map(async (lens) => {
-      const filename = `${CONFIG.storage.prefix}${lens}${date.replace(/-/g, '_')}/${metric}.json`
-      const task = {
-        date,
-        lens,
-        metric,
-        filename,
-        id: `${date}-${lens || 'all'}-${metric}`
-      }
-
-      return await processImportTask(task)
-    })
-
-    const results = await Promise.allSettled(lensPromises)
-
-    // Process results for this metric
-    let metricSuccess = 0
-    let metricNotFound = 0
-    let metricErrors = 0
-
-    results.forEach((result, index) => {
-      if (result.status === 'fulfilled') {
-        const taskResult = result.value
-        if (taskResult.success) {
-          // Use concat to avoid stack overflow with large arrays
-          for (const row of taskResult.rows) {
-            allRows.push(row)
-          }
-          metricSuccess++
-          totalSuccess++
-        } else if (taskResult.isNotFound) {
-          metricNotFound++
-          totalNotFound++
-        } else {
-          metricErrors++
-          totalErrors++
-          failedTasks.push(taskResult.filename)
-          console.error(`    ✗ ${taskResult.id}: ${taskResult.error}`)
-        }
-      } else {
-        metricErrors++
-        totalErrors++
-        const lens = lenses[index]
-        const filename = `${CONFIG.storage.prefix}${lens}${date.replace(/-/g, '_')}/${metric}.json`
-        failedTasks.push(filename)
-        console.error(`    ✗ ${date}-${lens || 'all'}-${metric}: ${result.reason?.message || 'Unknown error'}`)
-      }
-    })
-
-    console.log(`    ${metricSuccess} success, ${metricNotFound} not found, ${metricErrors} errors`)
-  }
-
-  console.log(`  Total files: ${totalSuccess} success, ${totalNotFound} not found, ${totalErrors} errors`)
-
-  // Upload all data for this date in a single operation
-  if (allRows.length > 0) {
-    console.log(`  Uploading ${allRows.length.toLocaleString()} rows to BigQuery...`)
-    try {
-      await uploadToBigQuery(allRows)
-      console.log(`  ✓ Successfully uploaded all data for ${date}`)
-    } catch (error) {
-      console.error(`  ✗ Failed to upload data for ${date}: ${error.message}`)
-      // Add all successful downloads to failed tasks since upload failed
-      for (const lens of lenses) {
-        for (const metric of histogramMetrics) {
-          const filename = `${CONFIG.storage.prefix}${lens}${date.replace(/-/g, '_')}/${metric}.json`
-          if (!failedTasks.includes(filename)) {
-            failedTasks.push(filename)
-          }
-        }
-      }
-    }
-  } else {
-    console.log(`  No data to upload for ${date}`)
-  }
-
-  return {
-    date,
-    successCount: totalSuccess,
-    notFoundCount: totalNotFound,
-    errorCount: totalErrors,
-    totalRows: allRows.length,
-    failedTasks
-  }
+  console.log(`Backlog: ${ok} ok, ${fail} failed\n`)
 }
 
 async function importHistogramData() {
-  // Process backlog first
-  await processBacklog()
-
-  console.log(`Processing ${dates.length} dates`)
-
-  let totalSuccess = 0
-  let totalNotFound = 0
-  let totalErrors = 0
-  let totalRows = 0
-  const allFailedTasks = []
-
-  for (const date of dates) {
-    if (CONFIG.skipDates.includes(date)) {
-      console.log(`Skipping date: ${date}`)
-      continue
-    }
-
-    const dateResult = await processDateData(date)
-
-    totalSuccess += dateResult.successCount
-    totalNotFound += dateResult.notFoundCount
-    totalErrors += dateResult.errorCount
-    totalRows += dateResult.totalRows
-    allFailedTasks.push(...dateResult.failedTasks)
+  if (BACKLOG.length > 0) {
+    await processBacklog()
+    console.log('Backlog processed. Exiting backlog-only mode.')
+    return
   }
 
-  console.log('\n=== FINAL SUMMARY ===')
-  console.log(`Dates processed: ${dates.filter(d => !CONFIG.skipDates.includes(d)).length}`)
-  console.log(`Total files successful: ${totalSuccess}`)
-  console.log(`Total files not found: ${totalNotFound}`)
-  console.log(`Total files with errors: ${totalErrors}`)
-  console.log(`Total rows uploaded: ${totalRows.toLocaleString()}`)
+  console.log('Starting parallel histogram backfill...')
+  // Process 3 metrics at a time in parallel
+  await mapLimit(METRICS, 3, importMetricHistogram)
 
-  if (allFailedTasks.length > 0) {
-    console.log('\n=== FAILED TASKS (for BACKLOG) ===')
-    allFailedTasks.forEach(filename => console.log(`  '${filename}',`))
-  }
+  console.log('\n=== All histogram metrics complete ===')
 }
 
 importHistogramData().catch(console.error)

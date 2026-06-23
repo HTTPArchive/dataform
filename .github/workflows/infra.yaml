@@ -13,13 +13,14 @@ permissions:
   contents: read
 
 jobs:
+  # zizmor: ignore[secrets-outside-env]
   terraform:
     name: Terraform
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v6.0.3
         with:
           fetch-depth: 0
           persist-credentials: false

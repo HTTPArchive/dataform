@@ -1,3 +1,40 @@
+/**
+ * WARNING & NOTES: Historical Backfill Status (Completed June 2026)
+ *
+ * During the full migration backfill of GCS reports to per-metric BQ tables,
+ * the following metrics had missing or corrupt data files in GCS:
+ *
+ * 1. Timeseries (GCS Consolidated JSON Files):
+ *    - compileJs: No timeseries file exists in GCS.
+ *    - evalJs: No timeseries file exists in GCS.
+ *
+ * 2. Histograms (GCS Monthly JSON Files):
+ *    - compileJs: 27 files failed to download/parse (empty or incomplete JSON)
+ *      * reports/2016_01_01/compileJs.json to 2016_12_01/compileJs.json
+ *      * reports/2017_08_01/compileJs.json to 2017_08_15/compileJs.json
+ *      * reports/wordpress/2018_06_01/compileJs.json to 2018_06_15/compileJs.json
+ *    - dcl: 51 files failed to download/parse (mostly empty JSON files)
+ *      * reports/2011_06_01/dcl.json to 2013_07_01/dcl.json
+ *    - evalJs: 26 files failed to download/parse (empty or incomplete JSON)
+ *      * reports/2016_01_01/evalJs.json to 2017_08_15/evalJs.json
+ *      * reports/wordpress/2018_06_01/evalJs.json to 2018_06_15/evalJs.json
+ *    - fcp: 2 files failed to download/parse (corrupted files)
+ *      * reports/2017_08_01/fcp.json
+ *      * reports/2017_08_15/fcp.json
+ *
+ * If you need to reprocess these dates, they must be re-generated from the raw crawl pages tables
+ * since the legacy GCS artifacts for these dates are corrupted or missing.
+ *
+ * 3. Suggested Post-Migration Validation Tests:
+ *    - Quantile Monotonicity: Verify that for all timeseries tables, quantiles satisfy
+ *      p10 <= p25 <= p50 <= p75 <= p90.
+ *    - CDF Integrity Check: Verify that for all histogram tables, the cdf increases
+ *      monotonically and reaches exactly 1.0 at the highest bin of each partition.
+ *    - Gap Analysis: Run a query to identify any missing dates/gaps in the backfilled BQ tables
+ *      that are not documented in the missing list above.
+ *    - Page Volume Validation: Compare total page counts in reports.numUrls_timeseries with
+ *      the sum of volumes in corresponding histograms to ensure no missed/duplicate uploads.
+ */
 class DataformTemplateBuilder {
   /**
    * Create a Dataform SQL template that can be dynamically interpolated
@@ -64,7 +101,6 @@ const config = {
                   date = '${params.date}'
                   AND is_root_page
                   ${params.lens.sql}
-                  ${params.devRankFilter}
                 GROUP BY
                   bin,
                   client
@@ -91,7 +127,6 @@ const config = {
               AND is_root_page
               ${params.lens.sql}
               AND FLOAT64(summary.bytesCss) > 0
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
@@ -101,7 +136,6 @@ const config = {
       ]
     },
     llmsTxt: {
-      enabled: true,
       SQL: [
         {
           type: 'timeseries',
@@ -117,7 +151,6 @@ const config = {
               date = '${params.date}'
               AND is_root_page
               ${params.lens.sql}
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
@@ -125,13 +158,236 @@ const config = {
           `)
         }
       ]
-    }
-  },
-  ttci: {
-    SQL: [
-      {
-        type: 'histogram',
-        query: DataformTemplateBuilder.create((ctx, params) => `
+    },
+    bytesFont: {
+      SQL: [
+        {
+          type: 'histogram',
+          query: DataformTemplateBuilder.create((ctx, params) => `
+            SELECT
+              *,
+              SUM(pdf) OVER (PARTITION BY client ORDER BY bin) AS cdf
+            FROM (
+              SELECT
+                *,
+                volume / SUM(volume) OVER (PARTITION BY client) AS pdf
+              FROM (
+                SELECT
+                  client,
+                  CAST(FLOOR(FLOAT64(summary.bytesFont) / 10240) * 10 AS INT64) AS bin,
+                  COUNT(0) AS volume
+                FROM ${ctx.ref('crawl', 'pages')}
+                WHERE
+                  date = '${params.date}'
+                  AND is_root_page
+                  ${params.lens.sql}
+                GROUP BY
+                  bin,
+                  client
+              )
+            )
+            ORDER BY
+              bin,
+              client
+          `)
+        },
+        {
+          type: 'timeseries',
+          query: DataformTemplateBuilder.create((ctx, params) => `
+            SELECT
+              client,
+              ROUND(APPROX_QUANTILES(FLOAT64(summary.bytesFont), 1001)[OFFSET(101)] / 1024, 2) AS p10,
+              ROUND(APPROX_QUANTILES(FLOAT64(summary.bytesFont), 1001)[OFFSET(251)] / 1024, 2) AS p25,
+              ROUND(APPROX_QUANTILES(FLOAT64(summary.bytesFont), 1001)[OFFSET(501)] / 1024, 2) AS p50,
+              ROUND(APPROX_QUANTILES(FLOAT64(summary.bytesFont), 1001)[OFFSET(751)] / 1024, 2) AS p75,
+              ROUND(APPROX_QUANTILES(FLOAT64(summary.bytesFont), 1001)[OFFSET(901)] / 1024, 2) AS p90
+            FROM ${ctx.ref('crawl', 'pages')}
+            WHERE
+              date = '${params.date}'
+              AND is_root_page
+              ${params.lens.sql}
+              AND FLOAT64(summary.bytesFont) > 0
+            GROUP BY
+              client
+            ORDER BY
+              client
+          `)
+        }
+      ]
+    },
+    bytesImg: {
+      SQL: [
+        {
+          type: 'histogram',
+          query: DataformTemplateBuilder.create((ctx, params) => `
+            SELECT
+              *,
+              SUM(pdf) OVER (PARTITION BY client ORDER BY bin) AS cdf
+            FROM (
+              SELECT
+                *,
+                volume / SUM(volume) OVER (PARTITION BY client) AS pdf
+              FROM (
+                SELECT
+                  client,
+                  CAST(FLOOR(FLOAT64(summary.bytesImg) / 102400) * 100 AS INT64) AS bin,
+                  COUNT(0) AS volume
+                FROM ${ctx.ref('crawl', 'pages')}
+                WHERE
+                  date = '${params.date}'
+                  AND is_root_page
+                  ${params.lens.sql}
+                GROUP BY
+                  bin,
+                  client
+              )
+            )
+            ORDER BY
+              bin,
+              client
+          `)
+        },
+        {
+          type: 'timeseries',
+          query: DataformTemplateBuilder.create((ctx, params) => `
+            SELECT
+              client,
+              ROUND(APPROX_QUANTILES(FLOAT64(summary.bytesImg), 1001)[OFFSET(101)] / 1024, 2) AS p10,
+              ROUND(APPROX_QUANTILES(FLOAT64(summary.bytesImg), 1001)[OFFSET(251)] / 1024, 2) AS p25,
+              ROUND(APPROX_QUANTILES(FLOAT64(summary.bytesImg), 1001)[OFFSET(501)] / 1024, 2) AS p50,
+              ROUND(APPROX_QUANTILES(FLOAT64(summary.bytesImg), 1001)[OFFSET(751)] / 1024, 2) AS p75,
+              ROUND(APPROX_QUANTILES(FLOAT64(summary.bytesImg), 1001)[OFFSET(901)] / 1024, 2) AS p90
+            FROM ${ctx.ref('crawl', 'pages')}
+            WHERE
+              date = '${params.date}'
+              AND is_root_page
+              ${params.lens.sql}
+              AND FLOAT64(summary.bytesImg) > 0
+            GROUP BY
+              client
+            ORDER BY
+              client
+          `)
+        }
+      ]
+    },
+    bytesJs: {
+      SQL: [
+        {
+          type: 'histogram',
+          query: DataformTemplateBuilder.create((ctx, params) => `
+            SELECT
+              *,
+              SUM(pdf) OVER (PARTITION BY client ORDER BY bin) AS cdf
+            FROM (
+              SELECT
+                *,
+                volume / SUM(volume) OVER (PARTITION BY client) AS pdf
+              FROM (
+                SELECT
+                  client,
+                  CAST(FLOOR(FLOAT64(summary.bytesJS) / 10240) * 10 AS INT64) AS bin,
+                  COUNT(0) AS volume
+                FROM ${ctx.ref('crawl', 'pages')}
+                WHERE
+                  date = '${params.date}'
+                  AND is_root_page
+                  ${params.lens.sql}
+                GROUP BY
+                  bin,
+                  client
+              )
+            )
+            ORDER BY
+              bin,
+              client
+          `)
+        },
+        {
+          type: 'timeseries',
+          query: DataformTemplateBuilder.create((ctx, params) => `
+            SELECT
+              client,
+              ROUND(APPROX_QUANTILES(FLOAT64(summary.bytesJS), 1001)[OFFSET(101)] / 1024, 2) AS p10,
+              ROUND(APPROX_QUANTILES(FLOAT64(summary.bytesJS), 1001)[OFFSET(251)] / 1024, 2) AS p25,
+              ROUND(APPROX_QUANTILES(FLOAT64(summary.bytesJS), 1001)[OFFSET(501)] / 1024, 2) AS p50,
+              ROUND(APPROX_QUANTILES(FLOAT64(summary.bytesJS), 1001)[OFFSET(751)] / 1024, 2) AS p75,
+              ROUND(APPROX_QUANTILES(FLOAT64(summary.bytesJS), 1001)[OFFSET(901)] / 1024, 2) AS p90
+            FROM ${ctx.ref('crawl', 'pages')}
+            WHERE
+              date = '${params.date}'
+              AND is_root_page
+              ${params.lens.sql}
+              AND FLOAT64(summary.bytesJS) > 0
+            GROUP BY
+              client
+            ORDER BY
+              client
+          `)
+        }
+      ]
+    },
+    bytesTotal: {
+      SQL: [
+        {
+          type: 'histogram',
+          query: DataformTemplateBuilder.create((ctx, params) => `
+            SELECT
+              *,
+              SUM(pdf) OVER (PARTITION BY client ORDER BY bin) AS cdf
+            FROM (
+              SELECT
+                *,
+                volume / SUM(volume) OVER (PARTITION BY client) AS pdf
+              FROM (
+                SELECT
+                  client,
+                  CAST(FLOOR(FLOAT64(summary.bytesTotal) / 1024 / 100) * 100 AS INT64) AS bin,
+                  COUNT(0) AS volume
+                FROM ${ctx.ref('crawl', 'pages')}
+                WHERE
+                  date = '${params.date}'
+                  AND is_root_page
+                  ${params.lens.sql}
+                GROUP BY
+                  bin,
+                  client
+              )
+            )
+            ORDER BY
+              bin,
+              client
+          `)
+        },
+        {
+          type: 'timeseries',
+          query: DataformTemplateBuilder.create((ctx, params) => `
+            SELECT
+              client,
+              ROUND(APPROX_QUANTILES(bytesTotal, 1001)[OFFSET(101)] / 1024, 2) AS p10,
+              ROUND(APPROX_QUANTILES(bytesTotal, 1001)[OFFSET(251)] / 1024, 2) AS p25,
+              ROUND(APPROX_QUANTILES(bytesTotal, 1001)[OFFSET(501)] / 1024, 2) AS p50,
+              ROUND(APPROX_QUANTILES(bytesTotal, 1001)[OFFSET(751)] / 1024, 2) AS p75,
+              ROUND(APPROX_QUANTILES(bytesTotal, 1001)[OFFSET(901)] / 1024, 2) AS p90
+            FROM ${ctx.ref('crawl', 'pages')}
+            WHERE
+              date = '${params.date}'
+              AND is_root_page
+              ${params.lens.sql}
+              AND INT64(summary.bytesTotal) > 0
+            GROUP BY
+              client
+            ORDER BY
+              client
+          `)
+        }
+      ]
+    },
+    ttci: {
+      SQL: [
+        {
+          type: 'histogram',
+          query: DataformTemplateBuilder.create((ctx, params) => `
             SELECT
               *,
               SUM(pdf) OVER (PARTITION BY client ORDER BY bin) AS cdf
@@ -155,7 +411,6 @@ const config = {
                   date = '${params.date}'
                   AND is_root_page
                   ${params.lens.sql}
-                  ${params.devRankFilter}
                 GROUP BY
                   bin,
                   client
@@ -167,10 +422,10 @@ const config = {
               bin,
               client
           `)
-      },
-      {
-        type: 'timeseries',
-        query: DataformTemplateBuilder.create((ctx, params) => `
+        },
+        {
+          type: 'timeseries',
+          query: DataformTemplateBuilder.create((ctx, params) => `
             SELECT
               client,
               ROUND(APPROX_QUANTILES(value, 1000)[OFFSET(100)], 2) AS p10,
@@ -193,21 +448,20 @@ const config = {
                 date = '${params.date}'
                 AND is_root_page
                 ${params.lens.sql}
-                ${params.devRankFilter}
             )
             GROUP BY
               client
             ORDER BY
               client
           `)
-      }
-    ]
-  },
-  pctHttps: {
-    SQL: [
-      {
-        type: 'timeseries',
-        query: DataformTemplateBuilder.create((ctx, params) => `
+        }
+      ]
+    },
+    pctHttps: {
+      SQL: [
+        {
+          type: 'timeseries',
+          query: DataformTemplateBuilder.create((ctx, params) => `
             SELECT
               client,
               ROUND(SUM(IF(STARTS_WITH(url, 'https'), 1, 0)) * 100 / COUNT(0), 2) AS percent
@@ -218,20 +472,19 @@ const config = {
               date = '${params.date}'
               AND is_root_page
               ${params.lens.sql}
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
               client
           `)
-      }
-    ]
-  },
-  storageEstimate: {
-    SQL: [
-      {
-        type: 'timeseries',
-        query: DataformTemplateBuilder.create((ctx, params) => `
+        }
+      ]
+    },
+    storageEstimate: {
+      SQL: [
+        {
+          type: 'timeseries',
+          query: DataformTemplateBuilder.create((ctx, params) => `
             SELECT
               client,
               SUM(IF(feat.id IS NOT NULL, 1, 0)) AS num_urls,
@@ -243,21 +496,20 @@ const config = {
               date = '${params.date}'
               AND is_root_page
               ${params.lens.sql}
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
               client,
               num_urls DESC
           `)
-      }
-    ]
-  },
-  bootupJs: {
-    SQL: [
-      {
-        type: 'histogram',
-        query: DataformTemplateBuilder.create((ctx, params) => `
+        }
+      ]
+    },
+    bootupJs: {
+      SQL: [
+        {
+          type: 'histogram',
+          query: DataformTemplateBuilder.create((ctx, params) => `
             SELECT
               *,
               SUM(pdf) OVER (PARTITION BY client ORDER BY bin) AS cdf
@@ -275,7 +527,6 @@ const config = {
                   date = '${params.date}'
                   AND is_root_page
                   ${params.lens.sql}
-                  ${params.devRankFilter}
                 GROUP BY
                   bin,
                   client
@@ -287,10 +538,10 @@ const config = {
               bin,
               client
           `)
-      },
-      {
-        type: 'timeseries',
-        query: DataformTemplateBuilder.create((ctx, params) => `
+        },
+        {
+          type: 'timeseries',
+          query: DataformTemplateBuilder.create((ctx, params) => `
             SELECT
               client,
               ROUND(APPROX_QUANTILES(value, 1000)[OFFSET(100)], 2) AS p10,
@@ -311,369 +562,20 @@ const config = {
                 AND is_root_page
                 ${params.lens.sql}
                 AND lighthouse IS NOT NULL AND TO_JSON_STRING(lighthouse) != '{}'
-                ${params.devRankFilter}
             )
             GROUP BY
               client
             ORDER BY
               client
           `)
-      }
-    ]
-  },
-  bytesFont: {
-    SQL: [
-      {
-        type: 'histogram',
-        query: DataformTemplateBuilder.create((ctx, params) => `
-            SELECT
-              *,
-              SUM(pdf) OVER (PARTITION BY client ORDER BY bin) AS cdf
-            FROM (
-              SELECT
-                *,
-                volume / SUM(volume) OVER (PARTITION BY client) AS pdf
-              FROM (
-                SELECT
-                  client,
-                  CAST(FLOOR(FLOAT64(summary.bytesFont) / 10240) * 10 AS INT64) AS bin,
-                  COUNT(0) AS volume
-                FROM ${ctx.ref('crawl', 'pages')}
-                WHERE
-                  date = '${params.date}'
-                  AND is_root_page
-                  ${params.lens.sql}
-                  ${params.devRankFilter}
-                GROUP BY
-                  bin,
-                  client
-              )
-            )
-            ORDER BY
-              bin,
-              client
-          `)
-      },
-      {
-        type: 'timeseries',
-        query: DataformTemplateBuilder.create((ctx, params) => `
-            SELECT
-              client,
-              ROUND(APPROX_QUANTILES(FLOAT64(summary.bytesFont), 1001)[OFFSET(101)] / 1024, 2) AS p10,
-              ROUND(APPROX_QUANTILES(FLOAT64(summary.bytesFont), 1001)[OFFSET(251)] / 1024, 2) AS p25,
-              ROUND(APPROX_QUANTILES(FLOAT64(summary.bytesFont), 1001)[OFFSET(501)] / 1024, 2) AS p50,
-              ROUND(APPROX_QUANTILES(FLOAT64(summary.bytesFont), 1001)[OFFSET(751)] / 1024, 2) AS p75,
-              ROUND(APPROX_QUANTILES(FLOAT64(summary.bytesFont), 1001)[OFFSET(901)] / 1024, 2) AS p90
-            FROM ${ctx.ref('crawl', 'pages')}
-            WHERE
-              date = '${params.date}'
-              AND is_root_page
-              ${params.lens.sql}
-              AND FLOAT64(summary.bytesFont) > 0
-              ${params.devRankFilter}
-            GROUP BY
-              client
-            ORDER BY
-              client
-          `)
-      }
-    ]
-  },
-  bytesHtml: {
-    SQL: [
-      {
-        type: 'histogram',
-        query: DataformTemplateBuilder.create((ctx, params) => `
-            SELECT
-              *,
-              SUM(pdf) OVER (PARTITION BY client ORDER BY bin) AS cdf
-            FROM (
-              SELECT
-                *,
-                volume / SUM(volume) OVER (PARTITION BY client) AS pdf
-              FROM (
-                SELECT
-                  client,
-                  CAST(FLOOR(FLOAT64(summary.bytesHtml) / 10240) * 10 AS INT64) AS bin,
-                  COUNT(0) AS volume
-                FROM ${ctx.ref('crawl', 'pages')}
-                WHERE
-                  date = '${params.date}'
-                  AND is_root_page
-                  ${params.lens.sql}
-                  ${params.devRankFilter}
-                GROUP BY
-                  bin,
-                  client
-              )
-            )
-            ORDER BY
-              bin,
-              client
-          `)
-      },
-      {
-        type: 'timeseries',
-        query: DataformTemplateBuilder.create((ctx, params) => `
-            SELECT
-              client,
-              ROUND(APPROX_QUANTILES(FLOAT64(summary.bytesHtml), 1001)[OFFSET(101)] / 1024, 2) AS p10,
-              ROUND(APPROX_QUANTILES(FLOAT64(summary.bytesHtml), 1001)[OFFSET(251)] / 1024, 2) AS p25,
-              ROUND(APPROX_QUANTILES(FLOAT64(summary.bytesHtml), 1001)[OFFSET(501)] / 1024, 2) AS p50,
-              ROUND(APPROX_QUANTILES(FLOAT64(summary.bytesHtml), 1001)[OFFSET(751)] / 1024, 2) AS p75,
-              ROUND(APPROX_QUANTILES(FLOAT64(summary.bytesHtml), 1001)[OFFSET(901)] / 1024, 2) AS p90
-            FROM ${ctx.ref('crawl', 'pages')}
-            WHERE
-              date = '${params.date}'
-              AND is_root_page
-              ${params.lens.sql}
-              AND FLOAT64(summary.bytesHtml) > 0
-              ${params.devRankFilter}
-            GROUP BY
-              client
-            ORDER BY
-              client
-          `)
-      }
-    ]
-  },
-  bytesImg: {
-    SQL: [
-      {
-        type: 'histogram',
-        query: DataformTemplateBuilder.create((ctx, params) => `
-            SELECT
-              *,
-              SUM(pdf) OVER (PARTITION BY client ORDER BY bin) AS cdf
-            FROM (
-              SELECT
-                *,
-                volume / SUM(volume) OVER (PARTITION BY client) AS pdf
-              FROM (
-                SELECT
-                  client,
-                  CAST(FLOOR(FLOAT64(summary.bytesImg) / 102400) * 100 AS INT64) AS bin,
-                  COUNT(0) AS volume
-                FROM ${ctx.ref('crawl', 'pages')}
-                WHERE
-                  date = '${params.date}'
-                  AND is_root_page
-                  ${params.lens.sql}
-                  ${params.devRankFilter}
-                GROUP BY
-                  bin,
-                  client
-              )
-            )
-            ORDER BY
-              bin,
-              client
-          `)
-      },
-      {
-        type: 'timeseries',
-        query: DataformTemplateBuilder.create((ctx, params) => `
-            SELECT
-              client,
-              ROUND(APPROX_QUANTILES(FLOAT64(summary.bytesImg), 1001)[OFFSET(101)] / 1024, 2) AS p10,
-              ROUND(APPROX_QUANTILES(FLOAT64(summary.bytesImg), 1001)[OFFSET(251)] / 1024, 2) AS p25,
-              ROUND(APPROX_QUANTILES(FLOAT64(summary.bytesImg), 1001)[OFFSET(501)] / 1024, 2) AS p50,
-              ROUND(APPROX_QUANTILES(FLOAT64(summary.bytesImg), 1001)[OFFSET(751)] / 1024, 2) AS p75,
-              ROUND(APPROX_QUANTILES(FLOAT64(summary.bytesImg), 1001)[OFFSET(901)] / 1024, 2) AS p90
-            FROM ${ctx.ref('crawl', 'pages')}
-            WHERE
-              date = '${params.date}'
-              AND is_root_page
-              ${params.lens.sql}
-              AND FLOAT64(summary.bytesImg) > 0
-              ${params.devRankFilter}
-            GROUP BY
-              client
-            ORDER BY
-              client
-          `)
-      }
-    ]
-  },
-  bytesJs: {
-    SQL: [
-      {
-        type: 'histogram',
-        query: DataformTemplateBuilder.create((ctx, params) => `
-            SELECT
-              *,
-              SUM(pdf) OVER (PARTITION BY client ORDER BY bin) AS cdf
-            FROM (
-              SELECT
-                *,
-                volume / SUM(volume) OVER (PARTITION BY client) AS pdf
-              FROM (
-                SELECT
-                  client,
-                  CAST(FLOOR(FLOAT64(summary.bytesJS) / 10240) * 10 AS INT64) AS bin,
-                  COUNT(0) AS volume
-                FROM ${ctx.ref('crawl', 'pages')}
-                WHERE
-                  date = '${params.date}'
-                  AND is_root_page
-                  ${params.lens.sql}
-                  ${params.devRankFilter}
-                GROUP BY
-                  bin,
-                  client
-              )
-            )
-            ORDER BY
-              bin,
-              client
-          `)
-      },
-      {
-        type: 'timeseries',
-        query: DataformTemplateBuilder.create((ctx, params) => `
-            SELECT
-              client,
-              ROUND(APPROX_QUANTILES(FLOAT64(summary.bytesJS), 1001)[OFFSET(101)] / 1024, 2) AS p10,
-              ROUND(APPROX_QUANTILES(FLOAT64(summary.bytesJS), 1001)[OFFSET(251)] / 1024, 2) AS p25,
-              ROUND(APPROX_QUANTILES(FLOAT64(summary.bytesJS), 1001)[OFFSET(501)] / 1024, 2) AS p50,
-              ROUND(APPROX_QUANTILES(FLOAT64(summary.bytesJS), 1001)[OFFSET(751)] / 1024, 2) AS p75,
-              ROUND(APPROX_QUANTILES(FLOAT64(summary.bytesJS), 1001)[OFFSET(901)] / 1024, 2) AS p90
-            FROM ${ctx.ref('crawl', 'pages')}
-            WHERE
-              date = '${params.date}'
-              AND is_root_page
-              ${params.lens.sql}
-              AND FLOAT64(summary.bytesJS) > 0
-              ${params.devRankFilter}
-            GROUP BY
-              client
-            ORDER BY
-              client
-          `)
-      }
-    ]
-  },
-  bytesOther: {
-    SQL: [
-      {
-        type: 'histogram',
-        query: DataformTemplateBuilder.create((ctx, params) => `
-            SELECT
-              *,
-              SUM(pdf) OVER (PARTITION BY client ORDER BY bin) AS cdf
-            FROM (
-              SELECT
-                *,
-                volume / SUM(volume) OVER (PARTITION BY client) AS pdf
-              FROM (
-                SELECT
-                  client,
-                  CAST(FLOOR(FLOAT64(summary.bytesOther) / 10240) * 10 AS INT64) AS bin,
-                  COUNT(0) AS volume
-                FROM ${ctx.ref('crawl', 'pages')}
-                WHERE
-                  date = '${params.date}'
-                  AND is_root_page
-                  ${params.lens.sql}
-                  ${params.devRankFilter}
-                GROUP BY
-                  bin,
-                  client
-              )
-            )
-            ORDER BY
-              bin,
-              client
-          `)
-      },
-      {
-        type: 'timeseries',
-        query: DataformTemplateBuilder.create((ctx, params) => `
-            SELECT
-              client,
-              ROUND(APPROX_QUANTILES(FLOAT64(summary.bytesOther), 1001)[OFFSET(101)] / 1024, 2) AS p10,
-              ROUND(APPROX_QUANTILES(FLOAT64(summary.bytesOther), 1001)[OFFSET(251)] / 1024, 2) AS p25,
-              ROUND(APPROX_QUANTILES(FLOAT64(summary.bytesOther), 1001)[OFFSET(501)] / 1024, 2) AS p50,
-              ROUND(APPROX_QUANTILES(FLOAT64(summary.bytesOther), 1001)[OFFSET(751)] / 1024, 2) AS p75,
-              ROUND(APPROX_QUANTILES(FLOAT64(summary.bytesOther), 1001)[OFFSET(901)] / 1024, 2) AS p90
-            FROM ${ctx.ref('crawl', 'pages')}
-            WHERE
-              date = '${params.date}'
-              AND is_root_page
-              ${params.lens.sql}
-              AND FLOAT64(summary.bytesOther) > 0
-              ${params.devRankFilter}
-            GROUP BY
-              client
-            ORDER BY
-              client
-          `)
-      }
-    ]
-  },
-  bytesTotal: {
-    SQL: [
-      {
-        type: 'histogram',
-        query: DataformTemplateBuilder.create((ctx, params) => `
-            SELECT
-              *,
-              SUM(pdf) OVER (PARTITION BY client ORDER BY bin) AS cdf
-            FROM (
-              SELECT
-                *,
-                volume / SUM(volume) OVER (PARTITION BY client) AS pdf
-              FROM (
-                SELECT
-                  client,
-                  CAST(FLOOR(FLOAT64(summary.bytesTotal) / 1024 / 100) * 100 AS INT64) AS bin,
-                  COUNT(0) AS volume
-                FROM ${ctx.ref('crawl', 'pages')}
-                WHERE
-                  date = '${params.date}'
-                  AND is_root_page
-                  ${params.lens.sql}
-                  ${params.devRankFilter}
-                GROUP BY
-                  bin,
-                  client
-              )
-            )
-            ORDER BY
-              bin,
-              client
-          `)
-      },
-      {
-        type: 'timeseries',
-        query: DataformTemplateBuilder.create((ctx, params) => `
-            SELECT
-              client,
-              ROUND(APPROX_QUANTILES(bytesTotal, 1001)[OFFSET(101)] / 1024, 2) AS p10,
-              ROUND(APPROX_QUANTILES(bytesTotal, 1001)[OFFSET(251)] / 1024, 2) AS p25,
-              ROUND(APPROX_QUANTILES(bytesTotal, 1001)[OFFSET(501)] / 1024, 2) AS p50,
-              ROUND(APPROX_QUANTILES(bytesTotal, 1001)[OFFSET(751)] / 1024, 2) AS p75,
-              ROUND(APPROX_QUANTILES(bytesTotal, 1001)[OFFSET(901)] / 1024, 2) AS p90
-            FROM ${ctx.ref('crawl', 'pages')}
-            WHERE
-              date = '${params.date}'
-              AND is_root_page
-              ${params.lens.sql}
-              AND INT64(summary.bytesTotal) > 0
-              ${params.devRankFilter}
-            GROUP BY
-              client
-            ORDER BY
-              client
-          `)
-      }
-    ]
-  },
-  bytesVideo: {
-    SQL: [
-      {
-        type: 'histogram',
-        query: DataformTemplateBuilder.create((ctx, params) => `
+        }
+      ]
+    },
+    bytesVideo: {
+      SQL: [
+        {
+          type: 'histogram',
+          query: DataformTemplateBuilder.create((ctx, params) => `
             SELECT
               *,
               SUM(pdf) OVER (PARTITION BY client ORDER BY bin) AS cdf
@@ -691,7 +593,6 @@ const config = {
                   date = '${params.date}'
                   AND is_root_page
                   ${params.lens.sql}
-                  ${params.devRankFilter}
                 GROUP BY
                   bin,
                   client
@@ -701,10 +602,10 @@ const config = {
               bin,
               client
           `)
-      },
-      {
-        type: 'timeseries',
-        query: DataformTemplateBuilder.create((ctx, params) => `
+        },
+        {
+          type: 'timeseries',
+          query: DataformTemplateBuilder.create((ctx, params) => `
             SELECT
               client,
               ROUND(APPROX_QUANTILES(FLOAT64(summary.bytesVideo), 1001)[OFFSET(101)] / 1024, 2) AS p10,
@@ -718,20 +619,19 @@ const config = {
               AND is_root_page
               ${params.lens.sql}
               AND FLOAT64(summary.bytesVideo) > 0
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
               client
           `)
-      }
-    ]
-  },
-  compileJs: {
-    SQL: [
-      {
-        type: 'histogram',
-        query: DataformTemplateBuilder.create((ctx, params) => `
+        }
+      ]
+    },
+    compileJs: {
+      SQL: [
+        {
+          type: 'histogram',
+          query: DataformTemplateBuilder.create((ctx, params) => `
             SELECT
               *,
               SUM(pdf) OVER (PARTITION BY client ORDER BY bin) AS cdf
@@ -749,7 +649,6 @@ const config = {
                   date = '${params.date}'
                   AND is_root_page
                   ${params.lens.sql}
-                  ${params.devRankFilter}
                 GROUP BY
                   bin,
                   client
@@ -761,10 +660,10 @@ const config = {
               bin,
               client
           `)
-      },
-      {
-        type: 'timeseries',
-        query: DataformTemplateBuilder.create((ctx, params) => `
+        },
+        {
+          type: 'timeseries',
+          query: DataformTemplateBuilder.create((ctx, params) => `
             SELECT
               client,
               ROUND(APPROX_QUANTILES(value, 1000)[OFFSET(100)], 2) AS p10,
@@ -782,21 +681,20 @@ const config = {
                 AND is_root_page
                 ${params.lens.sql}
                 AND INT64(payload['_cpu.v8.compile']) IS NOT NULL AND INT64(payload['_cpu.v8.compile']) >= 0
-                ${params.devRankFilter}
             )
             GROUP BY
               client
             ORDER BY
               client
           `)
-      }
-    ]
-  },
-  dcl: {
-    SQL: [
-      {
-        type: 'histogram',
-        query: DataformTemplateBuilder.create((ctx, params) => `
+        }
+      ]
+    },
+    dcl: {
+      SQL: [
+        {
+          type: 'histogram',
+          query: DataformTemplateBuilder.create((ctx, params) => `
             SELECT
               *,
               SUM(pdf) OVER (PARTITION BY client ORDER BY bin) AS cdf
@@ -815,7 +713,6 @@ const config = {
                   AND is_root_page
                   ${params.lens.sql}
                   AND FLOAT64(summary.onContentLoaded) > 0
-                  ${params.devRankFilter}
                 GROUP BY
                   bin,
                   client
@@ -825,10 +722,10 @@ const config = {
               bin,
               client
           `)
-      },
-      {
-        type: 'timeseries',
-        query: DataformTemplateBuilder.create((ctx, params) => `
+        },
+        {
+          type: 'timeseries',
+          query: DataformTemplateBuilder.create((ctx, params) => `
             SELECT
               client,
               ROUND(APPROX_QUANTILES(FLOAT64(summary.onContentLoaded), 1001)[OFFSET(101)], 2) AS p10,
@@ -842,20 +739,19 @@ const config = {
               AND is_root_page
               ${params.lens.sql}
               AND FLOAT64(summary.onContentLoaded) > 0
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
               client
           `)
-      }
-    ]
-  },
-  evalJs: {
-    SQL: [
-      {
-        type: 'histogram',
-        query: DataformTemplateBuilder.create((ctx, params) => `
+        }
+      ]
+    },
+    evalJs: {
+      SQL: [
+        {
+          type: 'histogram',
+          query: DataformTemplateBuilder.create((ctx, params) => `
             SELECT
               *,
               SUM(pdf) OVER (PARTITION BY client ORDER BY bin) AS cdf
@@ -875,7 +771,6 @@ const config = {
                   date = '${params.date}'
                   AND is_root_page
                   ${params.lens.sql}
-                  ${params.devRankFilter}
                 GROUP BY
                   bin,
                   client
@@ -887,14 +782,14 @@ const config = {
               bin,
               client
           `)
-      }
-    ]
-  },
-  fcp: {
-    SQL: [
-      {
-        type: 'histogram',
-        query: DataformTemplateBuilder.create((ctx, params) => `
+        }
+      ]
+    },
+    fcp: {
+      SQL: [
+        {
+          type: 'histogram',
+          query: DataformTemplateBuilder.create((ctx, params) => `
             SELECT
               *,
               SUM(pdf) OVER (PARTITION BY client ORDER BY bin) AS cdf
@@ -912,7 +807,6 @@ const config = {
                   date = '${params.date}'
                   AND is_root_page
                   ${params.lens.sql}
-                  ${params.devRankFilter}
                 GROUP BY
                   bin,
                   client
@@ -924,10 +818,10 @@ const config = {
               bin,
               client
           `)
-      },
-      {
-        type: 'timeseries',
-        query: DataformTemplateBuilder.create((ctx, params) => `
+        },
+        {
+          type: 'timeseries',
+          query: DataformTemplateBuilder.create((ctx, params) => `
             SELECT
               client,
               ROUND(APPROX_QUANTILES(FLOAT64(payload['_chromeUserTiming.firstContentfulPaint']), 1001)[OFFSET(101)] / 1024, 2) AS p10,
@@ -940,7 +834,6 @@ const config = {
               date = '${params.date}'
               AND is_root_page
               ${params.lens.sql}
-              ${params.devRankFilter}
             GROUP BY
               client
             HAVING
@@ -948,14 +841,14 @@ const config = {
             ORDER BY
               client
           `)
-      }
-    ]
-  },
-  gzipSavings: {
-    SQL: [
-      {
-        type: 'histogram',
-        query: DataformTemplateBuilder.create((ctx, params) => `
+        }
+      ]
+    },
+    gzipSavings: {
+      SQL: [
+        {
+          type: 'histogram',
+          query: DataformTemplateBuilder.create((ctx, params) => `
             SELECT
               *,
               SUM(pdf) OVER (PARTITION BY client ORDER BY bin) AS cdf
@@ -973,7 +866,6 @@ const config = {
                   date = '${params.date}'
                   AND is_root_page
                   ${params.lens.sql}
-                  ${params.devRankFilter}
                 GROUP BY
                   bin,
                   client
@@ -985,10 +877,10 @@ const config = {
               bin,
               client
           `)
-      },
-      {
-        type: 'timeseries',
-        query: DataformTemplateBuilder.create((ctx, params) => `
+        },
+        {
+          type: 'timeseries',
+          query: DataformTemplateBuilder.create((ctx, params) => `
             SELECT
               client,
               ROUND(APPROX_QUANTILES(FLOAT64(payload._gzip_savings), 1001)[OFFSET(101)] / 1024, 2) AS p10,
@@ -1001,20 +893,19 @@ const config = {
               date = '${params.date}'
               AND is_root_page
               ${params.lens.sql}
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
               client
           `)
-      }
-    ]
-  },
-  ol: {
-    SQL: [
-      {
-        type: 'histogram',
-        query: DataformTemplateBuilder.create((ctx, params) => `
+        }
+      ]
+    },
+    ol: {
+      SQL: [
+        {
+          type: 'histogram',
+          query: DataformTemplateBuilder.create((ctx, params) => `
             SELECT
               *,
               SUM(pdf) OVER (PARTITION BY client ORDER BY bin) AS cdf
@@ -1033,7 +924,6 @@ const config = {
                   AND is_root_page
                   ${params.lens.sql}
                   AND FLOAT64(summary.onLoad) > 0
-                  ${params.devRankFilter}
                 GROUP BY
                   bin,
                   client
@@ -1043,10 +933,10 @@ const config = {
               bin,
               client
           `)
-      },
-      {
-        type: 'timeseries',
-        query: DataformTemplateBuilder.create((ctx, params) => `
+        },
+        {
+          type: 'timeseries',
+          query: DataformTemplateBuilder.create((ctx, params) => `
             SELECT
               client,
               ROUND(APPROX_QUANTILES(FLOAT64(summary.onLoad), 1001)[OFFSET(101)] / 1000, 2) AS p10,
@@ -1060,20 +950,19 @@ const config = {
               AND is_root_page
               ${params.lens.sql}
               AND FLOAT64(summary.onLoad) > 0
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
               client
           `)
-      }
-    ]
-  },
-  reqCss: {
-    SQL: [
-      {
-        type: 'histogram',
-        query: DataformTemplateBuilder.create((ctx, params) => `
+        }
+      ]
+    },
+    reqCss: {
+      SQL: [
+        {
+          type: 'histogram',
+          query: DataformTemplateBuilder.create((ctx, params) => `
             SELECT
               *,
               SUM(pdf) OVER (PARTITION BY client ORDER BY bin) AS cdf
@@ -1091,7 +980,6 @@ const config = {
                   date = '${params.date}'
                   AND is_root_page
                   ${params.lens.sql}
-                  ${params.devRankFilter}
                 GROUP BY
                   bin,
                   client
@@ -1101,10 +989,10 @@ const config = {
               bin,
               client
           `)
-      },
-      {
-        type: 'timeseries',
-        query: DataformTemplateBuilder.create((ctx, params) => `
+        },
+        {
+          type: 'timeseries',
+          query: DataformTemplateBuilder.create((ctx, params) => `
             SELECT
               client,
               ROUND(APPROX_QUANTILES(FLOAT64(summary.reqCss), 1001)[OFFSET(101)], 2) AS p10,
@@ -1118,20 +1006,19 @@ const config = {
               AND is_root_page
               ${params.lens.sql}
               AND FLOAT64(summary.reqCss) > 0
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
               client
           `)
-      }
-    ]
-  },
-  reqFont: {
-    SQL: [
-      {
-        type: 'histogram',
-        query: DataformTemplateBuilder.create((ctx, params) => `
+        }
+      ]
+    },
+    reqFont: {
+      SQL: [
+        {
+          type: 'histogram',
+          query: DataformTemplateBuilder.create((ctx, params) => `
             SELECT
               *,
               SUM(pdf) OVER (PARTITION BY client ORDER BY bin) AS cdf
@@ -1149,7 +1036,6 @@ const config = {
                   date = '${params.date}'
                   AND is_root_page
                   ${params.lens.sql}
-                  ${params.devRankFilter}
                 GROUP BY
                   bin,
                   client
@@ -1159,10 +1045,10 @@ const config = {
               bin,
               client
           `)
-      },
-      {
-        type: 'timeseries',
-        query: DataformTemplateBuilder.create((ctx, params) => `
+        },
+        {
+          type: 'timeseries',
+          query: DataformTemplateBuilder.create((ctx, params) => `
             SELECT
               client,
               ROUND(APPROX_QUANTILES(FLOAT64(summary.reqFont), 1001)[OFFSET(101)], 2) AS p10,
@@ -1176,20 +1062,19 @@ const config = {
               AND is_root_page
               ${params.lens.sql}
               AND FLOAT64(summary.reqFont) > 0
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
               client
           `)
-      }
-    ]
-  },
-  reqHtml: {
-    SQL: [
-      {
-        type: 'histogram',
-        query: DataformTemplateBuilder.create((ctx, params) => `
+        }
+      ]
+    },
+    reqHtml: {
+      SQL: [
+        {
+          type: 'histogram',
+          query: DataformTemplateBuilder.create((ctx, params) => `
             SELECT
               *,
               SUM(pdf) OVER (PARTITION BY client ORDER BY bin) AS cdf
@@ -1207,7 +1092,6 @@ const config = {
                   date = '${params.date}'
                   AND is_root_page
                   ${params.lens.sql}
-                  ${params.devRankFilter}
                 GROUP BY
                   bin,
                   client
@@ -1217,10 +1101,10 @@ const config = {
               bin,
               client
           `)
-      },
-      {
-        type: 'timeseries',
-        query: DataformTemplateBuilder.create((ctx, params) => `
+        },
+        {
+          type: 'timeseries',
+          query: DataformTemplateBuilder.create((ctx, params) => `
             SELECT
               client,
               ROUND(APPROX_QUANTILES(FLOAT64(summary.reqHtml), 1001)[OFFSET(101)], 2) AS p10,
@@ -1234,20 +1118,19 @@ const config = {
               AND is_root_page
               ${params.lens.sql}
               AND FLOAT64(summary.reqHtml) > 0
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
               client
           `)
-      }
-    ]
-  },
-  reqImg: {
-    SQL: [
-      {
-        type: 'histogram',
-        query: DataformTemplateBuilder.create((ctx, params) => `
+        }
+      ]
+    },
+    reqImg: {
+      SQL: [
+        {
+          type: 'histogram',
+          query: DataformTemplateBuilder.create((ctx, params) => `
             SELECT
               *,
               SUM(pdf) OVER (PARTITION BY client ORDER BY bin) AS cdf
@@ -1265,7 +1148,6 @@ const config = {
                   date = '${params.date}'
                   AND is_root_page
                   ${params.lens.sql}
-                  ${params.devRankFilter}
                 GROUP BY
                   bin,
                   client
@@ -1275,10 +1157,10 @@ const config = {
               bin,
               client
           `)
-      },
-      {
-        type: 'timeseries',
-        query: DataformTemplateBuilder.create((ctx, params) => `
+        },
+        {
+          type: 'timeseries',
+          query: DataformTemplateBuilder.create((ctx, params) => `
             SELECT
               client,
               ROUND(APPROX_QUANTILES(FLOAT64(summary.reqImg), 1001)[OFFSET(101)], 2) AS p10,
@@ -1292,20 +1174,19 @@ const config = {
               AND is_root_page
               ${params.lens.sql}
               AND FLOAT64(summary.reqImg) > 0
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
               client
           `)
-      }
-    ]
-  },
-  reqJs: {
-    SQL: [
-      {
-        type: 'histogram',
-        query: DataformTemplateBuilder.create((ctx, params) => `
+        }
+      ]
+    },
+    reqJs: {
+      SQL: [
+        {
+          type: 'histogram',
+          query: DataformTemplateBuilder.create((ctx, params) => `
             SELECT
               *,
               SUM(pdf) OVER (PARTITION BY client ORDER BY bin) AS cdf
@@ -1323,7 +1204,6 @@ const config = {
                   date = '${params.date}'
                   AND is_root_page
                   ${params.lens.sql}
-                  ${params.devRankFilter}
                 GROUP BY
                   bin,
                   client
@@ -1333,10 +1213,10 @@ const config = {
               bin,
               client
           `)
-      },
-      {
-        type: 'timeseries',
-        query: DataformTemplateBuilder.create((ctx, params) => `
+        },
+        {
+          type: 'timeseries',
+          query: DataformTemplateBuilder.create((ctx, params) => `
             SELECT
               client,
               ROUND(APPROX_QUANTILES(FLOAT64(summary.reqJS), 1001)[OFFSET(101)], 2) AS p10,
@@ -1350,20 +1230,19 @@ const config = {
               AND is_root_page
               ${params.lens.sql}
               AND FLOAT64(summary.reqJS) > 0
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
               client
           `)
-      }
-    ]
-  },
-  reqOther: {
-    SQL: [
-      {
-        type: 'histogram',
-        query: DataformTemplateBuilder.create((ctx, params) => `
+        }
+      ]
+    },
+    reqOther: {
+      SQL: [
+        {
+          type: 'histogram',
+          query: DataformTemplateBuilder.create((ctx, params) => `
             SELECT
               *,
               SUM(pdf) OVER (PARTITION BY client ORDER BY bin) AS cdf
@@ -1381,7 +1260,6 @@ const config = {
                   date = '${params.date}'
                   AND is_root_page
                   ${params.lens.sql}
-                  ${params.devRankFilter}
                 GROUP BY
                   bin,
                   client
@@ -1391,10 +1269,10 @@ const config = {
               bin,
               client
           `)
-      },
-      {
-        type: 'timeseries',
-        query: DataformTemplateBuilder.create((ctx, params) => `
+        },
+        {
+          type: 'timeseries',
+          query: DataformTemplateBuilder.create((ctx, params) => `
             SELECT
               client,
               ROUND(APPROX_QUANTILES(FLOAT64(summary.reqOther), 1001)[OFFSET(101)], 2) AS p10,
@@ -1408,20 +1286,19 @@ const config = {
               AND is_root_page
               ${params.lens.sql}
               AND FLOAT64(summary.reqOther) > 0
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
               client
           `)
-      }
-    ]
-  },
-  reqTotal: {
-    SQL: [
-      {
-        type: 'histogram',
-        query: DataformTemplateBuilder.create((ctx, params) => `
+        }
+      ]
+    },
+    reqTotal: {
+      SQL: [
+        {
+          type: 'histogram',
+          query: DataformTemplateBuilder.create((ctx, params) => `
             SELECT
               *,
               SUM(pdf) OVER (PARTITION BY client ORDER BY bin) AS cdf
@@ -1439,7 +1316,6 @@ const config = {
                   date = '${params.date}'
                   AND is_root_page
                   ${params.lens.sql}
-                  ${params.devRankFilter}
                 GROUP BY
                   bin,
                   client
@@ -1449,10 +1325,10 @@ const config = {
               bin,
               client
           `)
-      },
-      {
-        type: 'timeseries',
-        query: DataformTemplateBuilder.create((ctx, params) => `
+        },
+        {
+          type: 'timeseries',
+          query: DataformTemplateBuilder.create((ctx, params) => `
             SELECT
               client,
               ROUND(APPROX_QUANTILES(FLOAT64(summary.reqTotal), 1001)[OFFSET(101)], 2) AS p10,
@@ -1466,20 +1342,19 @@ const config = {
               AND is_root_page
               ${params.lens.sql}
               AND FLOAT64(summary.reqTotal) > 0
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
               client
           `)
-      }
-    ]
-  },
-  reqVideo: {
-    SQL: [
-      {
-        type: 'histogram',
-        query: DataformTemplateBuilder.create((ctx, params) => `
+        }
+      ]
+    },
+    reqVideo: {
+      SQL: [
+        {
+          type: 'histogram',
+          query: DataformTemplateBuilder.create((ctx, params) => `
             SELECT
               *,
               SUM(pdf) OVER (PARTITION BY client ORDER BY bin) AS cdf
@@ -1497,7 +1372,6 @@ const config = {
                   date = '${params.date}'
                   AND is_root_page
                   ${params.lens.sql}
-                  ${params.devRankFilter}
                 GROUP BY
                   bin,
                   client
@@ -1507,10 +1381,10 @@ const config = {
               bin,
               client
           `)
-      },
-      {
-        type: 'timeseries',
-        query: DataformTemplateBuilder.create((ctx, params) => `
+        },
+        {
+          type: 'timeseries',
+          query: DataformTemplateBuilder.create((ctx, params) => `
             SELECT
               client,
               ROUND(APPROX_QUANTILES(FLOAT64(summary.reqVideo), 1001)[OFFSET(101)], 2) AS p10,
@@ -1524,20 +1398,19 @@ const config = {
               AND is_root_page
               ${params.lens.sql}
               AND FLOAT64(summary.reqVideo) > 0
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
               client
           `)
-      }
-    ]
-  },
-  imgSavings: {
-    SQL: [
-      {
-        type: 'histogram',
-        query: DataformTemplateBuilder.create((ctx, params) => `
+        }
+      ]
+    },
+    imgSavings: {
+      SQL: [
+        {
+          type: 'histogram',
+          query: DataformTemplateBuilder.create((ctx, params) => `
             SELECT
               *,
               SUM(pdf) OVER (PARTITION BY client ORDER BY bin) AS cdf
@@ -1555,7 +1428,6 @@ const config = {
                   date = '${params.date}'
                   AND is_root_page
                   ${params.lens.sql}
-                  ${params.devRankFilter}
                 GROUP BY
                   bin,
                   client
@@ -1567,10 +1439,10 @@ const config = {
               bin,
               client
           `)
-      },
-      {
-        type: 'timeseries',
-        query: DataformTemplateBuilder.create((ctx, params) => `
+        },
+        {
+          type: 'timeseries',
+          query: DataformTemplateBuilder.create((ctx, params) => `
             SELECT
               client,
               ROUND(APPROX_QUANTILES(FLOAT64(payload._image_savings), 1001)[OFFSET(101)] / 1024, 2) AS p10,
@@ -1583,20 +1455,19 @@ const config = {
               date = '${params.date}'
               AND is_root_page
               ${params.lens.sql}
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
               client
           `)
-      }
-    ]
-  },
-  offscreenImages: {
-    SQL: [
-      {
-        type: 'histogram',
-        query: DataformTemplateBuilder.create((ctx, params) => `
+        }
+      ]
+    },
+    offscreenImages: {
+      SQL: [
+        {
+          type: 'histogram',
+          query: DataformTemplateBuilder.create((ctx, params) => `
             SELECT
               *,
               SUM(pdf) OVER (PARTITION BY client ORDER BY bin) AS cdf
@@ -1617,7 +1488,6 @@ const config = {
                   date = '${params.date}'
                   AND is_root_page
                   ${params.lens.sql}
-                  ${params.devRankFilter}
                 GROUP BY
                   bin,
                   client
@@ -1629,10 +1499,10 @@ const config = {
               bin,
               client
           `)
-      },
-      {
-        type: 'timeseries',
-        query: DataformTemplateBuilder.create((ctx, params) => `
+        },
+        {
+          type: 'timeseries',
+          query: DataformTemplateBuilder.create((ctx, params) => `
             SELECT
               client,
               ROUND(APPROX_QUANTILES(IFNULL(INT64(lighthouse.audits['offscreen-images'].details.overallSavingsBytes), INT64(lighthouse.audits['offscreen-images'].extendedInfo.value.wastedKb) * 1024), 1001)[OFFSET(101)] / 1024, 2) AS p10,
@@ -1645,20 +1515,19 @@ const config = {
               date = '${params.date}'
               AND is_root_page
               ${params.lens.sql}
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
               client
           `)
-      }
-    ]
-  },
-  optimizedImages: {
-    SQL: [
-      {
-        type: 'histogram',
-        query: DataformTemplateBuilder.create((ctx, params) => `
+        }
+      ]
+    },
+    optimizedImages: {
+      SQL: [
+        {
+          type: 'histogram',
+          query: DataformTemplateBuilder.create((ctx, params) => `
             SELECT
               *,
               SUM(pdf) OVER (PARTITION BY client ORDER BY bin) AS cdf
@@ -1679,7 +1548,6 @@ const config = {
                   date = '${params.date}'
                   AND is_root_page
                   ${params.lens.sql}
-                  ${params.devRankFilter}
                 GROUP BY
                   bin,
                   client
@@ -1691,10 +1559,10 @@ const config = {
               bin,
               client
           `)
-      },
-      {
-        type: 'timeseries',
-        query: DataformTemplateBuilder.create((ctx, params) => `
+        },
+        {
+          type: 'timeseries',
+          query: DataformTemplateBuilder.create((ctx, params) => `
             SELECT
               client,
               ROUND(APPROX_QUANTILES(IFNULL(INT64(lighthouse.audits['uses-optimized-images'].details.overallSavingsBytes), INT64(lighthouse.audits['uses-optimized-images'].extendedInfo.value.wastedKb) * 1024), 1001)[OFFSET(101)] / 1024, 2) AS p10,
@@ -1707,20 +1575,19 @@ const config = {
               date = '${params.date}'
               AND is_root_page
               ${params.lens.sql}
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
               client
           `)
-      }
-    ]
-  },
-  speedIndex: {
-    SQL: [
-      {
-        type: 'histogram',
-        query: DataformTemplateBuilder.create((ctx, params) => `
+        }
+      ]
+    },
+    speedIndex: {
+      SQL: [
+        {
+          type: 'histogram',
+          query: DataformTemplateBuilder.create((ctx, params) => `
             SELECT
               *,
               SUM(pdf) OVER (PARTITION BY client ORDER BY bin) AS cdf
@@ -1738,7 +1605,6 @@ const config = {
                   date = '${params.date}'
                   AND is_root_page
                   ${params.lens.sql}
-                  ${params.devRankFilter}
                 GROUP BY
                   bin,
                   client
@@ -1750,10 +1616,10 @@ const config = {
               bin,
               client
           `)
-      },
-      {
-        type: 'timeseries',
-        query: DataformTemplateBuilder.create((ctx, params) => `
+        },
+        {
+          type: 'timeseries',
+          query: DataformTemplateBuilder.create((ctx, params) => `
             SELECT
               client,
               ROUND(APPROX_QUANTILES(FLOAT64(payload._SpeedIndex), 1001)[OFFSET(101)] / 1000, 2) AS p10,
@@ -1766,20 +1632,19 @@ const config = {
               date = '${params.date}'
               AND is_root_page
               ${params.lens.sql}
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
               client
           `)
-      }
-    ]
-  },
-  tcp: {
-    SQL: [
-      {
-        type: 'histogram',
-        query: DataformTemplateBuilder.create((ctx, params) => `
+        }
+      ]
+    },
+    tcp: {
+      SQL: [
+        {
+          type: 'histogram',
+          query: DataformTemplateBuilder.create((ctx, params) => `
             SELECT
               *,
               SUM(pdf) OVER (PARTITION BY client ORDER BY bin) AS cdf
@@ -1798,7 +1663,6 @@ const config = {
                   AND is_root_page
                   ${params.lens.sql}
                   AND INT64(summary._connections) > 0
-                  ${params.devRankFilter}
                 GROUP BY
                   bin,
                   client
@@ -1808,14 +1672,14 @@ const config = {
               bin,
               client
           `)
-      }
-    ]
-  },
-  imgLazy: {
-    SQL: [
-      {
-        type: 'timeseries',
-        query: DataformTemplateBuilder.create((ctx, params) => `
+        }
+      ]
+    },
+    imgLazy: {
+      SQL: [
+        {
+          type: 'timeseries',
+          query: DataformTemplateBuilder.create((ctx, params) => `
             SELECT
               client,
               ROUND(COUNT(DISTINCT IF(LOWER(LAX_STRING(attr)) = 'lazy', page, NULL)) * 100 / COUNT(DISTINCT page), 2) AS percent
@@ -1826,20 +1690,19 @@ const config = {
               date = '${params.date}' AND date > '2016-01-01'
               AND is_root_page
               ${params.lens.sql}
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
               client
           `)
-      }
-    ]
-  },
-  h2: {
-    SQL: [
-      {
-        type: 'timeseries',
-        query: DataformTemplateBuilder.create((ctx, params) => `
+        }
+      ]
+    },
+    h2: {
+      SQL: [
+        {
+          type: 'timeseries',
+          query: DataformTemplateBuilder.create((ctx, params) => `
             SELECT
               client,
               ROUND(SUM(IF(LAX_STRING(r.summary.respHttpVersion) = 'HTTP/2', 1, 0)) * 100 / COUNT(0), 2) AS percent
@@ -1850,20 +1713,19 @@ const config = {
               date = '${params.date}'
               AND is_root_page
               ${params.lens.sql}
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
               client
           `)
-      }
-    ]
-  },
-  h3: {
-    SQL: [
-      {
-        type: 'timeseries',
-        query: DataformTemplateBuilder.create((ctx, params) => `
+        }
+      ]
+    },
+    h3: {
+      SQL: [
+        {
+          type: 'timeseries',
+          query: DataformTemplateBuilder.create((ctx, params) => `
             SELECT
               client,
               ROUND(
@@ -1886,20 +1748,19 @@ const config = {
               date = '${params.date}'
               AND is_root_page
               ${params.lens.sql}
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
               client
           `)
-      }
-    ]
-  },
-  fontDisplay: {
-    SQL: [
-      {
-        type: 'timeseries',
-        query: DataformTemplateBuilder.create((ctx, params) => `
+        }
+      ]
+    },
+    fontDisplay: {
+      SQL: [
+        {
+          type: 'timeseries',
+          query: DataformTemplateBuilder.create((ctx, params) => `
             SELECT
               client,
               ROUND(SUM(IF(LAX_STRING(lighthouse.audits['font-display'].score) IN ('true', '1'), 1, 0)) * 100 / COUNT(0), 2) AS percent
@@ -1910,20 +1771,19 @@ const config = {
               ${params.lens.sql}
               AND lighthouse IS NOT NULL AND TO_JSON_STRING(lighthouse) != '{}'
               AND LAX_STRING(lighthouse.audits['font-display'].score) IS NOT NULL
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
               client
           `)
-      }
-    ]
-  },
-  canonical: {
-    SQL: [
-      {
-        type: 'timeseries',
-        query: DataformTemplateBuilder.create((ctx, params) => `
+        }
+      ]
+    },
+    canonical: {
+      SQL: [
+        {
+          type: 'timeseries',
+          query: DataformTemplateBuilder.create((ctx, params) => `
             SELECT
               client,
               ROUND(SUM(IF(LAX_STRING(lighthouse.audits.canonical.score) IN ('true', '1'), 1, 0)) * 100 / COUNT(0), 2) AS percent
@@ -1933,20 +1793,19 @@ const config = {
               AND is_root_page
               ${params.lens.sql}
               AND lighthouse IS NOT NULL AND TO_JSON_STRING(lighthouse) != '{}' AND
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
               client
           `)
-      }
-    ]
-  },
-  a11yButtonName: {
-    SQL: [
-      {
-        type: 'timeseries',
-        query: DataformTemplateBuilder.create((ctx, params) => `
+        }
+      ]
+    },
+    a11yButtonName: {
+      SQL: [
+        {
+          type: 'timeseries',
+          query: DataformTemplateBuilder.create((ctx, params) => `
             SELECT
               client,
               ROUND(SUM(IF(LAX_STRING(lighthouse.audits['button-name'].score) IN ('true', '1'), 1, 0)) * 100 / COUNT(0), 2) AS percent
@@ -1956,20 +1815,19 @@ const config = {
               AND is_root_page
               ${params.lens.sql}
               AND lighthouse IS NOT NULL AND TO_JSON_STRING(lighthouse) != '{}'
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
               client
           `)
-      }
-    ]
-  },
-  hreflang: {
-    SQL: [
-      {
-        type: 'timeseries',
-        query: DataformTemplateBuilder.create((ctx, params) => `
+        }
+      ]
+    },
+    hreflang: {
+      SQL: [
+        {
+          type: 'timeseries',
+          query: DataformTemplateBuilder.create((ctx, params) => `
             SELECT
               client,
               ROUND(SUM(IF(LAX_STRING(lighthouse.audits.hreflang.score) IN ('true', '1'), 1, 0)) * 100 / COUNT(0), 2) AS percent
@@ -1979,20 +1837,19 @@ const config = {
               AND is_root_page
               ${params.lens.sql}
               AND lighthouse IS NOT NULL AND TO_JSON_STRING(lighthouse) != '{}' AND LAX_STRING(lighthouse.audits.hreflang.score) IS NOT NULL
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
               client
           `)
-      }
-    ]
-  },
-  numUrls: {
-    SQL: [
-      {
-        type: 'timeseries',
-        query: DataformTemplateBuilder.create((ctx, params) => `
+        }
+      ]
+    },
+    numUrls: {
+      SQL: [
+        {
+          type: 'timeseries',
+          query: DataformTemplateBuilder.create((ctx, params) => `
             SELECT
               client,
               COUNT(0) AS urls
@@ -2001,20 +1858,19 @@ const config = {
               date = '${params.date}'
               AND is_root_page
               ${params.lens.sql}
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
               client
           `)
-      }
-    ]
-  },
-  contentIndex: {
-    SQL: [
-      {
-        type: 'timeseries',
-        query: DataformTemplateBuilder.create((ctx, params) => `
+        }
+      ]
+    },
+    contentIndex: {
+      SQL: [
+        {
+          type: 'timeseries',
+          query: DataformTemplateBuilder.create((ctx, params) => `
             SELECT
               client,
               SUM(IF(feat.id IS NOT NULL, 1, 0)) AS num_urls,
@@ -2026,21 +1882,20 @@ const config = {
               date = '${params.date}'
               AND is_root_page
               ${params.lens.sql}
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
               client,
               num_urls DESC
           `)
-      }
-    ]
-  },
-  legible: {
-    SQL: [
-      {
-        type: 'timeseries',
-        query: DataformTemplateBuilder.create((ctx, params) => `
+        }
+      ]
+    },
+    legible: {
+      SQL: [
+        {
+          type: 'timeseries',
+          query: DataformTemplateBuilder.create((ctx, params) => `
             SELECT
               client,
               ROUND(SUM(IF(LAX_STRING(lighthouse.audits['font-size'].score) IN ('true', '1'), 1, 0)) * 100 / COUNT(0), 2) AS percent
@@ -2050,20 +1905,19 @@ const config = {
               AND is_root_page
               ${params.lens.sql}
               AND lighthouse IS NOT NULL AND LAX_STRING(lighthouse.audits['font-size'].score) IS NOT NULL
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
               client
           `)
-      }
-    ]
-  },
-  a11yColorContrast: {
-    SQL: [
-      {
-        type: 'timeseries',
-        query: DataformTemplateBuilder.create((ctx, params) => `
+        }
+      ]
+    },
+    a11yColorContrast: {
+      SQL: [
+        {
+          type: 'timeseries',
+          query: DataformTemplateBuilder.create((ctx, params) => `
             SELECT
               client,
               ROUND(SUM(IF(LAX_STRING(lighthouse.audits['color-contrast'].score) IN ('true', '1'), 1, 0)) * 100 / COUNT(0), 2) AS percent
@@ -2073,20 +1927,19 @@ const config = {
               AND is_root_page
               ${params.lens.sql}
               AND lighthouse IS NOT NULL AND TO_JSON_STRING(lighthouse) != '{}'
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
               client
           `)
-      }
-    ]
-  },
-  a11yImageAlt: {
-    SQL: [
-      {
-        type: 'timeseries',
-        query: DataformTemplateBuilder.create((ctx, params) => `
+        }
+      ]
+    },
+    a11yImageAlt: {
+      SQL: [
+        {
+          type: 'timeseries',
+          query: DataformTemplateBuilder.create((ctx, params) => `
             SELECT
               client,
               ROUND(SUM(IF(LAX_STRING(lighthouse.audits['image-alt'].score) IN ('true', '1'), 1, 0)) * 100 / COUNT(0), 2) AS percent
@@ -2096,20 +1949,19 @@ const config = {
               AND is_root_page
               ${params.lens.sql}
               AND lighthouse IS NOT NULL AND TO_JSON_STRING(lighthouse) != '{}'
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
               client
           `)
-      }
-    ]
-  },
-  a11yLabel: {
-    SQL: [
-      {
-        type: 'timeseries',
-        query: DataformTemplateBuilder.create((ctx, params) => `
+        }
+      ]
+    },
+    a11yLabel: {
+      SQL: [
+        {
+          type: 'timeseries',
+          query: DataformTemplateBuilder.create((ctx, params) => `
             SELECT
               client,
               ROUND(SUM(IF(LAX_STRING(lighthouse.audits.label.score) IN ('true', '1'), 1, 0)) * 100 / COUNT(0), 2) AS percent
@@ -2119,20 +1971,19 @@ const config = {
               AND is_root_page
               ${params.lens.sql}
               AND lighthouse IS NOT NULL AND TO_JSON_STRING(lighthouse) != '{}'
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
               client
           `)
-      }
-    ]
-  },
-  a11yLinkName: {
-    SQL: [
-      {
-        type: 'timeseries',
-        query: DataformTemplateBuilder.create((ctx, params) => `
+        }
+      ]
+    },
+    a11yLinkName: {
+      SQL: [
+        {
+          type: 'timeseries',
+          query: DataformTemplateBuilder.create((ctx, params) => `
             SELECT
               client,
               ROUND(SUM(IF(LAX_STRING(lighthouse.audits['link-name'].score) IN ('true', '1'), 1, 0)) * 100 / COUNT(0), 2) AS percent
@@ -2142,20 +1993,19 @@ const config = {
               AND is_root_page
               ${params.lens.sql}
               AND lighthouse IS NOT NULL AND TO_JSON_STRING(lighthouse) != '{}'
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
               client
           `)
-      }
-    ]
-  },
-  a11yScores: {
-    SQL: [
-      {
-        type: 'timeseries',
-        query: DataformTemplateBuilder.create((ctx, params) => `
+        }
+      ]
+    },
+    a11yScores: {
+      SQL: [
+        {
+          type: 'timeseries',
+          query: DataformTemplateBuilder.create((ctx, params) => `
             SELECT
               client,
               ROUND(APPROX_QUANTILES(score, 1000)[OFFSET(100)], 2) AS p10,
@@ -2173,21 +2023,20 @@ const config = {
                 AND is_root_page
                 ${params.lens.sql}
                 AND lighthouse IS NOT NULL AND TO_JSON_STRING(lighthouse) != '{}'
-                ${params.devRankFilter}
             )
             GROUP BY
               client
             ORDER BY
               client
           `)
-      }
-    ]
-  },
-  asyncClipboardRead: {
-    SQL: [
-      {
-        type: 'timeseries',
-        query: DataformTemplateBuilder.create((ctx, params) => `
+        }
+      ]
+    },
+    asyncClipboardRead: {
+      SQL: [
+        {
+          type: 'timeseries',
+          query: DataformTemplateBuilder.create((ctx, params) => `
             SELECT
               client,
               SUM(IF(feat.id IS NOT NULL, 1, 0)) AS num_urls,
@@ -2199,21 +2048,20 @@ const config = {
               date = '${params.date}'
               AND is_root_page
               ${params.lens.sql}
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
               client,
               num_urls DESC
           `)
-      }
-    ]
-  },
-  badgeClear: {
-    SQL: [
-      {
-        type: 'timeseries',
-        query: DataformTemplateBuilder.create((ctx, params) => `
+        }
+      ]
+    },
+    badgeClear: {
+      SQL: [
+        {
+          type: 'timeseries',
+          query: DataformTemplateBuilder.create((ctx, params) => `
             SELECT
               client,
               SUM(IF(feat.id IS NOT NULL, 1, 0)) AS num_urls,
@@ -2225,21 +2073,20 @@ const config = {
               date = '${params.date}'
               AND is_root_page
               ${params.lens.sql}
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
               client,
               num_urls DESC
           `)
-      }
-    ]
-  },
-  badgeSet: {
-    SQL: [
-      {
-        type: 'timeseries',
-        query: DataformTemplateBuilder.create((ctx, params) => `
+        }
+      ]
+    },
+    badgeSet: {
+      SQL: [
+        {
+          type: 'timeseries',
+          query: DataformTemplateBuilder.create((ctx, params) => `
             SELECT
               client,
               SUM(IF(feat.id IS NOT NULL, 1, 0)) AS num_urls,
@@ -2251,21 +2098,20 @@ const config = {
               date = '${params.date}'
               AND is_root_page
               ${params.lens.sql}
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
               client,
               num_urls DESC
           `)
-      }
-    ]
-  },
-  getInstalledRelatedApps: {
-    SQL: [
-      {
-        type: 'timeseries',
-        query: DataformTemplateBuilder.create((ctx, params) => `
+        }
+      ]
+    },
+    getInstalledRelatedApps: {
+      SQL: [
+        {
+          type: 'timeseries',
+          query: DataformTemplateBuilder.create((ctx, params) => `
             SELECT
               client,
               SUM(IF(feat.id IS NOT NULL, 1, 0)) AS num_urls,
@@ -2277,21 +2123,20 @@ const config = {
               date = '${params.date}'
               AND is_root_page
               ${params.lens.sql}
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
               client,
               num_urls DESC
           `)
-      }
-    ]
-  },
-  idleDetection: {
-    SQL: [
-      {
-        type: 'timeseries',
-        query: DataformTemplateBuilder.create((ctx, params) => `
+        }
+      ]
+    },
+    idleDetection: {
+      SQL: [
+        {
+          type: 'timeseries',
+          query: DataformTemplateBuilder.create((ctx, params) => `
             SELECT
               client,
               SUM(IF(feat.id IS NOT NULL, 1, 0)) AS num_urls,
@@ -2303,21 +2148,20 @@ const config = {
               date = '${params.date}'
               AND is_root_page
               ${params.lens.sql}
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
               client,
               num_urls DESC
           `)
-      }
-    ]
-  },
-  linkText: {
-    SQL: [
-      {
-        type: 'timeseries',
-        query: DataformTemplateBuilder.create((ctx, params) => `
+        }
+      ]
+    },
+    linkText: {
+      SQL: [
+        {
+          type: 'timeseries',
+          query: DataformTemplateBuilder.create((ctx, params) => `
             SELECT
               client,
               ROUND(SUM(IF(LAX_STRING(lighthouse.audits['link-text'].score) IN ('true', '1'), 1, 0)) * 100 / COUNT(0), 2) AS percent
@@ -2327,20 +2171,19 @@ const config = {
               AND is_root_page
               ${params.lens.sql}
               AND lighthouse IS NOT NULL AND LAX_STRING(lighthouse.audits['link-text'].score) IS NOT NULL
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
               client
           `)
-      }
-    ]
-  },
-  notificationTriggers: {
-    SQL: [
-      {
-        type: 'timeseries',
-        query: DataformTemplateBuilder.create((ctx, params) => `
+        }
+      ]
+    },
+    notificationTriggers: {
+      SQL: [
+        {
+          type: 'timeseries',
+          query: DataformTemplateBuilder.create((ctx, params) => `
             SELECT
               client,
               SUM(IF(feat.id IS NOT NULL, 1, 0)) AS num_urls,
@@ -2352,21 +2195,20 @@ const config = {
               date = '${params.date}'
               AND is_root_page
               ${params.lens.sql}
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
               client,
               num_urls DESC
           `)
-      }
-    ]
-  },
-  periodicBackgroundSync: {
-    SQL: [
-      {
-        type: 'timeseries',
-        query: DataformTemplateBuilder.create((ctx, params) => `
+        }
+      ]
+    },
+    periodicBackgroundSync: {
+      SQL: [
+        {
+          type: 'timeseries',
+          query: DataformTemplateBuilder.create((ctx, params) => `
             SELECT
               client,
               SUM(IF(feat.id IS NOT NULL, 1, 0)) AS num_urls,
@@ -2378,21 +2220,20 @@ const config = {
               date = '${params.date}'
               AND is_root_page
               ${params.lens.sql}
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
               client,
               num_urls DESC
           `)
-      }
-    ]
-  },
-  periodicBackgroundSyncRegister: {
-    SQL: [
-      {
-        type: 'timeseries',
-        query: DataformTemplateBuilder.create((ctx, params) => `
+        }
+      ]
+    },
+    periodicBackgroundSyncRegister: {
+      SQL: [
+        {
+          type: 'timeseries',
+          query: DataformTemplateBuilder.create((ctx, params) => `
             SELECT
               client,
               SUM(IF(feat.id IS NOT NULL, 1, 0)) AS num_urls,
@@ -2404,21 +2245,20 @@ const config = {
               date = '${params.date}'
               AND is_root_page
               ${params.lens.sql}
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
               client,
               num_urls DESC
           `)
-      }
-    ]
-  },
-  quicTransport: {
-    SQL: [
-      {
-        type: 'timeseries',
-        query: DataformTemplateBuilder.create((ctx, params) => `
+        }
+      ]
+    },
+    quicTransport: {
+      SQL: [
+        {
+          type: 'timeseries',
+          query: DataformTemplateBuilder.create((ctx, params) => `
             SELECT
               client,
               SUM(IF(feat.id IS NOT NULL, 1, 0)) AS num_urls,
@@ -2430,21 +2270,20 @@ const config = {
               date = '${params.date}'
               AND is_root_page
               ${params.lens.sql}
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
               client,
               num_urls DESC
           `)
-      }
-    ]
-  },
-  screenWakeLock: {
-    SQL: [
-      {
-        type: 'timeseries',
-        query: DataformTemplateBuilder.create((ctx, params) => `
+        }
+      ]
+    },
+    screenWakeLock: {
+      SQL: [
+        {
+          type: 'timeseries',
+          query: DataformTemplateBuilder.create((ctx, params) => `
             SELECT
               client,
               SUM(IF(feat.id IS NOT NULL, 1, 0)) AS num_urls,
@@ -2456,21 +2295,20 @@ const config = {
               date = '${params.date}'
               AND is_root_page
               ${params.lens.sql}
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
               client,
               num_urls DESC
           `)
-      }
-    ]
-  },
-  storagePersist: {
-    SQL: [
-      {
-        type: 'timeseries',
-        query: DataformTemplateBuilder.create((ctx, params) => `
+        }
+      ]
+    },
+    storagePersist: {
+      SQL: [
+        {
+          type: 'timeseries',
+          query: DataformTemplateBuilder.create((ctx, params) => `
             SELECT
               client,
               SUM(IF(feat.id IS NOT NULL, 1, 0)) AS num_urls,
@@ -2483,21 +2321,20 @@ const config = {
               date = '${params.date}'
               AND is_root_page
               ${params.lens.sql}
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
               client,
               num_urls DESC
           `)
-      }
-    ]
-  },
-  swControlledPages: {
-    SQL: [
-      {
-        type: 'timeseries',
-        query: DataformTemplateBuilder.create((ctx, params) => `
+        }
+      ]
+    },
+    swControlledPages: {
+      SQL: [
+        {
+          type: 'timeseries',
+          query: DataformTemplateBuilder.create((ctx, params) => `
             SELECT
               client,
               SUM(IF(feat.id = '990' OR feat.feature = 'ServiceWorkerControlledPage', 1, 0)) AS num_urls,
@@ -2510,21 +2347,20 @@ const config = {
               date = '${params.date}'
               AND is_root_page
               ${params.lens.sql}
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
               client,
               num_urls DESC
           `)
-      }
-    ]
-  },
-  webSocketStream: {
-    SQL: [
-      {
-        type: 'timeseries',
-        query: DataformTemplateBuilder.create((ctx, params) => `
+        }
+      ]
+    },
+    webSocketStream: {
+      SQL: [
+        {
+          type: 'timeseries',
+          query: DataformTemplateBuilder.create((ctx, params) => `
             SELECT
               client,
               SUM(IF(feat.id = '3018' OR feat.feature = 'WebSocketStreamConstructor', 1, 0)) AS num_urls,
@@ -2537,15 +2373,15 @@ const config = {
               date = '${params.date}'
               AND is_root_page
               ${params.lens.sql}
-              ${params.devRankFilter}
             GROUP BY
               client
             ORDER BY
               client,
               num_urls DESC
           `)
-      }
-    ]
+        }
+      ]
+    }
   }
 }
 

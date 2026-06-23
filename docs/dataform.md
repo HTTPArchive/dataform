@@ -6,7 +6,7 @@ The test repository is used [for development and testing purposes](https://cloud
 
 Pipeline can be [run manually](https://cloud.google.com/dataform/docs/code-lifecycle) from the Dataform UI.
 
-[Configuration](./infra/dataform.tf)
+[Configuration](../infra/dataform.tf)
 
 ## Dataform Development Workspace
 
@@ -34,7 +34,6 @@ Pipeline can be [run manually](https://cloud.google.com/dataform/docs/code-lifec
 - `infra/` - Infrastructure code and deployment configurations
   - `bigquery-export/` - BigQuery export service
   - `dataform-service/` - Cloud Run function for dataform workflows automation
-  - `tf/` - Terraform configurations
 - `docs/` - Additional documentation
 
 ## GiHub to Dataform connection

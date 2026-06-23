@@ -1,4 +1,4 @@
-import { Firestore } from '@google-cloud/firestore'
+import { Firestore, FieldPath } from '@google-cloud/firestore'
 import { BigQueryExport } from './bigquery.js'
 
 export class FirestoreBatch {
@@ -53,6 +53,7 @@ export class FirestoreBatch {
   reset() {
     this.processedDocs = 0
     this.totalDocs = 0
+    this.pendingCount = 0
 
     // Clean up existing BulkWriter if it exists
     if (this.bulkWriter) {
@@ -74,23 +75,55 @@ export class FirestoreBatch {
   }
 
   createBulkWriter(operation) {
-    const bulkWriter = this.firestore.bulkWriter()
-
-    bulkWriter.maxBatchSize = 500 // Reduce batch size for memory efficiency
+    const bulkWriter = this.firestore.bulkWriter({
+      isThrottlingEnabled: false,
+      maxBatchSize: 500
+    })
 
     // Configure error handling with progress info
     bulkWriter.onWriteError((error) => {
       const progressInfo = this.totalDocs > 0 ? ` (${this.processedDocs}/${this.totalDocs})` : ''
       console.warn(`${operation} operation failed${progressInfo}:`, error.message)
 
+      // Limit retry attempts to prevent infinite retry loops on persistent transient errors
+      const MAX_RETRIES = 5
+      if (error.failedAttempts >= MAX_RETRIES) {
+        console.error(`Operation failed after ${error.failedAttempts} attempts. Skipping/failing.`)
+        this.pendingCount--
+        return false
+      }
+
       // Retry on transient errors, fail on permanent ones
-      const retryableErrors = ['deadline-exceeded', 'unavailable', 'resource-exhausted', 'aborted']
-      return retryableErrors.includes(error.code)
+      const retryableErrorCodes = [
+        4,  // DEADLINE_EXCEEDED
+        8,  // RESOURCE_EXHAUSTED
+        10, // ABORTED
+        14  // UNAVAILABLE
+      ]
+      const retryableErrorStrings = [
+        'deadline-exceeded',
+        'unavailable',
+        'resource-exhausted',
+        'aborted'
+      ]
+
+      const isRetryable =
+        retryableErrorCodes.includes(error.code) ||
+        (typeof error.code === 'string' && retryableErrorStrings.includes(error.code.toLowerCase()))
+
+      if (isRetryable) {
+        console.log(`Retrying failed operation (attempt ${error.failedAttempts + 1}/${MAX_RETRIES})...`)
+        return true
+      }
+
+      this.pendingCount--
+      return false
     })
 
     // Track progress on successful writes
     bulkWriter.onWriteResult(() => {
       this.processedDocs++
+      this.pendingCount--
 
       // Report progress periodically
       if (this.processedDocs % this.config.progressReportInterval === 0) {
@@ -105,6 +138,23 @@ export class FirestoreBatch {
     })
 
     return bulkWriter
+  }
+
+  async waitIfNeeded() {
+    const limit = 100000
+    const target = 50000
+    if (this.pendingCount > limit) {
+      console.log(`Pipeline full (${this.pendingCount} pending). Waiting for queue to drain below ${target}...`)
+      while (this.pendingCount > target) {
+        await new Promise(resolve => setTimeout(resolve, 50))
+      }
+      console.log(`Pipeline drained (${this.pendingCount} pending). Resuming...`)
+
+      // Force garbage collection after queue drains
+      if (global.gc) {
+        global.gc()
+      }
+    }
   }
 
   buildQuery(collectionRef) {
@@ -154,29 +204,71 @@ export class FirestoreBatch {
     // Create BulkWriter for delete operations
     this.bulkWriter = this.createBulkWriter('delet')
 
-    let deletedCount = 0
-    const batchSize = this.config.flushThreshold // Process documents in chunks
+    const pageSize = 10000 // 10,000 documents per query page
 
-    while (deletedCount < this.totalDocs || this.totalDocs === 0) {
-      const snapshot = await collectionQuery.limit(batchSize).get()
-      if (snapshot.empty) break
+    try {
+      // Split the deletion query into 4 parallel partitions manually using document ID ranges
+      // Optimized for lowercase strings/domain names (e.g. h, o, v splits)
+      const partitions = [
+        { start: '', end: 'h' },
+        { start: 'h', end: 'o' },
+        { start: 'o', end: 'v' },
+        { start: 'v', end: '\uf8ff' }
+      ]
 
-      // Add all delete operations to BulkWriter
-      for (const doc of snapshot.docs) {
-        this.bulkWriter.delete(doc.ref)
-        deletedCount++
+      console.info(`Split deletion into ${partitions.length} manual parallel partitions`)
 
-        // Frequent flushing to prevent memory buildup
-        if (deletedCount % this.config.flushThreshold === 0) {
-          console.log(`Flushing BulkWriter at ${deletedCount} operations...`)
-          await this.bulkWriter.flush()
+      await Promise.all(partitions.map(async (partition, index) => {
+        let lastDocId = null
+        let partitionDeletedCount = 0
 
-          // Force garbage collection after flush
-          if (global.gc) {
-            global.gc()
+        while (true) {
+          let pageQuery = collectionQuery
+            .select()
+            .orderBy(FieldPath.documentId())
+            .limit(pageSize)
+
+          if (lastDocId) {
+            pageQuery = pageQuery.startAfter(lastDocId)
+          } else if (partition.start !== '') {
+            pageQuery = pageQuery.startAt(partition.start)
           }
+
+          if (partition.end) {
+            pageQuery = pageQuery.endBefore(partition.end)
+          }
+
+          const snapshot = await pageQuery.get()
+          if (snapshot.empty) {
+            break
+          }
+
+          // Remember the last document ID of the sorted page for query cursor pagination
+          lastDocId = snapshot.docs[snapshot.docs.length - 1].id
+
+          // Shuffle document references in memory to prevent sequential index updates (hotspotting)
+          const docs = [...snapshot.docs]
+          for (let i = docs.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1))
+            const temp = docs[i]
+            docs[i] = docs[j]
+            docs[j] = temp
+          }
+
+          for (const doc of docs) {
+            this.bulkWriter.delete(doc.ref)
+            this.pendingCount++
+            partitionDeletedCount++
+          }
+
+          // Wait if the pending operations queue is too full
+          await this.waitIfNeeded()
         }
-      }
+        console.log(`Partition ${index + 1}/${partitions.length} complete. Deleted ${partitionDeletedCount} documents.`)
+      }))
+    } catch (error) {
+      console.error('Error during batch deletion pagination:', error)
+      throw error
     }
 
     // Final flush and close
@@ -197,7 +289,6 @@ export class FirestoreBatch {
     this.bulkWriter = this.createBulkWriter('writ')
 
     let rowCount = 0
-    let batchCount = 0
     const collectionRef = this.firestore.collection(this.collectionName)
 
     try {
@@ -205,20 +296,12 @@ export class FirestoreBatch {
         // Add document to BulkWriter
         const docRef = collectionRef.doc()
         this.bulkWriter.set(docRef, row)
-
+        this.pendingCount++
         rowCount++
         this.totalDocs = rowCount // Update totalDocs for progress tracking
 
-        if (rowCount % this.config.flushThreshold === 0) {
-          console.log(`Flushing BulkWriter at ${rowCount} operations...`)
-          await this.bulkWriter.flush()
-          batchCount++
-
-          if (batchCount % 5 === 0 && global.gc) {
-            console.log(`Forcing garbage collection at batch ${batchCount}...`)
-            global.gc()
-          }
-        }
+        // Wait if the pending operations queue is too full
+        await this.waitIfNeeded()
       }
     } catch (error) {
       console.error('Error during BigQuery streaming:', error)
@@ -267,6 +350,19 @@ export class FirestoreBatch {
       console.log(`✅ Export to ${exportConfig.collection} completed successfully`)
     } catch (error) {
       this.logMemoryUsage('on error')
+
+      // Avoid dumping the massive Firestore client instance (contained in documentRef)
+      if (error && error.documentRef) {
+        const cleanError = {
+          message: error.message,
+          code: error.code,
+          documentPath: error.documentRef.path,
+          failedAttempts: error.failedAttempts
+        }
+        console.error(`❌ Export to ${exportConfig.collection} failed:`, cleanError)
+        throw new Error(`Export failed at document ${cleanError.documentPath}: ${cleanError.message} (code: ${cleanError.code})`)
+      }
+
       console.error(`❌ Export to ${exportConfig.collection} failed:`, error)
       throw error
     }

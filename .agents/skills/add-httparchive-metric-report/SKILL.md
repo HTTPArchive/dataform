@@ -7,7 +7,7 @@ description: Add new metrics to HTTPArchive reports config. USE FOR adding perfo
 
 ## Documentation
 
-**See [reports.md](../../../reports.md)** for complete guide including:
+**See [reports.md](../../../docs/reports.md)** for complete guide including:
 
 - Architecture and processing details
 - Quick Decision Guide table
@@ -51,4 +51,4 @@ metricName: {
 }
 ```
 
-See [reports.md](../../../reports.md) for complete patterns and examples.
+See [reports.md](../../../docs/reports.md) for complete patterns and examples.

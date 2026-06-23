@@ -136,7 +136,7 @@ function generateReportConfigurations() {
     date >= DATE_RANGE.startDate;
     date = constants.fnPastMonth(date)) {
 
-    const whitelistedMetrics = availableMetrics.filter(metric => metric.enabled) // TODO: reports are whitelisted during migration
+    const whitelistedMetrics = availableMetrics.filter(metric => !metric.disabled)
 
     // For each available metric
     whitelistedMetrics.forEach(metric => {
