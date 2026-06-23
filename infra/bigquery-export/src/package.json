@@ -9,8 +9,9 @@
   "type": "module",
   "dependencies": {
     "@google-cloud/bigquery": "8.1.1",
+    "@google-cloud/firestore": "8.0.0",
     "shared": "file:../../shared",
-    "@google-cloud/firestore": "8.0.0"
+    "uuid": "^14.0.1"
   },
   "author": "@max-ostapenko",
   "engines": {
