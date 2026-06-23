@@ -1,0 +1,1 @@
+docker run --rm --platform linux/amd64 -e DEFAULT_BRANCH=main -e VALIDATE_GIT_COMMITLINT=false -e VALIDATE_TERRAFORM_TERRASCAN=false -e VALIDATE_TERRAFORM_TFLINT=false -e FIX_JSON_PRETTIER=true -e IGNORE_GITIGNORED_FILES=true -e VALIDATE_ALL_CODEBASE=true -e VALIDATE_JSCPD=false -e RUN_LOCAL=true -v $(pwd):/tmp/lint ghcr.io/super-linter/super-linter:slim-latest
