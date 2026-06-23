@@ -1,5 +1,5 @@
 import { Firestore, FieldPath } from '@google-cloud/firestore'
-import { BigQueryExport } from './bigquery.js'
+import { BigQueryExport } from 'shared'
 
 export class FirestoreBatch {
   constructor() {

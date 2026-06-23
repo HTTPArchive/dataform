@@ -15,7 +15,7 @@ data "external" "source_hash" {
   program = [
     "bash",
     "-c",
-    "cd ./${var.function_name}/src/ && echo '{\"hash\":\"'$(git ls-files -s | sha1sum | cut -c1-8)'\"}'"
+    "echo '{\"hash\":\"'$(git ls-files -s ./${var.function_name}/src ./shared | sha1sum | cut -c1-8)'\"}'"
   ]
 }
 
@@ -25,8 +25,9 @@ resource "docker_image" "function_image" {
   name = "${var.region}-docker.pkg.dev/${var.project}/dataform/${var.function_name}:${data.external.source_hash.result.hash}"
 
   build {
-    context  = "./${var.function_name}/src/"
-    platform = "linux/amd64"
+    context    = "./"
+    dockerfile = "./${var.function_name}/Dockerfile"
+    platform   = "linux/amd64"
   }
 }
 
