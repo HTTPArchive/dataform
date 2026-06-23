@@ -136,10 +136,8 @@ function generateReportConfigurations() {
     date >= DATE_RANGE.startDate;
     date = constants.fnPastMonth(date)) {
 
-    const whitelistedMetrics = availableMetrics.filter(metric => !metric.disabled)
-
     // For each available metric
-    whitelistedMetrics.forEach(metric => {
+    availableMetrics.forEach(metric => {
       // For each SQL type (histogram, timeseries)
       metric.SQL.forEach(sql => {
         // For each available lens (all, top1k, wordpress, etc.)
