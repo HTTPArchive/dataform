@@ -232,9 +232,7 @@ async function importHistogramData() {
           continue
         }
       }
-      //break // TEMP: only do first metric
     }
-    //break // TEMP: only do first lens
   }
 }
 
