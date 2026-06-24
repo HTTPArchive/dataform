@@ -8,11 +8,12 @@ RUN mkdir -p bigquery-export/src shared
 COPY bigquery-export/src/package*.json ./bigquery-export/src/
 COPY shared/package*.json ./shared/
 
+WORKDIR /app/bigquery-export/src
 RUN --mount=type=cache,target=/root/.npm \
-    cd bigquery-export/src && npm ci --omit=dev --no-fund --no-audit
+    npm ci --omit=dev --no-fund --no-audit
 
+WORKDIR /app
 ENV EXPORT_CONFIG=""
-
 COPY bigquery-export/src/ ./bigquery-export/src/
 COPY shared/ ./shared/
 
