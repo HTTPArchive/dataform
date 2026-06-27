@@ -41,25 +41,25 @@ async function runVerification() {
     console.log(`  BQ Table:   reports.${bqTable}`)
 
     // Get GCS row
-    let gcsRow = null
+    let gcsRowData
     try {
       const [content] = await storage.bucket(CONFIG.bucket).file(gcsPath).download()
       const data = JSON.parse(content.toString())
       // GCS dates are YYYY_MM_DD
       const targetGcsDate = tc.date.replace(/-/g, '_')
-      gcsRow = data.find(r => r.date === targetGcsDate && r.client === tc.client)
+      gcsRowData = data.find(r => r.date === targetGcsDate && r.client === tc.client)
     } catch (e) {
       console.log(`  ❌ Failed to fetch/parse GCS file: ${e.message}`)
       continue
     }
 
-    if (!gcsRow) {
+    if (!gcsRowData) {
       console.log(`  ⚠️ GCS row not found for client ${tc.client} and date ${tc.date}`)
       continue
     }
 
     // Get BQ row
-    let bqRow = null
+    let bqRowData
     try {
       const query = `
         SELECT * FROM \`${CONFIG.datasetId}.${bqTable}\`
@@ -68,13 +68,13 @@ async function runVerification() {
           AND client = '${tc.client}'
       `
       const [rows] = await bigquery.query({ query })
-      bqRow = rows[0] || null
+      bqRowData = rows[0] || null
     } catch (e) {
       console.log(`  ❌ Failed to query BQ table: ${e.message}`)
       continue
     }
 
-    if (!bqRow) {
+    if (!bqRowData) {
       console.log(`  ❌ BQ row not found for client ${tc.client} and date ${tc.date}`)
       continue
     }
@@ -82,11 +82,11 @@ async function runVerification() {
     // Compare fields
     console.log('  Comparing fields:')
     let allMatch = true
-    const keysToCompare = Object.keys(bqRow).filter(k => !['date', 'lens', 'client', 'metric'].includes(k))
+    const keysToCompare = Object.keys(bqRowData).filter(k => !['date', 'lens', 'client', 'metric'].includes(k))
 
     for (const key of keysToCompare) {
-      const bqVal = bqRow[key]
-      const gcsVal = Number(gcsRow[key])
+      const bqVal = bqRowData[key]
+      const gcsVal = Number(gcsRowData[key])
 
       // Check if both are NaN/null or match closely
       const match = (isNaN(bqVal) && isNaN(gcsVal)) || (bqVal === null && gcsVal === null) || Math.abs(bqVal - gcsVal) < 0.001
@@ -133,7 +133,7 @@ async function runVerification() {
     }
 
     // Get BQ rows
-    let bqRows = []
+    let bqRowsData
     try {
       const query = `
         SELECT bin, volume, pdf, cdf FROM \`${CONFIG.datasetId}.${bqTable}\`
@@ -143,24 +143,24 @@ async function runVerification() {
         ORDER BY bin ASC
       `
       const [rows] = await bigquery.query({ query })
-      bqRows = rows
+      bqRowsData = rows
     } catch (e) {
       console.log(`  ❌ Failed to query BQ table: ${e.message}`)
       continue
     }
 
-    if (!bqRows.length) {
+    if (!bqRowsData || !bqRowsData.length) {
       console.log(`  ❌ BQ rows not found for client ${tc.client}`)
       continue
     }
 
     // Compare first 3 bins, last bin, and total counts
-    console.log(`  Comparing histograms (GCS had ${gcsRows.length} bins | BQ has ${bqRows.length} bins):`)
+    console.log(`  Comparing histograms (GCS had ${gcsRows.length} bins | BQ has ${bqRowsData.length} bins):`)
 
-    if (gcsRows.length !== bqRows.length) {
-      console.log(`    ✗ Mismatch in bin count: GCS = ${gcsRows.length} | BQ = ${bqRows.length}`)
+    if (gcsRows.length !== bqRowsData.length) {
+      console.log(`    ✗ Mismatch in bin count: GCS = ${gcsRows.length} | BQ = ${bqRowsData.length}`)
     } else {
-      console.log(`    ✓ Bin counts match (${bqRows.length} bins)`)
+      console.log(`    ✓ Bin counts match (${bqRowsData.length} bins)`)
     }
 
     let sampleMatch = true
@@ -168,7 +168,7 @@ async function runVerification() {
 
     for (const idx of sampleIndices) {
       const gRow = gcsRows[idx]
-      const bRow = bqRows[idx]
+      const bRow = bqRowsData[idx]
 
       if (!bRow) {
         console.log(`    ✗ Index ${idx} missing in BQ`)
