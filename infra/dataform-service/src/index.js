@@ -1,6 +1,6 @@
 import functions from '@google-cloud/functions-framework'
 
-import { BigQueryExport } from './bigquery.js'
+import { BigQueryExport } from 'shared'
 import { callRunJob } from './cloud_run.js'
 import { getCompilationResults, runWorkflow } from './dataform.js'
 import { StorageUpload } from './storage.js'

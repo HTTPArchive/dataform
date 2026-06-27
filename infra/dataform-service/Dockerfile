@@ -4,16 +4,24 @@ WORKDIR /app
 
 RUN addgroup -S appuser && adduser -S -G appuser appuser
 
-COPY package*.json ./
+RUN mkdir -p dataform-service/src shared
+COPY dataform-service/src/package*.json ./dataform-service/src/
+COPY shared/package*.json ./shared/
 
+WORKDIR /app/dataform-service/src
 RUN --mount=type=cache,target=/root/.npm \
     npm ci --omit=dev --no-fund --no-audit
 
-COPY . .
+WORKDIR /app
+
+COPY dataform-service/src/ ./dataform-service/src/
+COPY shared/ ./shared/
 
 RUN chown -R appuser:appuser /app
 
 USER appuser
+
+WORKDIR /app/dataform-service/src
 
 ENV PORT=8080
 
