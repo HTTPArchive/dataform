@@ -239,9 +239,9 @@ async function processBacklog() {
   console.log(`\nProcessing ${BACKLOG.length} backlog files...`)
   let ok = 0, fail = 0
 
-  for (const filename of BACKLOG) {
+  await mapLimit(BACKLOG, 10, async (filename) => {
     const match = filename.match(/reports\/(?:([^/]+)\/)?(\d{4}_\d{2}_\d{2})\/(.+?)(?:\.json)?$/)
-    if (!match) { console.log(`✗ ${filename}: invalid format`); fail++; continue }
+    if (!match) { console.log(`✗ ${filename}: invalid format`); fail++; return }
 
     const [, lensPath = '', dateStr, metric] = match
     const date = dateStr.replace(/_/g, '-')
@@ -261,7 +261,7 @@ async function processBacklog() {
       console.log(`✗ ${filename}: ${result.error}`)
       fail++
     }
-  }
+  })
   console.log(`Backlog: ${ok} ok, ${fail} failed\n`)
 }
 
