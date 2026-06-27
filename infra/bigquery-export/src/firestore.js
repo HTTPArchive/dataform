@@ -247,15 +247,19 @@ export class FirestoreBatch {
           lastDocId = snapshot.docs[snapshot.docs.length - 1].id
 
           // Shuffle document references in memory to prevent sequential index updates (hotspotting)
-          const docs = [...snapshot.docs]
-          for (let i = docs.length - 1; i > 0; i--) {
+          const len = snapshot.docs.length
+          const indices = new Uint32Array(len)
+          for (let i = 0; i < len; i++) indices[i] = i
+
+          for (let i = len - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1))
-            const temp = docs[i]
-            docs[i] = docs[j]
-            docs[j] = temp
+            const temp = indices[i]
+            indices[i] = indices[j]
+            indices[j] = temp
           }
 
-          for (const doc of docs) {
+          for (let i = 0; i < len; i++) {
+            const doc = snapshot.docs[indices[i]]
             this.bulkWriter.delete(doc.ref)
             this.pendingCount++
             partitionDeletedCount++
