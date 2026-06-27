@@ -225,6 +225,22 @@ async function mainHandler (req, res) {
 
   if (path === '/health') {
     // Health check endpoint
+    const allowedIps = ['127.0.0.1', '::ffff:127.0.0.1', '::1']
+    const clientIp = req.ip || req.socket?.remoteAddress
+    const userAgent = req.headers['user-agent'] || ''
+
+    // Allow local IPs or Google's health check agent
+    const isLocal = allowedIps.includes(clientIp)
+    const isGoogleHC = userAgent.includes('GoogleHC')
+
+    if (!isLocal && !isGoogleHC) {
+      res.status(403).json({
+        error: 'Forbidden',
+        message: 'Access to health check endpoint is restricted'
+      })
+      return
+    }
+
     res.status(200).json({
       status: 'healthy',
       timestamp: new Date().toISOString()
