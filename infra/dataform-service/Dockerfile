@@ -8,6 +8,10 @@ RUN mkdir -p dataform-service/src shared
 COPY dataform-service/src/package*.json ./dataform-service/src/
 COPY shared/package*.json ./shared/
 
+WORKDIR /app/shared
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci --omit=dev --no-fund --no-audit
+
 WORKDIR /app/dataform-service/src
 RUN --mount=type=cache,target=/root/.npm \
     npm ci --omit=dev --no-fund --no-audit

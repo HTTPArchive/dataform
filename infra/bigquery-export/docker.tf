@@ -15,7 +15,7 @@ data "external" "source_hash" {
   program = [
     "bash",
     "-c",
-    "echo '{\"hash\":\"'$(git ls-files -s ./${var.function_name}/src ./shared | sha1sum | cut -c1-8)'\"}'"
+    "echo '{\"hash\":\"'$(git ls-files -s ./${var.function_name}/src ./${var.function_name}/Dockerfile ./shared | sha1sum | cut -c1-8)'\"}'"
   ]
 }
 
