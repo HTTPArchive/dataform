@@ -9,7 +9,7 @@
     "@google-cloud/bigquery": "8.1.1",
     "@google-cloud/dataform": "2.4.0",
     "@google-cloud/functions-framework": "^5.0.1",
-    "@google-cloud/run": "3.0.1",
+    "@google-cloud/run": "3.3.0",
     "@google-cloud/storage": "7.19.0",
     "shared": "file:../../shared",
     "uuid": "^14.0.1"
