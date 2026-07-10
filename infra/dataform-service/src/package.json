@@ -2,6 +2,7 @@
   "name": "dataform-service",
   "version": "1.0.0",
   "author": "@max-ostapenko",
+  "packageManager": "pnpm@11.10.0",
   "main": "index.js",
   "type": "module",
   "dependencies": {

@@ -9,8 +9,10 @@ updates:
   - package-ecosystem: "npm"
     directories:
       - "/"
-      - "/infra/bigquery-export"
-      - "/infra/dataform-service"
+      - "/script"
+      - "/infra/shared"
+      - "/infra/bigquery-export/src"
+      - "/infra/dataform-service/src"
     schedule:
       interval: "weekly"
     cooldown:

@@ -4,17 +4,19 @@ WORKDIR /app
 
 RUN addgroup -S appuser && adduser -S -G appuser appuser
 
+RUN corepack enable && corepack prepare pnpm@11.10.0 --activate
+
 RUN mkdir -p dataform-service/src shared
-COPY dataform-service/src/package*.json ./dataform-service/src/
-COPY shared/package*.json ./shared/
+COPY dataform-service/src/package.json dataform-service/src/pnpm-lock.yaml ./dataform-service/src/
+COPY shared/package.json shared/pnpm-lock.yaml ./shared/
 
 WORKDIR /app/shared
-RUN --mount=type=cache,target=/root/.npm \
-    npm ci --omit=dev --no-fund --no-audit
+RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
+    pnpm install --prod --frozen-lockfile --ignore-scripts
 
 WORKDIR /app/dataform-service/src
-RUN --mount=type=cache,target=/root/.npm \
-    npm ci --omit=dev --no-fund --no-audit
+RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
+    pnpm install --prod --frozen-lockfile --ignore-scripts
 
 WORKDIR /app
 

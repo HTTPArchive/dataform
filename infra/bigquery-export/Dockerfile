@@ -4,17 +4,19 @@ WORKDIR /app
 
 RUN addgroup -S appuser && adduser -S -G appuser appuser
 
+RUN corepack enable && corepack prepare pnpm@11.10.0 --activate
+
 RUN mkdir -p bigquery-export/src shared
-COPY bigquery-export/src/package*.json ./bigquery-export/src/
-COPY shared/package*.json ./shared/
+COPY bigquery-export/src/package.json bigquery-export/src/pnpm-lock.yaml ./bigquery-export/src/
+COPY shared/package.json shared/pnpm-lock.yaml ./shared/
 
 WORKDIR /app/shared
-RUN --mount=type=cache,target=/root/.npm \
-    npm ci --omit=dev --no-fund --no-audit
+RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
+    pnpm install --prod --frozen-lockfile --ignore-scripts
 
 WORKDIR /app/bigquery-export/src
-RUN --mount=type=cache,target=/root/.npm \
-    npm ci --omit=dev --no-fund --no-audit
+RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
+    pnpm install --prod --frozen-lockfile --ignore-scripts
 
 WORKDIR /app
 ENV EXPORT_CONFIG=""

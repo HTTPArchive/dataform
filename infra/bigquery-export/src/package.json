@@ -1,6 +1,7 @@
 {
   "name": "bigquery-export",
   "version": "1.0.0",
+  "packageManager": "pnpm@11.10.0",
   "main": "index.js",
   "scripts": {
     "build": "docker build -t bigquery-export .",
