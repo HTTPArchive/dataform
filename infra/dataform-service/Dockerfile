@@ -14,6 +14,9 @@ WORKDIR /app/shared
 RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
     pnpm install --prod --frozen-lockfile --ignore-scripts
 
+WORKDIR /app
+COPY shared/ ./shared/
+
 WORKDIR /app/dataform-service/src
 RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
     pnpm install --prod --frozen-lockfile --ignore-scripts
@@ -21,9 +24,9 @@ RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
 WORKDIR /app
 
 COPY dataform-service/src/ ./dataform-service/src/
-COPY shared/ ./shared/
 
 RUN chown -R appuser:appuser /app
+
 
 USER appuser
 

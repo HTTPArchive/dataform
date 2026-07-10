@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@dataform/core':
-        specifier: 3.0.59
-        version: 3.0.59
+        specifier: 3.0.61
+        version: 3.0.61
       '@masthead-data/dataform-package':
         specifier: 0.2.0
         version: 0.2.0
@@ -37,8 +37,8 @@ packages:
     resolution: {integrity: sha512-mak3FOmowYX6h8onVyYdC/qMrD0Mp2l+x4u6pHgO53DMRIHadHs+VlXXI3vTtku5p5pVfZol03CJp172NBm0Tg==}
     hasBin: true
 
-  '@dataform/core@3.0.59':
-    resolution: {integrity: sha512-1WmH3TB4ZxbTJQtRF63iLSPblLOyskzs6+pDSg+1LkEreAw6GWhQ2f4C2ASHQUo5MMdAHPOLL68lJ9fhGp8SCQ==}
+  '@dataform/core@3.0.61':
+    resolution: {integrity: sha512-eTobjdc6O27+Mh/UCOHtFXJstY/YGyozWOJCUavAIPRzGJbP966k2RmXadnbTDSY9AC1UsxEbgZJM6mDClt84g==}
 
   '@eslint-community/eslint-utils@4.9.1':
     resolution: {integrity: sha512-phrYmNiYppR7znFEdqgfWHXR6NCkZEK7hwWDHZUjit/2/U0r6XvkDl0SYnoM51Hq7FhCGdLDT6zxCCOY1hexsQ==}
@@ -1146,7 +1146,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@dataform/core@3.0.59': {}
+  '@dataform/core@3.0.61': {}
 
   '@eslint-community/eslint-utils@4.9.1(eslint@10.6.0)':
     dependencies:
