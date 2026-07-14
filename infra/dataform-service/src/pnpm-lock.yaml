@@ -12,17 +12,17 @@ importers:
         specifier: 8.1.1
         version: 8.1.1
       '@google-cloud/dataform':
-        specifier: 2.2.1
-        version: 2.2.1
+        specifier: 2.4.0
+        version: 2.4.0
       '@google-cloud/functions-framework':
         specifier: ^5.0.1
         version: 5.0.5
       '@google-cloud/run':
-        specifier: 3.0.1
-        version: 3.0.1
+        specifier: 3.3.0
+        version: 3.3.0
       '@google-cloud/storage':
-        specifier: 7.19.0
-        version: 7.19.0
+        specifier: 7.21.0
+        version: 7.21.0
       shared:
         specifier: file:../../shared
         version: file:../../shared
@@ -48,8 +48,8 @@ packages:
     resolution: {integrity: sha512-1uvKzbmAWUdchIYRsg0f4rUmezOamWuVBSWAPAhnYoUE5OiPEx6v6JOxFIdr3MsrqV+6fyLV3EI1vMPlHoeRvw==}
     engines: {node: '>=18'}
 
-  '@google-cloud/dataform@2.2.1':
-    resolution: {integrity: sha512-CJ/CgopZxZXpItDYH4xz1p6FpPaGNVHY60t4xH3rP+y7BPOuP+lif4bjgwkT70M4cJppaKndYrXWIGw1wg2saA==}
+  '@google-cloud/dataform@2.4.0':
+    resolution: {integrity: sha512-+R/mHCDEWTxFVKdgNRThQ7owv1I4JWvBQcjo5sUF0GVDF99A2JP+8ENIW5OON9Dad4S+pQf8q5oEabBfEpX4+w==}
     engines: {node: '>=18.0.0'}
 
   '@google-cloud/functions-framework@5.0.5':
@@ -85,12 +85,12 @@ packages:
     resolution: {integrity: sha512-Ste6NGraHq30ge3Sdq7m+pZE6lRUlkt2YgsEdq/vcoEgdbdZ/7h37Z1dMvivjhlbgrcmYRvlLF9FgI7tXm5wjg==}
     engines: {node: '>=18'}
 
-  '@google-cloud/run@3.0.1':
-    resolution: {integrity: sha512-LBjAefZZW4pmIDVHOqxiuYgt6Sx8bwW4PUAfY4X54jvfRL77SiOOfRAijcVu6b0bTZXO36N0h0rxEH1RTFyJkg==}
+  '@google-cloud/run@3.3.0':
+    resolution: {integrity: sha512-Tepu6polyc+qFiG93yhLNY3rV+BngWcwZWiV3D21/hc8/Md1Ftwgk9UcTkkGuflOOibtf62O07T4eLP7Cpmmrg==}
     engines: {node: '>=18'}
 
-  '@google-cloud/storage@7.19.0':
-    resolution: {integrity: sha512-n2FjE7NAOYyshogdc7KQOl/VZb4sneqPjWouSyia9CMDdMhRX5+RIbqalNmC7LOLzuLAN89VlF2HvG8na9G+zQ==}
+  '@google-cloud/storage@7.21.0':
+    resolution: {integrity: sha512-l+IFTkd+6Y5LoAuXyYCKNAKtw/Ci+rAMqgdTB1jv4iZiLhw0rtq+0qjIRbBizXkNzEFmXiXUW0H7sZQQvk1ffA==}
     engines: {node: '>=14'}
 
   '@grpc/grpc-js@1.14.4':
@@ -1131,7 +1131,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@google-cloud/dataform@2.2.1':
+  '@google-cloud/dataform@2.4.0':
     dependencies:
       google-gax: 5.0.7
     transitivePeerDependencies:
@@ -1168,13 +1168,13 @@ snapshots:
 
   '@google-cloud/promisify@5.0.1': {}
 
-  '@google-cloud/run@3.0.1':
+  '@google-cloud/run@3.3.0':
     dependencies:
       google-gax: 5.0.7
     transitivePeerDependencies:
       - supports-color
 
-  '@google-cloud/storage@7.19.0':
+  '@google-cloud/storage@7.21.0':
     dependencies:
       '@google-cloud/paginator': 5.0.2
       '@google-cloud/projectify': 4.0.0
@@ -1190,7 +1190,6 @@ snapshots:
       p-limit: 3.1.0
       retry-request: 7.0.2
       teeny-request: 9.0.0
-      uuid: 8.3.2
     transitivePeerDependencies:
       - encoding
       - supports-color
