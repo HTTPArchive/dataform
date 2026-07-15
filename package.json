@@ -1,6 +1,5 @@
 {
   "name": "crawl-data",
-  "packageManager": "npm@11.6.2",
   "author": "@max-ostapenko",
   "scripts": {
     "format": "npx eslint -c .github/linters/eslint.config.mjs --fix .; npx markdownlint --ignore-path .gitignore --config package.json --configPointer /markdownlint . --fix; terraform -chdir=infra fmt -recursive",

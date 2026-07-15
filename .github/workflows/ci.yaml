@@ -39,7 +39,6 @@ jobs:
           VALIDATE_GIT_COMMITLINT: false
           VALIDATE_BIOME_FORMAT: false
           VALIDATE_BIOME_LINT: false
-          FILTER_REGEX_EXCLUDE: '.*package-lock\.json|.*pnpm-lock\.yaml'
 
   dependabot:
     name: Dependabot auto-merge
