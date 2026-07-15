@@ -1,4 +1,0 @@
-allowBuilds:
-  protobufjs: true
-onlyBuiltDependencies:
-  - protobufjs
