@@ -34,8 +34,10 @@ variable "dataform_service_account_email" {
 
 variable "edit_datasets" {
   default = [
+    "crawl_staging",
     "crawl",
     "sample_data",
+    "latest",
     "wappalyzer",
 
     // Reports
