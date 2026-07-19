@@ -14,7 +14,7 @@ UNDROP SCHEMA httparchive.crawl;
 
 ## Restoring a Deleted Table
 
-To restore a deleted table from a specific snapshot timestamp using the `bq` CLI tool:
+To restore a deleted table from a specific snapshot timestamp using the `bq` command-line tool:
 
 ```bash
 bq cp httparchive.crawl.pages@$(date -d '2025-08-04 16:00:00.000000Z' +%s000) httparchive.scratchspace.pages_restored_20250804
