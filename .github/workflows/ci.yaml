@@ -32,13 +32,15 @@ jobs:
           DEFAULT_BRANCH: main
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ENABLE_GITHUB_PULL_REQUEST_SUMMARY_COMMENT: false
-          VALIDATE_JSCPD: false
-          VALIDATE_JAVASCRIPT_PRETTIER: false
-          VALIDATE_MARKDOWN_PRETTIER: false
-          VALIDATE_CHECKOV: false
-          VALIDATE_GIT_COMMITLINT: false
           VALIDATE_BIOME_FORMAT: false
           VALIDATE_BIOME_LINT: false
+          VALIDATE_CHECKOV: false
+          VALIDATE_GIT_COMMITLINT: false
+          VALIDATE_JAVASCRIPT_PRETTIER: false
+          VALIDATE_JSCPD: false
+          VALIDATE_MARKDOWN_PRETTIER: false
+          VALIDATE_PYTHON_RUFF_FORMAT: false
+          VALIDATE_PYTHON_RUFF: false
 
   dependabot:
     name: Dependabot auto-merge

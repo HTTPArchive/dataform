@@ -9,18 +9,6 @@ updates:
   - package-ecosystem: "npm"
     directories:
       - "/"
-      - "/script"
-      - "/infra/shared"
-      - "/infra/bigquery-export/src"
-      - "/infra/dataform-service/src"
-    schedule:
-      interval: "weekly"
-    cooldown:
-      default-days: 7
-
-  - package-ecosystem: "terraform"
-    directories:
-      - "/infra/tf/"
     schedule:
       interval: "weekly"
     cooldown:
