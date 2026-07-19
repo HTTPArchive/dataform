@@ -1,31 +1,39 @@
 /**
- * WARNING & NOTES: Historical Backfill Status (Completed June 2026)
+ * WARNING & NOTES: Historical Report Data Issues & Backfill Status
  *
  * During the full migration backfill of GCS reports to per-metric BQ tables,
- * the following metrics had missing or corrupt data files in GCS:
+ * the following metrics had missing, incomplete, or corrupted data files in GCS:
  *
  * 1. Timeseries (GCS Consolidated JSON Files):
- *    - compileJs: No timeseries file exists in GCS.
- *    - evalJs: No timeseries file exists in GCS.
+ *    - compileJs: Missing - No timeseries file exists in GCS.
+ *    - evalJs: Missing - No timeseries file exists in GCS.
  *
  * 2. Histograms (GCS Monthly JSON Files):
- *    - compileJs: 27 files failed to download/parse (empty or incomplete JSON)
+ *    - compileJs: 27 files failed to download/parse (empty or truncated JSON)
  *      * reports/2016_01_01/compileJs.json to 2016_12_01/compileJs.json
  *      * reports/2017_08_01/compileJs.json to 2017_08_15/compileJs.json
  *      * reports/wordpress/2018_06_01/compileJs.json to 2018_06_15/compileJs.json
- *    - dcl: 51 files failed to download/parse (mostly empty JSON files)
+ *    - dcl: 51 files failed to download/parse (empty legacy JSON files)
  *      * reports/2011_06_01/dcl.json to 2013_07_01/dcl.json
- *    - evalJs: 26 files failed to download/parse (empty or incomplete JSON)
+ *    - evalJs: 26 files failed to download/parse (empty or truncated JSON)
  *      * reports/2016_01_01/evalJs.json to 2017_08_15/evalJs.json
  *      * reports/wordpress/2018_06_01/evalJs.json to 2018_06_15/evalJs.json
  *    - fcp: 2 files failed to download/parse (corrupted files)
  *      * reports/2017_08_01/fcp.json
  *      * reports/2017_08_15/fcp.json
  *
- * If you need to reprocess these dates, they must be re-generated from the raw crawl pages tables
- * since the legacy GCS artifacts for these dates are corrupted or missing.
+ * 3. Bin Schema & Data Precision Classifications:
+ *    - FLOAT64 Bin Metrics: 11 metrics require exact floating-point decimal precision
+ *      (bootupJs, dcl, ol, reqCss, reqFont, reqHtml, reqImg, reqJs, reqOther, reqTotal, reqVideo).
+ *      Do NOT apply Math.round() or CAST AS INT64 on bin values during GCS ingestion or SQL generation.
+ *    - INT64 Bin Metrics: 26 metrics represent integer counts, byte buckets, or integer calculations
+ *      (bytesCss, bytesFont, bytesHtml, bytesImg, bytesJs, bytesOther, bytesTotal, bytesVideo, compileJs,
+ *       crux*, evalJs, fcp, gzipSavings, imgSavings, offscreenImages, optimizedImages, speedIndex, tcp, ttci).
  *
- * 3. Suggested Post-Migration Validation Tests:
+ * If you need to backfill the missing/corrupted historical dates listed above, they must be
+ * re-generated from the raw crawl pages tables (httparchive.crawl.pages) using Dataform operations.
+ *
+ * 4. Suggested Post-Migration Validation Tests:
  *    - Quantile Monotonicity: Verify that for all timeseries tables, quantiles satisfy
  *      p10 <= p25 <= p50 <= p75 <= p90.
  *    - CDF Integrity Check: Verify that for all histogram tables, the cdf increases
@@ -364,11 +372,11 @@ const config = {
           query: DataformTemplateBuilder.create((ctx, params) => `
             SELECT
               client,
-              ROUND(APPROX_QUANTILES(bytesTotal, 1001)[OFFSET(101)] / 1024, 2) AS p10,
-              ROUND(APPROX_QUANTILES(bytesTotal, 1001)[OFFSET(251)] / 1024, 2) AS p25,
-              ROUND(APPROX_QUANTILES(bytesTotal, 1001)[OFFSET(501)] / 1024, 2) AS p50,
-              ROUND(APPROX_QUANTILES(bytesTotal, 1001)[OFFSET(751)] / 1024, 2) AS p75,
-              ROUND(APPROX_QUANTILES(bytesTotal, 1001)[OFFSET(901)] / 1024, 2) AS p90
+              ROUND(APPROX_QUANTILES(INT64(summary.bytesTotal), 1001)[OFFSET(101)] / 1024, 2) AS p10,
+              ROUND(APPROX_QUANTILES(INT64(summary.bytesTotal), 1001)[OFFSET(251)] / 1024, 2) AS p25,
+              ROUND(APPROX_QUANTILES(INT64(summary.bytesTotal), 1001)[OFFSET(501)] / 1024, 2) AS p50,
+              ROUND(APPROX_QUANTILES(INT64(summary.bytesTotal), 1001)[OFFSET(751)] / 1024, 2) AS p75,
+              ROUND(APPROX_QUANTILES(INT64(summary.bytesTotal), 1001)[OFFSET(901)] / 1024, 2) AS p90
             FROM ${ctx.ref('crawl', 'pages')}
             WHERE
               date = '${params.date}'
@@ -1792,7 +1800,7 @@ const config = {
               date = '${params.date}'
               AND is_root_page
               ${params.lens.sql}
-              AND lighthouse IS NOT NULL AND TO_JSON_STRING(lighthouse) != '{}' AND
+              AND lighthouse IS NOT NULL AND TO_JSON_STRING(lighthouse) != '{}'
             GROUP BY
               client
             ORDER BY

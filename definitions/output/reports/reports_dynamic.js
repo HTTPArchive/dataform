@@ -229,11 +229,30 @@ SELECT reports.run_export_job(job_config);
 // Generate all report configurations
 const reportConfigurations = generateReportConfigurations()
 
-// Create Dataform operations for each report configuration
+// Group report configurations by table to sequence operations on the same table
+const configsByTable = {}
 reportConfigurations.forEach(reportConfig => {
-  const operationName = createOperationName(reportConfig)
+  const table = reportConfig.tableName
+  if (!configsByTable[table]) {
+    configsByTable[table] = []
+  }
+  configsByTable[table].push(reportConfig)
+})
 
-  operate(operationName)
-    .tags(['crawl_complete'])
-    .queries(ctx => generateOperationSQL(ctx, reportConfig))
+// Create Dataform operations sequentially per table to prevent BigQuery DML table lock rate limits
+Object.values(configsByTable).forEach(configs => {
+  let prevOperationName = null
+
+  configs.forEach(reportConfig => {
+    const operationName = createOperationName(reportConfig)
+    const op = operate(operationName)
+      .tags(['crawl_complete'])
+      .queries(ctx => generateOperationSQL(ctx, reportConfig))
+
+    if (prevOperationName) {
+      op.dependencies([prevOperationName])
+    }
+
+    prevOperationName = operationName
+  })
 })

@@ -311,6 +311,47 @@ const EXPORT_CONFIG = {
 }
 ```
 
+## GCS Import Sync & Backfill Scripts
+
+Historical report JSON files stored in GCS (`gs://httparchive/reports/...`) can be backfilled directly into BigQuery `httparchive.reports.*` tables using the sync scripts in `scripts/import_gcs_reports/`.
+
+### Explicit Bin Schema Classification (`histogram_storage_sync.js`)
+
+To prevent precision loss or BigQuery type mismatch errors during JSON ingestion, histogram metrics are explicitly categorized by their bin data type:
+
+- **`INT64_BIN_METRICS`**: Metrics representing counts, byte sizes, or integer calculations (e.g. `bytesCss`, `bytesTotal`, `reqTotal`, `speedIndex`, `tcp`, `crux*`). Bins are parsed with integer rounding (`Math.round`) and uploaded to BigQuery under an `INT64` schema.
+- **`FLOAT64_BIN_METRICS`**: Metrics representing exact timing or floating-point ratios (e.g. `bootupJs`, `dcl`, `ol`, `reqCss`, `reqFont`, `reqHtml`, `reqImg`, `reqJs`, `reqOther`, `reqTotal`, `reqVideo`). Bins preserve full decimal precision (`Number(val)`) and are uploaded under a `FLOAT64` schema.
+
+### CLI Sync Commands
+
+```bash
+# Sync all histogram tables (skips existing tables with data)
+node scripts/import_gcs_reports/histogram_storage_sync.js
+
+# Sync only INT64 bin metrics
+node scripts/import_gcs_reports/histogram_storage_sync.js --int64-only
+
+# Sync only FLOAT64 bin metrics
+node scripts/import_gcs_reports/histogram_storage_sync.js --float64-only
+
+# Force truncate and re-sync specific metrics
+node scripts/import_gcs_reports/histogram_storage_sync.js --force bootupJs dcl ol
+
+# Sync timeseries metrics
+node scripts/import_gcs_reports/timeseries_storage_sync.js
+```
+
+### Future Per-Metric Customizations
+
+The import script provides a `METRIC_CUSTOMIZATIONS` map to allow per-metric overrides (e.g., custom bin transformers, alternate GCS paths, or specific data filters):
+
+```javascript
+export const METRIC_CUSTOMIZATIONS = {
+  // Example future override:
+  // bootupJs: { binType: 'FLOAT64', customTransform: (row) => row }
+}
+```
+
 ## Troubleshooting
 
 ### Debugging
