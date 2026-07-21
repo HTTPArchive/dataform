@@ -228,30 +228,47 @@ ${exportStatements}
 // Generate all report configurations
 const reportConfigurations = generateReportConfigurations()
 
-// Group report configurations by table to sequence operations on the same table
-const configsByTable = {}
-reportConfigurations.forEach(reportConfig => {
+// Concurrency limits configuration
+const MAX_GLOBAL_CONCURRENCY = 10     // Max active operations globally across all reports
+const MAX_PER_REPORT_CONCURRENCY = 1 // Max active operations per report destination table
+
+// Map to track operations created per report table
+const opsByTable = {}
+
+reportConfigurations.forEach((reportConfig, index) => {
+  const operationName = createOperationName(reportConfig)
   const table = reportConfig.tableName
-  if (!configsByTable[table]) {
-    configsByTable[table] = []
+
+  if (!opsByTable[table]) {
+    opsByTable[table] = []
   }
-  configsByTable[table].push(reportConfig)
+  const tableHistory = opsByTable[table]
+  const dependencies = []
+
+  // 1. Global sliding stream constraint (max global concurrency)
+  if (index >= MAX_GLOBAL_CONCURRENCY) {
+    const globalPredecessor = createOperationName(reportConfigurations[index - MAX_GLOBAL_CONCURRENCY])
+    dependencies.push(globalPredecessor)
+  }
+
+  // 2. Per-report sliding stream constraint (max per-table concurrency)
+  if (tableHistory.length >= MAX_PER_REPORT_CONCURRENCY) {
+    const tablePredecessor = tableHistory[tableHistory.length - MAX_PER_REPORT_CONCURRENCY]
+    dependencies.push(tablePredecessor)
+  }
+
+  // Create Dataform operation
+  const op = operate(operationName)
+    .tags(['crawl_complete'])
+    .queries(ctx => generateOperationSQL(ctx, reportConfig))
+
+  // Apply deduplicated dependencies
+  const uniqueDeps = [...new Set(dependencies)]
+  if (uniqueDeps.length > 0) {
+    op.dependencies(uniqueDeps)
+  }
+
+  // Record operation in table history
+  tableHistory.push(operationName)
 })
 
-// Create Dataform operations sequentially per table to prevent BigQuery DML table lock rate limits
-Object.values(configsByTable).forEach(configs => {
-  let prevOperationName = null
-
-  configs.forEach(reportConfig => {
-    const operationName = createOperationName(reportConfig)
-    const op = operate(operationName)
-      .tags(['crawl_complete'])
-      .queries(ctx => generateOperationSQL(ctx, reportConfig))
-
-    if (prevOperationName) {
-      op.dependencies([prevOperationName])
-    }
-
-    prevOperationName = operationName
-  })
-})
