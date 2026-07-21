@@ -62,6 +62,9 @@ Lenses allow filtering data by different criteria:
 - **`magento`** - Sites using Magento
 - **`wordpress`** - Sites using WordPress
 
+> [!TIP]
+> **Single-Pass Multi-Lens Querying**: Reports do NOT run separate BigQuery operations per lens. Instead, a single operation tags each row with an array of applicable lenses (`constants.lensArrayExpression`), unnesting all 8 lenses in-memory in a single pass.
+
 ### Date Range Processing
 
 - Configurable start and end dates
