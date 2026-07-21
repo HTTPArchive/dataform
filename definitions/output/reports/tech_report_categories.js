@@ -8,9 +8,11 @@ publish('tech_report_categories', {
 WITH pages AS (
   SELECT DISTINCT
     client,
-    root_page,
-    technologies
-  FROM ${ctx.ref('crawl', 'pages')}
+    category,
+    root_page
+  FROM ${ctx.ref('crawl', 'pages')} AS pages
+  INNER JOIN pages.technologies AS tech
+  INNER JOIN tech.categories AS category
   WHERE
     date = '${pastMonth}'
     ${constants.devRankFilter}
@@ -36,7 +38,7 @@ crux AS (
 merged_pages AS (
   SELECT DISTINCT
     client,
-    technologies,
+    category,
     root_page
   FROM pages
   INNER JOIN crux
@@ -45,68 +47,53 @@ merged_pages AS (
 
 category_stats AS (
   SELECT
+    client,
     category,
-    STRUCT(
-      MAX(IF(client = 'desktop', origins, 0)) AS desktop,
-      MAX(IF(client = 'mobile', origins, 0)) AS mobile
-    ) AS origins
-  FROM (
-    SELECT
-      client,
-      category,
-      COUNT(DISTINCT root_page) AS origins
-    FROM merged_pages
-    INNER JOIN merged_pages.technologies AS tech
-    INNER JOIN tech.categories AS category
-    WHERE
-      category IS NOT NULL
-    GROUP BY
-      client,
-      category
-  )
-  GROUP BY category
+    COUNT(DISTINCT root_page) AS origins
+  FROM merged_pages
+  GROUP BY
+    client,
+    category
 ),
 
 technology_stats AS (
   SELECT
-    technology,
-    category_obj AS categories,
-    origins.mobile AS mobile_origins
-  FROM ${ctx.ref('reports', 'tech_report_technologies')}
+    category,
+    STRUCT(
+      ARRAY_AGG(technology IGNORE NULLS ORDER BY origins.mobile DESC) AS mobile,
+      ARRAY_AGG(technology IGNORE NULLS ORDER BY origins.desktop DESC) AS desktop
+    ) AS technologies
+  FROM ${ctx.ref('reports', 'tech_report_technologies')},
+    UNNEST(category_obj) AS category
+  GROUP BY category
 )
 
 SELECT
+  client,
   category,
   description,
   origins,
-  ARRAY_AGG(technology IGNORE NULLS ORDER BY technology_stats.mobile_origins DESC) AS technologies
+  IF(
+    client = 'mobile',
+    technologies.mobile,
+    technologies.desktop
+  ) AS technologies
 FROM category_stats
 INNER JOIN technology_stats
-ON category_stats.category IN UNNEST(technology_stats.categories)
+USING (category)
 INNER JOIN category_descriptions
 USING (category)
-GROUP BY
-  category,
-  description,
-  origins
 
 UNION ALL
 
 SELECT
+  client,
   'ALL' AS category,
   NULL AS description,
-  STRUCT(
-    MAX(IF(client = 'desktop', origins, 0)) AS desktop,
-    MAX(IF(client = 'mobile', origins, 0)) AS mobile
-  ) AS origins,
+  COUNT(DISTINCT root_page) AS origins,
   NULL AS technologies
-FROM (
-  SELECT
-    client,
-    COUNT(DISTINCT root_page) AS origins
-  FROM merged_pages
-  GROUP BY client
-)
+FROM merged_pages
+GROUP BY client
 `).postOps(ctx => `
 SELECT
   reports.run_export_job(
