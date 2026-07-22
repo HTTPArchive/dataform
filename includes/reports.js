@@ -464,7 +464,7 @@ const config = {
               SUM(IF(feat.id IS NOT NULL, 1, 0)) AS num_urls,
               ROUND(SUM(IF(feat.id IS NOT NULL, 1, 0)) / COUNT(0) * 100, 5) AS percent
             FROM (
-              SELECT client, is_root_page, date, ${lensArrayExpression} AS lens_array
+              SELECT client, is_root_page, date, ${lensArrayExpression} AS lens_array,
                 features
               FROM ${ctx.ref('crawl', 'pages')}
               WHERE date = '${params.date}' AND is_root_page

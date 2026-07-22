@@ -183,6 +183,14 @@ SELECT reports.run_export_job(job_config);
 `
   }).join('\n')
 
+  const isHistogram = sql.type === 'histogram'
+  const targetColumns = isHistogram
+    ? ' (client, date, metric, lens, volume, bin, pdf, cdf)'
+    : ''
+  const selectColumns = isHistogram
+    ? `client, DATE('${date}') AS date, '${metric.id}' AS metric, lens, volume, bin, pdf, cdf`
+    : `client, DATE('${date}') AS date, '${metric.id}' AS metric, lens, * EXCEPT(client, lens)`
+
   return `
 DECLARE job_config JSON;
 
@@ -197,11 +205,7 @@ PARTITION BY date
 CLUSTER BY metric, lens, client
 AS
 SELECT
-  client,
-  DATE('${date}') AS date,
-  '${metric.id}' AS metric,
-  lens,
-  * EXCEPT(client, lens)
+  ${selectColumns}
 FROM ${tableName}_temp
 WHERE FALSE;
 
@@ -211,13 +215,9 @@ WHERE date = '${date}'
   AND metric = '${metric.id}';
 
 -- Insert fresh multi-lens data
-INSERT INTO ${EXPORT_CONFIG.dataset}.${tableName}
+INSERT INTO ${EXPORT_CONFIG.dataset}.${tableName}${targetColumns}
 SELECT
-  client,
-  DATE('${date}') AS date,
-  '${metric.id}' AS metric,
-  lens,
-  * EXCEPT(client, lens)
+  ${selectColumns}
 FROM ${tableName}_temp;
 
 -- Export data for each lens to Cloud Storage
