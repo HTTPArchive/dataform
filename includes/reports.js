@@ -138,6 +138,108 @@ const config = {
         }
       ]
     },
+    bytesHtml: {
+      SQL: [
+        {
+          type: 'histogram',
+          query: DataformTemplateBuilder.create((ctx, params) => `
+            SELECT
+              *,
+              SUM(pdf) OVER (PARTITION BY client, lens ORDER BY bin) AS cdf
+            FROM (
+              SELECT
+                *,
+                volume / SUM(volume) OVER (PARTITION BY client, lens) AS pdf
+              FROM (
+                SELECT client, lens, COUNT(0) AS volume,
+                  CAST(FLOOR(bytesHtml / 10240) * 10 AS INT64) AS bin
+                FROM (
+                  SELECT client, ${lensArrayExpression} AS lens_array,
+                    FLOAT64(summary.bytesHtml) AS bytesHtml
+                  FROM ${ctx.ref('crawl', 'pages')}
+                  WHERE date = '${params.date}' AND is_root_page
+                ), UNNEST(lens_array) AS lens
+                WHERE lens IS NOT NULL
+                GROUP BY client, lens, bin
+              )
+            )
+            ORDER BY lens, client, bin
+          `)
+        },
+        {
+          type: 'timeseries',
+          query: DataformTemplateBuilder.create((ctx, params) => `
+            SELECT client, lens,
+              ROUND(APPROX_QUANTILES(bytesHtml, 1001)[OFFSET(101)] / 1024, 2) AS p10,
+              ROUND(APPROX_QUANTILES(bytesHtml, 1001)[OFFSET(251)] / 1024, 2) AS p25,
+              ROUND(APPROX_QUANTILES(bytesHtml, 1001)[OFFSET(501)] / 1024, 2) AS p50,
+              ROUND(APPROX_QUANTILES(bytesHtml, 1001)[OFFSET(751)] / 1024, 2) AS p75,
+              ROUND(APPROX_QUANTILES(bytesHtml, 1001)[OFFSET(901)] / 1024, 2) AS p90
+            FROM (
+              SELECT client, ${lensArrayExpression} AS lens_array,
+                FLOAT64(summary.bytesHtml) AS bytesHtml
+              FROM ${ctx.ref('crawl', 'pages')}
+              WHERE date = '${params.date}' AND is_root_page
+                AND FLOAT64(summary.bytesHtml) > 0
+            ), UNNEST(lens_array) AS lens
+            WHERE lens IS NOT NULL
+            GROUP BY client, lens
+            ORDER BY lens, client
+          `)
+        }
+      ]
+    },
+    bytesOther: {
+      SQL: [
+        {
+          type: 'histogram',
+          query: DataformTemplateBuilder.create((ctx, params) => `
+            SELECT
+              *,
+              SUM(pdf) OVER (PARTITION BY client, lens ORDER BY bin) AS cdf
+            FROM (
+              SELECT
+                *,
+                volume / SUM(volume) OVER (PARTITION BY client, lens) AS pdf
+              FROM (
+                SELECT client, lens, COUNT(0) AS volume,
+                  CAST(FLOOR(bytesOther / 10240) * 10 AS INT64) AS bin
+                FROM (
+                  SELECT client, ${lensArrayExpression} AS lens_array,
+                    FLOAT64(summary.bytesOther) AS bytesOther
+                  FROM ${ctx.ref('crawl', 'pages')}
+                  WHERE date = '${params.date}' AND is_root_page
+                ), UNNEST(lens_array) AS lens
+                WHERE lens IS NOT NULL
+                GROUP BY client, lens, bin
+              )
+            )
+            ORDER BY lens, client, bin
+          `)
+        },
+        {
+          type: 'timeseries',
+          query: DataformTemplateBuilder.create((ctx, params) => `
+            SELECT client, lens,
+              ROUND(APPROX_QUANTILES(bytesOther, 1001)[OFFSET(101)] / 1024, 2) AS p10,
+              ROUND(APPROX_QUANTILES(bytesOther, 1001)[OFFSET(251)] / 1024, 2) AS p25,
+              ROUND(APPROX_QUANTILES(bytesOther, 1001)[OFFSET(501)] / 1024, 2) AS p50,
+              ROUND(APPROX_QUANTILES(bytesOther, 1001)[OFFSET(751)] / 1024, 2) AS p75,
+              ROUND(APPROX_QUANTILES(bytesOther, 1001)[OFFSET(901)] / 1024, 2) AS p90
+            FROM (
+              SELECT client, ${lensArrayExpression} AS lens_array,
+                FLOAT64(summary.bytesOther) AS bytesOther
+              FROM ${ctx.ref('crawl', 'pages')}
+              WHERE date = '${params.date}' AND is_root_page
+                AND FLOAT64(summary.bytesOther) > 0
+            ), UNNEST(lens_array) AS lens
+            WHERE lens IS NOT NULL
+            GROUP BY client, lens
+            ORDER BY lens, client
+          `)
+        }
+      ]
+    },
     llmsTxt: {
       SQL: [
         {
