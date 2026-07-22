@@ -45,9 +45,9 @@ function buildExportPath(reportConfig, lensName) {
   let objectPath = EXPORT_CONFIG.storagePath
 
   if (sql.type === 'histogram') {
-    // Histogram exports are organized under date and lens folders
+    // Histogram exports are organized under lens and date folders
     const dateFolder = date.replaceAll('-', '_')
-    objectPath += `${dateFolder}/${lensPath}${metric.id}${EXPORT_CONFIG.fileFormat}`
+    objectPath += `${lensPath}${dateFolder}/${metric.id}${EXPORT_CONFIG.fileFormat}`
   } else if (sql.type === 'timeseries') {
     // Timeseries exports are organized under lens folders
     objectPath += `${lensPath}${metric.id}${EXPORT_CONFIG.fileFormat}`
@@ -259,7 +259,7 @@ reportConfigurations.forEach((reportConfig, index) => {
 
   // Create Dataform operation
   const op = operate(operationName)
-    .tags(['crawl_complete'])
+    .tags(['crawl_complete_reports'])
     .queries(ctx => generateOperationSQL(ctx, reportConfig))
 
   // Apply deduplicated dependencies

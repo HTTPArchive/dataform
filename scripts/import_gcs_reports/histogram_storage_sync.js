@@ -66,8 +66,8 @@ export function getHistogramSchema(metric) {
     { name: 'date', type: 'DATE' },
     { name: 'metric', type: 'STRING' },
     { name: 'lens', type: 'STRING' },
-    { name: 'bin', type: binType },
     { name: 'volume', type: 'INT64' },
+    { name: 'bin', type: binType },
     { name: 'pdf', type: 'FLOAT64' },
     { name: 'cdf', type: 'FLOAT64' }
   ]
@@ -139,7 +139,7 @@ function generateHTTPArchiveDates(startDate, endDate) {
   return dates.sort()
 }
 
-const dates = generateHTTPArchiveDates('2011-06-01', '2025-07-01')
+const dates = generateHTTPArchiveDates('2011-06-01', '2026-07-01')
 
 const downloadObject = async (filename) =>
   (await storage.bucket(CONFIG.storage.bucket).file(filename).download()).toString()
@@ -190,8 +190,8 @@ async function downloadAndParseFile(filename, date, lensPath, metric) {
       date,
       metric,
       lens: lensName(lensPath),
-      bin: parseBinValue(item.bin, binType),
       volume: (item.volume === null || item.volume === undefined || item.volume === '') ? null : Math.round(Number(item.volume)),
+      bin: parseBinValue(item.bin, binType),
       pdf: (item.pdf === null || item.pdf === undefined || item.pdf === '') ? null : Number(item.pdf),
       cdf: (item.cdf === null || item.cdf === undefined || item.cdf === '') ? null : Number(item.cdf)
     }))
