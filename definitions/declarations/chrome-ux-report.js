@@ -30,3 +30,16 @@ FROM ${ctx.ref(database, 'materialized', 'device_summary')}
 |> WHERE cnt_devices != 3 OR cnt_ranks != 10
 |> SELECT "Table data doesn't match 3 unique devices and 10 ranks" AS error_message
 `)
+
+// Declare chrome-ux-report.all.YYYYMM tables for CrUX histogram operations
+let d = new Date(constants.currentMonth)
+for (let i = 0; i < 180; i++) {
+  const yyyymm = d.toISOString().substring(0, 7).replace('-', '')
+  declare({
+    database,
+    schema: 'all',
+    name: yyyymm
+  })
+  d.setMonth(d.getMonth() - 1)
+}
+

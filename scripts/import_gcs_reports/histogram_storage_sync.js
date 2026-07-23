@@ -16,16 +16,16 @@ const CONFIG = {
 // Metrics with INT64 bin schemas (byte sizes, request counts, integer calculations)
 export const INT64_BIN_METRICS = [
   'bytesCss', 'bytesFont', 'bytesHtml', 'bytesImg', 'bytesJs',
-  'bytesOther', 'bytesTotal', 'bytesVideo', 'compileJs', 'cruxCls',
-  'cruxDcl', 'cruxFcp', 'cruxFp', 'cruxInp', 'cruxLcp', 'cruxOl',
-  'cruxTtfb', 'evalJs', 'fcp', 'gzipSavings', 'imgSavings',
-  'offscreenImages', 'optimizedImages', 'speedIndex', 'tcp', 'ttci'
+  'bytesOther', 'bytesTotal', 'bytesVideo', 'compileJs', 'evalJs',
+  'fcp', 'gzipSavings', 'imgSavings', 'offscreenImages',
+  'optimizedImages', 'speedIndex', 'tcp', 'ttci'
 ]
 
-// Metrics with FLOAT64 bin schemas (timing in seconds/ms with fractional precision)
+// Metrics with FLOAT64 bin schemas (timing in seconds/ms with fractional precision, CrUX distributions)
 export const FLOAT64_BIN_METRICS = [
-  'bootupJs', 'dcl', 'ol', 'reqCss', 'reqFont', 'reqHtml',
-  'reqImg', 'reqJs', 'reqOther', 'reqTotal', 'reqVideo'
+  'bootupJs', 'cruxCls', 'cruxDcl', 'cruxFcp', 'cruxFp', 'cruxInp',
+  'cruxLcp', 'cruxOl', 'cruxTtfb', 'dcl', 'ol', 'reqCss', 'reqFont',
+  'reqHtml', 'reqImg', 'reqJs', 'reqOther', 'reqTotal', 'reqVideo'
 ]
 
 export const ALL_METRICS = [...INT64_BIN_METRICS, ...FLOAT64_BIN_METRICS].sort()
@@ -61,12 +61,13 @@ export function getBinType(metric) {
  */
 export function getHistogramSchema(metric) {
   const binType = getBinType(metric)
+  const volumeType = FLOAT64_BIN_METRICS.includes(metric) ? 'FLOAT64' : 'INT64'
   return [
     { name: 'client', type: 'STRING' },
     { name: 'date', type: 'DATE' },
     { name: 'metric', type: 'STRING' },
     { name: 'lens', type: 'STRING' },
-    { name: 'volume', type: 'INT64' },
+    { name: 'volume', type: volumeType },
     { name: 'bin', type: binType },
     { name: 'pdf', type: 'FLOAT64' },
     { name: 'cdf', type: 'FLOAT64' }
@@ -183,6 +184,7 @@ async function mapLimit(items, limit, fn) {
 
 async function downloadAndParseFile(filename, date, lensPath, metric) {
   const binType = getBinType(metric)
+  const isFloatVolume = FLOAT64_BIN_METRICS.includes(metric)
   try {
     const data = await downloadObject(filename)
     const rows = JSON.parse(data).map(item => ({
@@ -190,7 +192,7 @@ async function downloadAndParseFile(filename, date, lensPath, metric) {
       date,
       metric,
       lens: lensName(lensPath),
-      volume: (item.volume === null || item.volume === undefined || item.volume === '') ? null : Math.round(Number(item.volume)),
+      volume: (item.volume === null || item.volume === undefined || item.volume === '') ? null : (isFloatVolume ? Number(item.volume) : Math.round(Number(item.volume))),
       bin: parseBinValue(item.bin, binType),
       pdf: (item.pdf === null || item.pdf === undefined || item.pdf === '') ? null : Number(item.pdf),
       cdf: (item.cdf === null || item.cdf === undefined || item.cdf === '') ? null : Number(item.cdf)

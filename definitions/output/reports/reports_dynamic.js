@@ -136,9 +136,13 @@ function generateReportConfigurations() {
 
     // For each available metric
     availableMetrics.forEach(metric => {
+      // CrUX dataset is published with a 1-month lag relative to HTTP Archive crawl date
+      const isCrux = metric.id.startsWith('crux')
+      const targetDate = isCrux ? constants.fnPastMonth(date) : date
+
       // For each SQL type (histogram, timeseries)
       metric.SQL.forEach(sql => {
-        const config = createReportConfig(date, metric, sql)
+        const config = createReportConfig(targetDate, metric, sql)
         reportConfigs.push(config)
       })
     })

@@ -23,12 +23,12 @@
  *      * reports/2017_08_15/fcp.json
  *
  * 3. Bin Schema & Data Precision Classifications:
- *    - FLOAT64 Bin Metrics: 11 metrics require exact floating-point decimal precision
- *      (bootupJs, dcl, ol, reqCss, reqFont, reqHtml, reqImg, reqJs, reqOther, reqTotal, reqVideo).
+ *    - FLOAT64 Bin Metrics: 19 metrics require exact floating-point decimal precision
+ *      (bootupJs, crux*, dcl, ol, reqCss, reqFont, reqHtml, reqImg, reqJs, reqOther, reqTotal, reqVideo).
  *      Do NOT apply Math.round() or CAST AS INT64 on bin values during GCS ingestion or SQL generation.
- *    - INT64 Bin Metrics: 26 metrics represent integer counts, byte buckets, or integer calculations
+ *    - INT64 Bin Metrics: 18 metrics represent integer counts, byte buckets, or integer calculations
  *      (bytesCss, bytesFont, bytesHtml, bytesImg, bytesJs, bytesOther, bytesTotal, bytesVideo, compileJs,
- *       crux*, evalJs, fcp, gzipSavings, imgSavings, offscreenImages, optimizedImages, speedIndex, tcp, ttci).
+ *       evalJs, fcp, gzipSavings, imgSavings, offscreenImages, optimizedImages, speedIndex, tcp, ttci).
  *
  * If you need to backfill the missing/corrupted historical dates listed above, they must be
  * re-generated from the raw crawl pages tables (httparchive.crawl.pages) using Dataform operations.
@@ -1640,6 +1640,27 @@ const config = {
             )
             ORDER BY lens, client, bin
           `)
+        },
+        {
+          type: 'timeseries',
+          query: DataformTemplateBuilder.create((ctx, params) => `
+            SELECT client, lens,
+              APPROX_QUANTILES(connections, 1001)[OFFSET(101)] AS p10,
+              APPROX_QUANTILES(connections, 1001)[OFFSET(251)] AS p25,
+              APPROX_QUANTILES(connections, 1001)[OFFSET(501)] AS p50,
+              APPROX_QUANTILES(connections, 1001)[OFFSET(751)] AS p75,
+              APPROX_QUANTILES(connections, 1001)[OFFSET(901)] AS p90
+            FROM (
+              SELECT client, ${lensArrayExpression} AS lens_array,
+                FLOAT64(summary._connections) AS connections
+              FROM ${ctx.ref('crawl', 'pages')}
+              WHERE date = '${params.date}' AND is_root_page
+                AND FLOAT64(summary._connections) > 0
+            ), UNNEST(lens_array) AS lens
+            WHERE lens IS NOT NULL
+            GROUP BY client, lens
+            ORDER BY lens, client
+          `)
         }
       ]
     },
@@ -2310,6 +2331,733 @@ const config = {
             WHERE lens IS NOT NULL
             GROUP BY client, lens
             ORDER BY lens, client, num_urls DESC
+          `)
+        }
+      ]
+    },
+    // CrUX Histograms
+    cruxCls: {
+      SQL: [
+        {
+          type: 'histogram',
+          query: DataformTemplateBuilder.create((ctx, params) => `
+            SELECT
+              *,
+              SUM(pdf) OVER (PARTITION BY client, lens ORDER BY bin) AS cdf
+            FROM (
+              SELECT
+                *,
+                volume / SUM(volume) OVER (PARTITION BY client, lens) AS pdf
+              FROM (
+                SELECT client, lens, bin, SUM(density) AS volume
+                FROM (
+                  SELECT
+                    IF(form_factor.name = 'desktop', 'desktop', 'mobile') AS client,
+                    lens,
+                    ROUND(s, 2) AS bin,
+                    bin.density / ((LEAST(bin.end, bin.start + 10) - bin.start) / 0.01) AS density
+                  FROM ${ctx.ref('chrome-ux-report', 'all', params.date.replaceAll('-', '').substring(0, 6))}
+                  INNER JOIN (
+                    SELECT page, client, lens
+                    FROM ${ctx.ref('crawl', 'pages')},
+                    UNNEST(${lensArrayExpression}) AS lens
+                    WHERE date = '${params.date}' AND is_root_page AND lens IS NOT NULL
+                  )
+                  ON (page = CONCAT(origin, '/') AND client = IF(form_factor.name = 'desktop', 'desktop', 'mobile')),
+                  UNNEST(layout_instability.cumulative_layout_shift.histogram.bin) AS bin,
+                  UNNEST(GENERATE_ARRAY(CAST(bin.start AS NUMERIC), CAST(LEAST(bin.end, bin.start + 10) - 0.01 AS NUMERIC), 0.01)) AS s
+                  WHERE bin.end > bin.start AND bin.density > 0
+                )
+                GROUP BY client, lens, bin
+              )
+            )
+            ORDER BY lens, client, bin
+          `)
+        }
+      ]
+    },
+    cruxDcl: {
+      SQL: [
+        {
+          type: 'histogram',
+          query: DataformTemplateBuilder.create((ctx, params) => `
+            SELECT
+              *,
+              SUM(pdf) OVER (PARTITION BY client, lens ORDER BY bin) AS cdf
+            FROM (
+              SELECT
+                *,
+                volume / SUM(volume) OVER (PARTITION BY client, lens) AS pdf
+              FROM (
+                SELECT client, lens, bin, SUM(density) AS volume
+                FROM (
+                  SELECT
+                    IF(form_factor.name = 'desktop', 'desktop', 'mobile') AS client,
+                    lens,
+                    s / 1000 AS bin,
+                    bin.density / ((LEAST(bin.end, bin.start + 5000) - bin.start) / 100) AS density
+                  FROM ${ctx.ref('chrome-ux-report', 'all', params.date.replaceAll('-', '').substring(0, 6))}
+                  INNER JOIN (
+                    SELECT page, client, lens
+                    FROM ${ctx.ref('crawl', 'pages')},
+                    UNNEST(${lensArrayExpression}) AS lens
+                    WHERE date = '${params.date}' AND is_root_page AND lens IS NOT NULL
+                  )
+                  ON (page = CONCAT(origin, '/') AND client = IF(form_factor.name = 'desktop', 'desktop', 'mobile')),
+                  UNNEST(dom_content_loaded.histogram.bin) AS bin,
+                  UNNEST(GENERATE_ARRAY(bin.start, LEAST(bin.end, bin.start + 5000) - 100, 100)) AS s
+                  WHERE bin.end > bin.start AND bin.density > 0
+                )
+                GROUP BY client, lens, bin
+              )
+            )
+            ORDER BY lens, client, bin
+          `)
+        }
+      ]
+    },
+    cruxFcp: {
+      SQL: [
+        {
+          type: 'histogram',
+          query: DataformTemplateBuilder.create((ctx, params) => `
+            SELECT
+              *,
+              SUM(pdf) OVER (PARTITION BY client, lens ORDER BY bin) AS cdf
+            FROM (
+              SELECT
+                *,
+                volume / SUM(volume) OVER (PARTITION BY client, lens) AS pdf
+              FROM (
+                SELECT client, lens, bin, SUM(density) AS volume
+                FROM (
+                  SELECT
+                    IF(form_factor.name = 'desktop', 'desktop', 'mobile') AS client,
+                    lens,
+                    s / 1000 AS bin,
+                    bin.density / ((LEAST(bin.end, bin.start + 5000) - bin.start) / 100) AS density
+                  FROM ${ctx.ref('chrome-ux-report', 'all', params.date.replaceAll('-', '').substring(0, 6))}
+                  INNER JOIN (
+                    SELECT page, client, lens
+                    FROM ${ctx.ref('crawl', 'pages')},
+                    UNNEST(${lensArrayExpression}) AS lens
+                    WHERE date = '${params.date}' AND is_root_page AND lens IS NOT NULL
+                  )
+                  ON (page = CONCAT(origin, '/') AND client = IF(form_factor.name = 'desktop', 'desktop', 'mobile')),
+                  UNNEST(first_contentful_paint.histogram.bin) AS bin,
+                  UNNEST(GENERATE_ARRAY(bin.start, LEAST(bin.end, bin.start + 5000) - 100, 100)) AS s
+                  WHERE bin.end > bin.start AND bin.density > 0
+                )
+                GROUP BY client, lens, bin
+              )
+            )
+            ORDER BY lens, client, bin
+          `)
+        }
+      ]
+    },
+    cruxFp: {
+      SQL: [
+        {
+          type: 'histogram',
+          query: DataformTemplateBuilder.create((ctx, params) => `
+            SELECT
+              *,
+              SUM(pdf) OVER (PARTITION BY client, lens ORDER BY bin) AS cdf
+            FROM (
+              SELECT
+                *,
+                volume / SUM(volume) OVER (PARTITION BY client, lens) AS pdf
+              FROM (
+                SELECT client, lens, bin, SUM(density) AS volume
+                FROM (
+                  SELECT
+                    IF(form_factor.name = 'desktop', 'desktop', 'mobile') AS client,
+                    lens,
+                    s / 1000 AS bin,
+                    bin.density / ((LEAST(bin.end, bin.start + 5000) - bin.start) / 100) AS density
+                  FROM ${ctx.ref('chrome-ux-report', 'all', params.date.replaceAll('-', '').substring(0, 6))}
+                  INNER JOIN (
+                    SELECT page, client, lens
+                    FROM ${ctx.ref('crawl', 'pages')},
+                    UNNEST(${lensArrayExpression}) AS lens
+                    WHERE date = '${params.date}' AND is_root_page AND lens IS NOT NULL
+                  )
+                  ON (page = CONCAT(origin, '/') AND client = IF(form_factor.name = 'desktop', 'desktop', 'mobile')),
+                  UNNEST(first_paint.histogram.bin) AS bin,
+                  UNNEST(GENERATE_ARRAY(bin.start, LEAST(bin.end, bin.start + 5000) - 100, 100)) AS s
+                  WHERE bin.end > bin.start AND bin.density > 0
+                )
+                GROUP BY client, lens, bin
+              )
+            )
+            ORDER BY lens, client, bin
+          `)
+        }
+      ]
+    },
+    cruxInp: {
+      SQL: [
+        {
+          type: 'histogram',
+          query: DataformTemplateBuilder.create((ctx, params) => `
+            SELECT
+              *,
+              SUM(pdf) OVER (PARTITION BY client, lens ORDER BY bin) AS cdf
+            FROM (
+              SELECT
+                *,
+                volume / SUM(volume) OVER (PARTITION BY client, lens) AS pdf
+              FROM (
+                SELECT
+                  IF(form_factor.name = 'desktop', 'desktop', 'mobile') AS client,
+                  lens,
+                  bin.start AS bin,
+                  SUM(bin.density) AS volume
+                FROM ${ctx.ref('chrome-ux-report', 'all', params.date.replaceAll('-', '').substring(0, 6))}
+                INNER JOIN (
+                  SELECT page, client, lens
+                  FROM ${ctx.ref('crawl', 'pages')},
+                  UNNEST(${lensArrayExpression}) AS lens
+                  WHERE date = '${params.date}' AND is_root_page AND lens IS NOT NULL
+                )
+                ON (page = CONCAT(origin, '/') AND client = IF(form_factor.name = 'desktop', 'desktop', 'mobile')),
+                UNNEST(interaction_to_next_paint.histogram.bin) AS bin
+                GROUP BY client, lens, bin
+              )
+            )
+            ORDER BY lens, client, bin
+          `)
+        }
+      ]
+    },
+    cruxLcp: {
+      SQL: [
+        {
+          type: 'histogram',
+          query: DataformTemplateBuilder.create((ctx, params) => `
+            SELECT
+              *,
+              SUM(pdf) OVER (PARTITION BY client, lens ORDER BY bin) AS cdf
+            FROM (
+              SELECT
+                *,
+                volume / SUM(volume) OVER (PARTITION BY client, lens) AS pdf
+              FROM (
+                SELECT
+                  client,
+                  lens,
+                  bin,
+                  SUM(density) AS volume
+                FROM (
+                  SELECT
+                    IF(form_factor.name = 'desktop', 'desktop', 'mobile') AS client,
+                    lens,
+                    s / 1000 AS bin,
+                    bin.density / ((LEAST(bin.end, bin.start + 5000) - bin.start) / 100) AS density
+                  FROM ${ctx.ref('chrome-ux-report', 'all', params.date.replaceAll('-', '').substring(0, 6))}
+                  INNER JOIN (
+                    SELECT page, client, lens
+                    FROM ${ctx.ref('crawl', 'pages')},
+                    UNNEST(${lensArrayExpression}) AS lens
+                    WHERE date = '${params.date}' AND is_root_page AND lens IS NOT NULL
+                  )
+                  ON (page = CONCAT(origin, '/') AND client = IF(form_factor.name = 'desktop', 'desktop', 'mobile')),
+                  UNNEST(largest_contentful_paint.histogram.bin) AS bin,
+                  UNNEST(GENERATE_ARRAY(bin.start, LEAST(bin.end, bin.start + 5000) - 100, 100)) AS s
+                  WHERE bin.end > bin.start AND bin.density > 0
+                )
+                GROUP BY client, lens, bin
+              )
+            )
+            ORDER BY lens, client, bin
+          `)
+        }
+      ]
+    },
+    cruxOl: {
+      SQL: [
+        {
+          type: 'histogram',
+          query: DataformTemplateBuilder.create((ctx, params) => `
+            SELECT
+              *,
+              SUM(pdf) OVER (PARTITION BY client, lens ORDER BY bin) AS cdf
+            FROM (
+              SELECT
+                *,
+                volume / SUM(volume) OVER (PARTITION BY client, lens) AS pdf
+              FROM (
+                SELECT
+                  client,
+                  lens,
+                  bin,
+                  SUM(density) AS volume
+                FROM (
+                  SELECT
+                    IF(form_factor.name = 'desktop', 'desktop', 'mobile') AS client,
+                    lens,
+                    s / 1000 AS bin,
+                    bin.density / ((LEAST(bin.end, bin.start + 5000) - bin.start) / 100) AS density
+                  FROM ${ctx.ref('chrome-ux-report', 'all', params.date.replaceAll('-', '').substring(0, 6))}
+                  INNER JOIN (
+                    SELECT page, client, lens
+                    FROM ${ctx.ref('crawl', 'pages')},
+                    UNNEST(${lensArrayExpression}) AS lens
+                    WHERE date = '${params.date}' AND is_root_page AND lens IS NOT NULL
+                  )
+                  ON (page = CONCAT(origin, '/') AND client = IF(form_factor.name = 'desktop', 'desktop', 'mobile')),
+                  UNNEST(onload.histogram.bin) AS bin,
+                  UNNEST(GENERATE_ARRAY(bin.start, LEAST(bin.end, bin.start + 5000) - 100, 100)) AS s
+                  WHERE bin.end > bin.start AND bin.density > 0
+                )
+                GROUP BY client, lens, bin
+              )
+            )
+            ORDER BY lens, client, bin
+          `)
+        }
+      ]
+    },
+    cruxTtfb: {
+      SQL: [
+        {
+          type: 'histogram',
+          query: DataformTemplateBuilder.create((ctx, params) => `
+            SELECT
+              *,
+              SUM(pdf) OVER (PARTITION BY client, lens ORDER BY bin) AS cdf
+            FROM (
+              SELECT
+                *,
+                volume / SUM(volume) OVER (PARTITION BY client, lens) AS pdf
+              FROM (
+                SELECT
+                  IF(form_factor.name = 'desktop', 'desktop', 'mobile') AS client,
+                  lens,
+                  bin.start AS bin,
+                  SUM(bin.density) AS volume
+                FROM ${ctx.ref('chrome-ux-report', 'all', params.date.replaceAll('-', '').substring(0, 6))}
+                INNER JOIN (
+                  SELECT page, client, lens
+                  FROM ${ctx.ref('crawl', 'pages')},
+                  UNNEST(${lensArrayExpression}) AS lens
+                  WHERE date = '${params.date}' AND is_root_page AND lens IS NOT NULL
+                )
+                ON (page = CONCAT(origin, '/') AND client = IF(form_factor.name = 'desktop', 'desktop', 'mobile')),
+                UNNEST(experimental.time_to_first_byte.histogram.bin) AS bin
+                GROUP BY client, lens, bin
+              )
+            )
+            ORDER BY lens, client, bin
+          `)
+        }
+      ]
+    },
+    // CrUX Timeseries
+    cruxFastFcp: {
+      SQL: [
+        {
+          type: 'timeseries',
+          query: DataformTemplateBuilder.create((ctx, params) => `
+            SELECT
+              IF(device = 'desktop', 'desktop', 'mobile') AS client,
+              lens,
+              ROUND(SAFE_DIVIDE(
+                COUNT(DISTINCT IF(fast_fcp / (fast_fcp + avg_fcp + slow_fcp) >= 0.75, origin, NULL)),
+                COUNT(DISTINCT IF(fast_fcp + avg_fcp + slow_fcp > 0, origin, NULL))
+              ) * 100, 2) AS percent
+            FROM ${ctx.ref('chrome-ux-report', 'materialized', 'device_summary')}
+            INNER JOIN (
+              SELECT page, client, lens
+              FROM ${ctx.ref('crawl', 'pages')},
+              UNNEST(${lensArrayExpression}) AS lens
+              WHERE date = '${params.date}' AND is_root_page AND lens IS NOT NULL
+            )
+            ON (page = CONCAT(origin, '/') AND client = IF(device = 'desktop', 'desktop', 'mobile'))
+            WHERE yyyymm = ${params.date.replaceAll('-', '').substring(0, 6)}
+              AND device IN ('desktop', 'phone')
+            GROUP BY client, lens
+            ORDER BY lens, client
+          `)
+        }
+      ]
+    },
+    cruxSlowFcp: {
+      SQL: [
+        {
+          type: 'timeseries',
+          query: DataformTemplateBuilder.create((ctx, params) => `
+            SELECT
+              IF(device = 'desktop', 'desktop', 'mobile') AS client,
+              lens,
+              ROUND(SAFE_DIVIDE(
+                COUNT(DISTINCT IF(slow_fcp / (fast_fcp + avg_fcp + slow_fcp) >= 0.25, origin, NULL)),
+                COUNT(DISTINCT IF(fast_fcp + avg_fcp + slow_fcp > 0, origin, NULL))
+              ) * 100, 2) AS percent
+            FROM ${ctx.ref('chrome-ux-report', 'materialized', 'device_summary')}
+            INNER JOIN (
+              SELECT page, client, lens
+              FROM ${ctx.ref('crawl', 'pages')},
+              UNNEST(${lensArrayExpression}) AS lens
+              WHERE date = '${params.date}' AND is_root_page AND lens IS NOT NULL
+            )
+            ON (page = CONCAT(origin, '/') AND client = IF(device = 'desktop', 'desktop', 'mobile'))
+            WHERE yyyymm = ${params.date.replaceAll('-', '').substring(0, 6)}
+              AND device IN ('desktop', 'phone')
+            GROUP BY client, lens
+            ORDER BY lens, client
+          `)
+        }
+      ]
+    },
+    cruxFastLcp: {
+      SQL: [
+        {
+          type: 'timeseries',
+          query: DataformTemplateBuilder.create((ctx, params) => `
+            SELECT
+              IF(device = 'desktop', 'desktop', 'mobile') AS client,
+              lens,
+              ROUND(SAFE_DIVIDE(
+                COUNT(DISTINCT IF(fast_lcp / (fast_lcp + avg_lcp + slow_lcp) >= 0.75, origin, NULL)),
+                COUNT(DISTINCT IF(fast_lcp + avg_lcp + slow_lcp > 0, origin, NULL))
+              ) * 100, 2) AS percent
+            FROM ${ctx.ref('chrome-ux-report', 'materialized', 'device_summary')}
+            INNER JOIN (
+              SELECT page, client, lens
+              FROM ${ctx.ref('crawl', 'pages')},
+              UNNEST(${lensArrayExpression}) AS lens
+              WHERE date = '${params.date}' AND is_root_page AND lens IS NOT NULL
+            )
+            ON (page = CONCAT(origin, '/') AND client = IF(device = 'desktop', 'desktop', 'mobile'))
+            WHERE yyyymm = ${params.date.replaceAll('-', '').substring(0, 6)}
+              AND device IN ('desktop', 'phone')
+              AND yyyymm >= 201909
+            GROUP BY client, lens
+            ORDER BY lens, client
+          `)
+        }
+      ]
+    },
+    cruxSlowLcp: {
+      SQL: [
+        {
+          type: 'timeseries',
+          query: DataformTemplateBuilder.create((ctx, params) => `
+            SELECT
+              IF(device = 'desktop', 'desktop', 'mobile') AS client,
+              lens,
+              ROUND(SAFE_DIVIDE(
+                COUNT(DISTINCT IF(slow_lcp / (fast_lcp + avg_lcp + slow_lcp) >= 0.25, origin, NULL)),
+                COUNT(DISTINCT IF(fast_lcp + avg_lcp + slow_lcp > 0, origin, NULL))
+              ) * 100, 2) AS percent
+            FROM ${ctx.ref('chrome-ux-report', 'materialized', 'device_summary')}
+            INNER JOIN (
+              SELECT page, client, lens
+              FROM ${ctx.ref('crawl', 'pages')},
+              UNNEST(${lensArrayExpression}) AS lens
+              WHERE date = '${params.date}' AND is_root_page AND lens IS NOT NULL
+            )
+            ON (page = CONCAT(origin, '/') AND client = IF(device = 'desktop', 'desktop', 'mobile'))
+            WHERE yyyymm = ${params.date.replaceAll('-', '').substring(0, 6)}
+              AND device IN ('desktop', 'phone')
+              AND yyyymm >= 201909
+            GROUP BY client, lens
+            ORDER BY lens, client
+          `)
+        }
+      ]
+    },
+    cruxSmallCls: {
+      SQL: [
+        {
+          type: 'timeseries',
+          query: DataformTemplateBuilder.create((ctx, params) => `
+            SELECT
+              IF(device = 'desktop', 'desktop', 'mobile') AS client,
+              lens,
+              ROUND(SAFE_DIVIDE(
+                COUNT(DISTINCT IF(small_cls / (small_cls + medium_cls + large_cls) >= 0.75, origin, NULL)),
+                COUNT(DISTINCT IF(small_cls + medium_cls + large_cls > 0, origin, NULL))
+              ) * 100, 2) AS percent
+            FROM ${ctx.ref('chrome-ux-report', 'materialized', 'device_summary')}
+            INNER JOIN (
+              SELECT page, client, lens
+              FROM ${ctx.ref('crawl', 'pages')},
+              UNNEST(${lensArrayExpression}) AS lens
+              WHERE date = '${params.date}' AND is_root_page AND lens IS NOT NULL
+            )
+            ON (page = CONCAT(origin, '/') AND client = IF(device = 'desktop', 'desktop', 'mobile'))
+            WHERE yyyymm = ${params.date.replaceAll('-', '').substring(0, 6)}
+              AND device IN ('desktop', 'phone')
+              AND yyyymm >= 201905
+            GROUP BY client, lens
+            ORDER BY lens, client
+          `)
+        }
+      ]
+    },
+    cruxLargeCls: {
+      SQL: [
+        {
+          type: 'timeseries',
+          query: DataformTemplateBuilder.create((ctx, params) => `
+            SELECT
+              IF(device = 'desktop', 'desktop', 'mobile') AS client,
+              lens,
+              ROUND(SAFE_DIVIDE(
+                COUNT(DISTINCT IF(large_cls / (small_cls + medium_cls + large_cls) >= 0.25, origin, NULL)),
+                COUNT(DISTINCT IF(small_cls + medium_cls + large_cls > 0, origin, NULL))
+              ) * 100, 2) AS percent
+            FROM ${ctx.ref('chrome-ux-report', 'materialized', 'device_summary')}
+            INNER JOIN (
+              SELECT page, client, lens
+              FROM ${ctx.ref('crawl', 'pages')},
+              UNNEST(${lensArrayExpression}) AS lens
+              WHERE date = '${params.date}' AND is_root_page AND lens IS NOT NULL
+            )
+            ON (page = CONCAT(origin, '/') AND client = IF(device = 'desktop', 'desktop', 'mobile'))
+            WHERE yyyymm = ${params.date.replaceAll('-', '').substring(0, 6)}
+              AND device IN ('desktop', 'phone')
+              AND yyyymm >= 201905
+            GROUP BY client, lens
+            ORDER BY lens, client
+          `)
+        }
+      ]
+    },
+    cruxFastInp: {
+      SQL: [
+        {
+          type: 'timeseries',
+          query: DataformTemplateBuilder.create((ctx, params) => `
+            SELECT
+              IF(device = 'desktop', 'desktop', 'mobile') AS client,
+              lens,
+              ROUND(SAFE_DIVIDE(
+                COUNT(DISTINCT IF(fast_inp / (fast_inp + avg_inp + slow_inp) >= 0.75, origin, NULL)),
+                COUNT(DISTINCT IF(fast_inp + avg_inp + slow_inp > 0, origin, NULL))
+              ) * 100, 2) AS percent
+            FROM ${ctx.ref('chrome-ux-report', 'materialized', 'device_summary')}
+            INNER JOIN (
+              SELECT page, client, lens
+              FROM ${ctx.ref('crawl', 'pages')},
+              UNNEST(${lensArrayExpression}) AS lens
+              WHERE date = '${params.date}' AND is_root_page AND lens IS NOT NULL
+            )
+            ON (page = CONCAT(origin, '/') AND client = IF(device = 'desktop', 'desktop', 'mobile'))
+            WHERE yyyymm = ${params.date.replaceAll('-', '').substring(0, 6)}
+              AND device IN ('desktop', 'phone')
+              AND yyyymm >= 202202
+            GROUP BY client, lens
+            ORDER BY lens, client
+          `)
+        }
+      ]
+    },
+    cruxSlowInp: {
+      SQL: [
+        {
+          type: 'timeseries',
+          query: DataformTemplateBuilder.create((ctx, params) => `
+            SELECT
+              IF(device = 'desktop', 'desktop', 'mobile') AS client,
+              lens,
+              ROUND(SAFE_DIVIDE(
+                COUNT(DISTINCT IF(slow_inp / (fast_inp + avg_inp + slow_inp) >= 0.25, origin, NULL)),
+                COUNT(DISTINCT IF(fast_inp + avg_inp + slow_inp > 0, origin, NULL))
+              ) * 100, 2) AS percent
+            FROM ${ctx.ref('chrome-ux-report', 'materialized', 'device_summary')}
+            INNER JOIN (
+              SELECT page, client, lens
+              FROM ${ctx.ref('crawl', 'pages')},
+              UNNEST(${lensArrayExpression}) AS lens
+              WHERE date = '${params.date}' AND is_root_page AND lens IS NOT NULL
+            )
+            ON (page = CONCAT(origin, '/') AND client = IF(device = 'desktop', 'desktop', 'mobile'))
+            WHERE yyyymm = ${params.date.replaceAll('-', '').substring(0, 6)}
+              AND device IN ('desktop', 'phone')
+              AND yyyymm >= 202202
+            GROUP BY client, lens
+            ORDER BY lens, client
+          `)
+        }
+      ]
+    },
+    cruxFastTtfb: {
+      SQL: [
+        {
+          type: 'timeseries',
+          query: DataformTemplateBuilder.create((ctx, params) => `
+            SELECT
+              IF(device = 'desktop', 'desktop', 'mobile') AS client,
+              lens,
+              ROUND(SAFE_DIVIDE(
+                COUNT(DISTINCT IF(fast_ttfb / (fast_ttfb + avg_ttfb + slow_ttfb) >= 0.75, origin, NULL)),
+                COUNT(DISTINCT IF(fast_ttfb + avg_ttfb + slow_ttfb > 0, origin, NULL))
+              ) * 100, 2) AS percent
+            FROM ${ctx.ref('chrome-ux-report', 'materialized', 'device_summary')}
+            INNER JOIN (
+              SELECT page, client, lens
+              FROM ${ctx.ref('crawl', 'pages')},
+              UNNEST(${lensArrayExpression}) AS lens
+              WHERE date = '${params.date}' AND is_root_page AND lens IS NOT NULL
+            )
+            ON (page = CONCAT(origin, '/') AND client = IF(device = 'desktop', 'desktop', 'mobile'))
+            WHERE yyyymm = ${params.date.replaceAll('-', '').substring(0, 6)}
+              AND device IN ('desktop', 'phone')
+            GROUP BY client, lens
+            ORDER BY lens, client
+          `)
+        }
+      ]
+    },
+    cruxSlowTtfb: {
+      SQL: [
+        {
+          type: 'timeseries',
+          query: DataformTemplateBuilder.create((ctx, params) => `
+            SELECT
+              IF(device = 'desktop', 'desktop', 'mobile') AS client,
+              lens,
+              ROUND(SAFE_DIVIDE(
+                COUNT(DISTINCT IF(slow_ttfb / (fast_ttfb + avg_ttfb + slow_ttfb) >= 0.25, origin, NULL)),
+                COUNT(DISTINCT IF(fast_ttfb + avg_ttfb + slow_ttfb > 0, origin, NULL))
+              ) * 100, 2) AS percent
+            FROM ${ctx.ref('chrome-ux-report', 'materialized', 'device_summary')}
+            INNER JOIN (
+              SELECT page, client, lens
+              FROM ${ctx.ref('crawl', 'pages')},
+              UNNEST(${lensArrayExpression}) AS lens
+              WHERE date = '${params.date}' AND is_root_page AND lens IS NOT NULL
+            )
+            ON (page = CONCAT(origin, '/') AND client = IF(device = 'desktop', 'desktop', 'mobile'))
+            WHERE yyyymm = ${params.date.replaceAll('-', '').substring(0, 6)}
+              AND device IN ('desktop', 'phone')
+            GROUP BY client, lens
+            ORDER BY lens, client
+          `)
+        }
+      ]
+    },
+    cruxFastDcl: {
+      SQL: [
+        {
+          type: 'timeseries',
+          query: DataformTemplateBuilder.create((ctx, params) => `
+            SELECT
+              IF(device = 'desktop', 'desktop', 'mobile') AS client,
+              lens,
+              ROUND(SAFE_DIVIDE(
+                COUNT(DISTINCT IF(fast_dcl / (fast_dcl + avg_dcl + slow_dcl) >= 0.75, origin, NULL)),
+                COUNT(DISTINCT IF(fast_dcl + avg_dcl + slow_dcl > 0, origin, NULL))
+              ) * 100, 2) AS percent
+            FROM ${ctx.ref('chrome-ux-report', 'materialized', 'device_summary')}
+            INNER JOIN (
+              SELECT page, client, lens
+              FROM ${ctx.ref('crawl', 'pages')},
+              UNNEST(${lensArrayExpression}) AS lens
+              WHERE date = '${params.date}' AND is_root_page AND lens IS NOT NULL
+            )
+            ON (page = CONCAT(origin, '/') AND client = IF(device = 'desktop', 'desktop', 'mobile'))
+            WHERE yyyymm = ${params.date.replaceAll('-', '').substring(0, 6)}
+              AND device IN ('desktop', 'phone')
+            GROUP BY client, lens
+            ORDER BY lens, client
+          `)
+        }
+      ]
+    },
+    cruxFastFp: {
+      SQL: [
+        {
+          type: 'timeseries',
+          query: DataformTemplateBuilder.create((ctx, params) => `
+            SELECT
+              IF(device = 'desktop', 'desktop', 'mobile') AS client,
+              lens,
+              ROUND(SAFE_DIVIDE(
+                COUNT(DISTINCT IF(fast_fp / (fast_fp + avg_fp + slow_fp) >= 0.75, origin, NULL)),
+                COUNT(DISTINCT IF(fast_fp + avg_fp + slow_fp > 0, origin, NULL))
+              ) * 100, 2) AS percent
+            FROM ${ctx.ref('chrome-ux-report', 'materialized', 'device_summary')}
+            INNER JOIN (
+              SELECT page, client, lens
+              FROM ${ctx.ref('crawl', 'pages')},
+              UNNEST(${lensArrayExpression}) AS lens
+              WHERE date = '${params.date}' AND is_root_page AND lens IS NOT NULL
+            )
+            ON (page = CONCAT(origin, '/') AND client = IF(device = 'desktop', 'desktop', 'mobile'))
+            WHERE yyyymm = ${params.date.replaceAll('-', '').substring(0, 6)}
+              AND device IN ('desktop', 'phone')
+            GROUP BY client, lens
+            ORDER BY lens, client
+          `)
+        }
+      ]
+    },
+    cruxFastOl: {
+      SQL: [
+        {
+          type: 'timeseries',
+          query: DataformTemplateBuilder.create((ctx, params) => `
+            SELECT
+              IF(device = 'desktop', 'desktop', 'mobile') AS client,
+              lens,
+              ROUND(SAFE_DIVIDE(
+                COUNT(DISTINCT IF(fast_ol / (fast_ol + avg_ol + slow_ol) >= 0.75, origin, NULL)),
+                COUNT(DISTINCT IF(fast_ol + avg_ol + slow_ol > 0, origin, NULL))
+              ) * 100, 2) AS percent
+            FROM ${ctx.ref('chrome-ux-report', 'materialized', 'device_summary')}
+            INNER JOIN (
+              SELECT page, client, lens
+              FROM ${ctx.ref('crawl', 'pages')},
+              UNNEST(${lensArrayExpression}) AS lens
+              WHERE date = '${params.date}' AND is_root_page AND lens IS NOT NULL
+            )
+            ON (page = CONCAT(origin, '/') AND client = IF(device = 'desktop', 'desktop', 'mobile'))
+            WHERE yyyymm = ${params.date.replaceAll('-', '').substring(0, 6)}
+              AND device IN ('desktop', 'phone')
+            GROUP BY client, lens
+            ORDER BY lens, client
+          `)
+        }
+      ]
+    },
+    cruxPassesCWV: {
+      SQL: [
+        {
+          type: 'timeseries',
+          query: DataformTemplateBuilder.create((ctx, params) => `
+            SELECT
+              IF(device = 'desktop', 'desktop', 'mobile') AS client,
+              lens,
+              ROUND(SAFE_DIVIDE(
+                COUNT(DISTINCT IF(
+                  IF(
+                    yyyymm >= 202402,
+                    (p75_inp IS NULL OR fast_inp / (fast_inp + avg_inp + slow_inp) >= 0.75),
+                    (p75_fid IS NULL OR fast_fid / (fast_fid + avg_fid + slow_fid) >= 0.75)
+                  ) AND
+                  fast_lcp / (fast_lcp + avg_lcp + slow_lcp) >= 0.75 AND
+                  small_cls / (small_cls + medium_cls + large_cls) >= 0.75, origin, NULL
+                )),
+                COUNT(DISTINCT origin)
+              ) * 100, 2) AS percent
+            FROM ${ctx.ref('chrome-ux-report', 'materialized', 'device_summary')}
+            INNER JOIN (
+              SELECT page, client, lens
+              FROM ${ctx.ref('crawl', 'pages')},
+              UNNEST(${lensArrayExpression}) AS lens
+              WHERE date = '${params.date}' AND is_root_page AND lens IS NOT NULL
+            )
+            ON (page = CONCAT(origin, '/') AND client = IF(device = 'desktop', 'desktop', 'mobile'))
+            WHERE yyyymm = ${params.date.replaceAll('-', '').substring(0, 6)}
+              AND device IN ('desktop', 'phone')
+              AND yyyymm >= 201910 AND p75_lcp IS NOT NULL AND p75_cls IS NOT NULL
+            GROUP BY client, lens
+            ORDER BY lens, client
           `)
         }
       ]
