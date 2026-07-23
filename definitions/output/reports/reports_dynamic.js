@@ -6,12 +6,11 @@
  * - Date range (from startDate to endDate)
  * - Metrics (defined in includes/reports.js)
  * - SQL types (histogram, timeseries)
- * - Lenses (data filters like all, top1k, wordpress, etc.)
  *
  * Each operation:
- * 1. Calculates metrics from crawl data
- * 2. Stores results in BigQuery tables
- * 3. Exports data to Cloud Storage as JSON
+ * 1. Calculates metrics for ALL lenses in a single pass
+ * 2. Stores results in BigQuery tables partitioned by date and clustered by metric, lens, client
+ * 3. Exports data to Cloud Storage as JSON files for each lens
  */
 
 // Initialize configurations
@@ -37,17 +36,18 @@ const DATE_RANGE = {
 /**
  * Generates the Cloud Storage export path for a report
  * @param {Object} reportConfig - Report configuration object
+ * @param {string} lensName - Target lens name
  * @returns {string} - Cloud Storage object path
  */
-function buildExportPath(reportConfig) {
-  const { sql, date, metric, lens } = reportConfig
-  const lensPath = lens && lens.name && lens.name !== 'all' ? `${lens.name}/` : ''
+function buildExportPath(reportConfig, lensName) {
+  const { sql, date, metric } = reportConfig
+  const lensPath = lensName && lensName !== 'all' ? `${lensName}/` : ''
   let objectPath = EXPORT_CONFIG.storagePath
 
   if (sql.type === 'histogram') {
-    // Histogram exports are organized under date and lens folders
+    // Histogram exports are organized under lens and date folders
     const dateFolder = date.replaceAll('-', '_')
-    objectPath += `${dateFolder}/${lensPath}${metric.id}${EXPORT_CONFIG.fileFormat}`
+    objectPath += `${lensPath}${dateFolder}/${metric.id}${EXPORT_CONFIG.fileFormat}`
   } else if (sql.type === 'timeseries') {
     // Timeseries exports are organized under lens folders
     objectPath += `${lensPath}${metric.id}${EXPORT_CONFIG.fileFormat}`
@@ -61,10 +61,11 @@ function buildExportPath(reportConfig) {
 /**
  * Generates the BigQuery export query for a report
  * @param {Object} reportConfig - Report configuration object
+ * @param {string} lensName - Target lens name
  * @returns {string} - SQL query for exporting data
  */
-function buildExportQuery(reportConfig) {
-  const { sql, date, metric, lens, tableName } = reportConfig
+function buildExportQuery(reportConfig, lensName) {
+  const { sql, date, metric, tableName } = reportConfig
   let query
 
   if (sql.type === 'histogram') {
@@ -74,7 +75,7 @@ function buildExportQuery(reportConfig) {
       FROM \`${EXPORT_CONFIG.dataset}.${tableName}\`
       WHERE date = '${date}'
         AND metric = '${metric.id}'
-        AND lens = '${lens.name}'
+        AND lens = '${lensName}'
       ORDER BY client, bin ASC
     `
   } else if (sql.type === 'timeseries') {
@@ -86,7 +87,7 @@ function buildExportQuery(reportConfig) {
       FROM \`${EXPORT_CONFIG.dataset}.${tableName}\`
       WHERE
         metric = '${metric.id}'
-        AND lens = '${lens.name}'
+        AND lens = '${lensName}'
       ORDER BY date, client DESC
     `
   } else {
@@ -102,11 +103,9 @@ function buildExportQuery(reportConfig) {
  * @param {string} date - Report date (YYYY-MM-DD)
  * @param {Object} metric - Metric configuration
  * @param {Object} sql - SQL configuration (type and query)
- * @param {string} lensName - Lens name
- * @param {string} lensSQL - Lens SQL filter
  * @returns {Object} - Complete report configuration
  */
-function createReportConfig(date, metric, sql, lensName, lensSQL) {
+function createReportConfig(date, metric, sql) {
   let tableName
   if (sql.type === 'timeseries' || sql.type === 'histogram') {
     tableName = `${metric.id}_${sql.type}`
@@ -118,7 +117,6 @@ function createReportConfig(date, metric, sql, lensName, lensSQL) {
     date,
     metric,
     sql,
-    lens: { name: lensName, sql: lensSQL },
     devRankFilter: constants.devRankFilter,
     tableName: tableName
   }
@@ -138,13 +136,14 @@ function generateReportConfigurations() {
 
     // For each available metric
     availableMetrics.forEach(metric => {
+      // CrUX dataset is published with a 1-month lag relative to HTTP Archive crawl date
+      const isCrux = metric.id.startsWith('crux')
+      const targetDate = isCrux ? constants.fnPastMonth(date) : date
+
       // For each SQL type (histogram, timeseries)
       metric.SQL.forEach(sql => {
-        // For each available lens (all, top1k, wordpress, etc.)
-        Object.entries(availableLenses).forEach(([lensName, lensSQL]) => {
-          const config = createReportConfig(date, metric, sql, lensName, lensSQL)
-          reportConfigs.push(config)
-        })
+        const config = createReportConfig(targetDate, metric, sql)
+        reportConfigs.push(config)
       })
     })
   }
@@ -158,10 +157,8 @@ function generateReportConfigurations() {
  * @returns {string} - Operation name
  */
 function createOperationName(reportConfig) {
-  const { sql, date, lens, metric } = reportConfig
-  const lensSuffix = lens && lens.name ? `_${lens.name}` : ''
-
-  return `${metric.id}_${sql.type}_${date}${lensSuffix}`
+  const { sql, date, metric } = reportConfig
+  return `${metric.id}_${sql.type}_${date}`
 }
 
 /**
@@ -171,12 +168,37 @@ function createOperationName(reportConfig) {
  * @returns {string} - Complete SQL for the operation
  */
 function generateOperationSQL(ctx, reportConfig) {
-  const { date, metric, lens, sql, tableName } = reportConfig
+  const { date, metric, sql, tableName } = reportConfig
+
+  const exportStatements = Object.keys(availableLenses).map(lensName => {
+    return `
+SET job_config = TO_JSON(
+  STRUCT(
+    "cloud_storage" AS destination,
+    STRUCT(
+      "httparchive" AS bucket,
+      "${buildExportPath(reportConfig, lensName)}" AS name
+    ) AS config,
+    r"${buildExportQuery(reportConfig, lensName)}" AS query
+  )
+);
+
+SELECT reports.run_export_job(job_config);
+`
+  }).join('\n')
+
+  const isHistogram = sql.type === 'histogram'
+  const targetColumns = isHistogram
+    ? ' (client, date, metric, lens, volume, bin, pdf, cdf)'
+    : ''
+  const selectColumns = isHistogram
+    ? `client, DATE('${date}') AS date, '${metric.id}' AS metric, lens, volume, bin, pdf, cdf`
+    : `client, DATE('${date}') AS date, '${metric.id}' AS metric, lens, * EXCEPT(client, lens)`
 
   return `
 DECLARE job_config JSON;
 
--- Run analysis once
+-- Run analysis once for all lenses
 CREATE TEMP TABLE ${tableName}_temp AS (
   ${sql.query(ctx, reportConfig)}
 );
@@ -187,53 +209,70 @@ PARTITION BY date
 CLUSTER BY metric, lens, client
 AS
 SELECT
-  client,
-  DATE('${date}') AS date,
-  '${metric.id}' AS metric,
-  '${lens.name}' AS lens,
-  * EXCEPT(client)
+  ${selectColumns}
 FROM ${tableName}_temp
 WHERE FALSE;
 
--- Delete existing data for this partition
+-- Delete existing data for this partition across all lenses
 DELETE FROM ${EXPORT_CONFIG.dataset}.${tableName}
 WHERE date = '${date}'
-  AND metric = '${metric.id}'
-  AND lens = '${lens.name}';
+  AND metric = '${metric.id}';
 
--- Insert fresh data
-INSERT INTO ${EXPORT_CONFIG.dataset}.${tableName}
+-- Insert fresh multi-lens data
+INSERT INTO ${EXPORT_CONFIG.dataset}.${tableName}${targetColumns}
 SELECT
-  client,
-  DATE('${date}') AS date,
-  '${metric.id}' AS metric,
-  '${lens.name}' AS lens,
-  * EXCEPT(client)
+  ${selectColumns}
 FROM ${tableName}_temp;
 
-SET job_config = TO_JSON(
-  STRUCT(
-    "cloud_storage" AS destination,
-    STRUCT(
-      "httparchive" AS bucket,
-      "${buildExportPath(reportConfig)}" AS name
-    ) AS config,
-    r"${buildExportQuery(reportConfig)}" AS query
-  )
-);
-
-SELECT reports.run_export_job(job_config);
+-- Export data for each lens to Cloud Storage
+${exportStatements}
 `
 }
 
 // Generate all report configurations
 const reportConfigurations = generateReportConfigurations()
 
-// Create Dataform operations for each report configuration
-reportConfigurations.forEach(reportConfig => {
-  const operationName = createOperationName(reportConfig)
+// Concurrency limits configuration
+const MAX_GLOBAL_CONCURRENCY = 10     // Max active operations globally across all reports
+const MAX_PER_REPORT_CONCURRENCY = 1  // Max active operations per report destination table
 
-  operate(operationName)
-    .tags(['crawl_complete'])
+// Map to track operations created per report table
+const opsByTable = {}
+
+reportConfigurations.forEach((reportConfig, index) => {
+  const operationName = createOperationName(reportConfig)
+  const table = reportConfig.tableName
+
+  if (!opsByTable[table]) {
+    opsByTable[table] = []
+  }
+  const tableHistory = opsByTable[table]
+  const dependencies = []
+
+  // 1. Global sliding stream constraint (max global concurrency)
+  if (index >= MAX_GLOBAL_CONCURRENCY) {
+    const globalPredecessor = createOperationName(reportConfigurations[index - MAX_GLOBAL_CONCURRENCY])
+    dependencies.push(globalPredecessor)
+  }
+
+  // 2. Per-report sliding stream constraint (max per-table concurrency)
+  if (tableHistory.length >= MAX_PER_REPORT_CONCURRENCY) {
+    const tablePredecessor = tableHistory[tableHistory.length - MAX_PER_REPORT_CONCURRENCY]
+    dependencies.push(tablePredecessor)
+  }
+
+  // Create Dataform operation
+  const op = operate(operationName)
+    .tags(['crawl_complete_reports'])
     .queries(ctx => generateOperationSQL(ctx, reportConfig))
+
+  // Apply deduplicated dependencies
+  const uniqueDeps = [...new Set(dependencies)]
+  if (uniqueDeps.length > 0) {
+    op.dependencies(uniqueDeps)
+  }
+
+  // Record operation in table history
+  tableHistory.push(operationName)
 })
+

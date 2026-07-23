@@ -2,19 +2,20 @@
   "name": "crawl-data",
   "author": "@max-ostapenko",
   "scripts": {
-    "format": "npx eslint -c .github/linters/eslint.config.mjs --fix .; npx markdownlint --ignore-path .gitignore --config package.json --configPointer /markdownlint . --fix; terraform -chdir=infra fmt -recursive",
+    "format": "npx eslint -c .github/linters/eslint.config.mjs --fix .; npx markdownlint --ignore-path .gitignore --config package.json --configPointer /markdownlint . --fix;",
     "lint": "npx eslint -c .github/linters/eslint.config.mjs .; npx markdownlint --ignore-path .gitignore --config package.json --configPointer /markdownlint .; dataform compile",
-    "superlint": "docker run --platform linux/amd64 -e DEFAULT_BRANCH=main -e VALIDATE_GIT_COMMITLINT=false -e VALIDATE_TERRAFORM_TERRASCAN=false -e VALIDATE_TERRAFORM_TFLINT=false -e FIX_JSON_PRETTIER=true -e IGNORE_GITIGNORED_FILES=true -e VALIDATE_ALL_CODEBASE=true -e VALIDATE_JSCPD=false -e RUN_LOCAL=true -v ./:/tmp/lint ghcr.io/super-linter/super-linter:slim-latest"
+    "superlint": "docker run --platform linux/amd64 -e SHELL=/bin/bash -e DEFAULT_BRANCH=main -e VALIDATE_JSCPD=false -e VALIDATE_GIT_COMMITLINT=false -e VALIDATE_BIOME_FORMAT=false -e VALIDATE_BIOME_LINT=false -e VALIDATE_GITLEAKS=false -e VALIDATE_PYTHON_RUFF_FORMAT=false -e VALIDATE_PYTHON_RUFF=false -e FILTER_REGEX_EXCLUDE='.*package-lock\\.json' -e IGNORE_GITIGNORED_FILES=true -e VALIDATE_ALL_CODEBASE=true -e RUN_LOCAL=true -v ./:/tmp/lint ghcr.io/super-linter/super-linter:slim-latest"
   },
   "dependencies": {
-    "@dataform/core": "3.0.59",
+    "@dataform/core": "3.0.61",
     "@masthead-data/dataform-package": "0.2.0"
   },
   "devDependencies": {
-    "eslint": "10.6.0",
+    "eslint": "10.7.0",
+    "@eslint/js": "10.0.1",
     "globals": "17.7.0",
     "markdownlint-cli": "0.49.0",
-    "@dataform/cli": "3.0.60"
+    "@dataform/cli": "3.0.61"
   },
   "markdownlint": {
     "default": true,

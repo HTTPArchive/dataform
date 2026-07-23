@@ -9,22 +9,98 @@ const CONFIG = {
   skipDates: []
 }
 
-// All metrics that have histogram files in GCS.
-// These all share the same schema: client, date, metric, lens, bin, volume, pdf, cdf.
-const METRICS = [
-  'bootupJs', 'bytesCss', 'bytesFont', 'bytesHtml', 'bytesImg', 'bytesJs',
-  'bytesOther', 'bytesTotal', 'bytesVideo', 'compileJs', 'cruxCls', 'cruxDcl',
-  'cruxFcp', 'cruxFp', 'cruxInp', 'cruxLcp', 'cruxOl', 'cruxTtfb', 'dcl',
-  'evalJs', 'fcp', 'gzipSavings', 'imgSavings', 'offscreenImages', 'ol',
-  'optimizedImages', 'reqCss', 'reqFont', 'reqHtml', 'reqImg', 'reqJs',
-  'reqOther', 'reqTotal', 'reqVideo', 'speedIndex', 'tcp', 'ttci'
+// ==========================================
+// METRIC CLASSIFICATIONS & BIN SCHEMA TYPES
+// ==========================================
+
+// Metrics with INT64 bin schemas (byte sizes, request counts, integer calculations)
+export const INT64_BIN_METRICS = [
+  'bytesCss', 'bytesFont', 'bytesHtml', 'bytesImg', 'bytesJs',
+  'bytesOther', 'bytesTotal', 'bytesVideo', 'compileJs', 'evalJs',
+  'fcp', 'gzipSavings', 'imgSavings', 'offscreenImages',
+  'optimizedImages', 'speedIndex', 'tcp', 'ttci'
 ]
+
+// Metrics with FLOAT64 bin schemas (timing in seconds/ms with fractional precision, CrUX distributions)
+export const FLOAT64_BIN_METRICS = [
+  'bootupJs', 'cruxCls', 'cruxDcl', 'cruxFcp', 'cruxFp', 'cruxInp',
+  'cruxLcp', 'cruxOl', 'cruxTtfb', 'dcl', 'ol', 'reqCss', 'reqFont',
+  'reqHtml', 'reqImg', 'reqJs', 'reqOther', 'reqTotal', 'reqVideo'
+]
+
+export const ALL_METRICS = [...INT64_BIN_METRICS, ...FLOAT64_BIN_METRICS].sort()
+
+/**
+ * Per-metric customization registry.
+ * Allows overriding bin types, custom transformers, or future sync behaviors per metric.
+ */
+export const METRIC_CUSTOMIZATIONS = {
+  // Example for future metric-specific overrides:
+  // bootupJs: { binType: 'FLOAT64', customTransform: (val) => val },
+}
+
+/**
+ * Helper to determine bin data type for a metric.
+ */
+export function getBinType(metric) {
+  if (METRIC_CUSTOMIZATIONS[metric]?.binType) {
+    return METRIC_CUSTOMIZATIONS[metric].binType
+  }
+  if (INT64_BIN_METRICS.includes(metric)) {
+    return 'INT64'
+  }
+  if (FLOAT64_BIN_METRICS.includes(metric)) {
+    return 'FLOAT64'
+  }
+  // Default fallback to FLOAT64 for high precision
+  return 'FLOAT64'
+}
+
+/**
+ * Generate BigQuery schema for a given metric.
+ */
+export function getHistogramSchema(metric) {
+  const binType = getBinType(metric)
+  const volumeType = FLOAT64_BIN_METRICS.includes(metric) ? 'FLOAT64' : 'INT64'
+  return [
+    { name: 'client', type: 'STRING' },
+    { name: 'date', type: 'DATE' },
+    { name: 'metric', type: 'STRING' },
+    { name: 'lens', type: 'STRING' },
+    { name: 'volume', type: volumeType },
+    { name: 'bin', type: binType },
+    { name: 'pdf', type: 'FLOAT64' },
+    { name: 'cdf', type: 'FLOAT64' }
+  ]
+}
+
+/**
+ * Parse and cast bin values according to the metric's bin type.
+ */
+export function parseBinValue(rawBin, binType) {
+  if (rawBin === null || rawBin === undefined || rawBin === '') return null
+  const num = Number(rawBin)
+  if (isNaN(num)) return null
+  return binType === 'INT64' ? Math.round(num) : num
+}
+
+// CLI Flags & Arguments
+const forceOverwrite = process.argv.includes('--force') || process.argv.includes('-f')
+const int64Only = process.argv.includes('--int64-only')
+const float64Only = process.argv.includes('--float64-only')
+const cliMetrics = process.argv.slice(2).filter(arg => !arg.startsWith('-'))
+
+let METRICS = ALL_METRICS
+if (cliMetrics.length > 0) {
+  METRICS = cliMetrics
+} else if (int64Only) {
+  METRICS = INT64_BIN_METRICS
+} else if (float64Only) {
+  METRICS = FLOAT64_BIN_METRICS
+}
 
 // Files to retry after a failed run — add paths from "Failed tasks" output.
 const BACKLOG = []
-/*
-
-*/
 
 const storage = new Storage()
 const bigquery = new BigQuery({ projectId: CONFIG.bigquery.projectId })
@@ -64,25 +140,12 @@ function generateHTTPArchiveDates(startDate, endDate) {
   return dates.sort()
 }
 
-const dates = generateHTTPArchiveDates('2011-06-01', '2025-07-01')
-
-// Histogram schema is identical across all metrics — matches Dataform DDL exactly.
-// bin/volume are INT64 (Dataform uses CAST/COUNT producing INT64).
-const HISTOGRAM_SCHEMA = [
-  { name: 'client', type: 'STRING' },
-  { name: 'date', type: 'DATE' },
-  { name: 'metric', type: 'STRING' },
-  { name: 'lens', type: 'STRING' },
-  { name: 'bin', type: 'INT64' },
-  { name: 'volume', type: 'INT64' },
-  { name: 'pdf', type: 'FLOAT64' },
-  { name: 'cdf', type: 'FLOAT64' }
-]
+const dates = generateHTTPArchiveDates('2011-06-01', '2026-07-01')
 
 const downloadObject = async (filename) =>
   (await storage.bucket(CONFIG.storage.bucket).file(filename).download()).toString()
 
-async function uploadToBigQuery(rows, tableId) {
+async function uploadToBigQuery(rows, tableId, schema) {
   return new Promise((resolve, reject) => {
     const table = bigquery.dataset(CONFIG.bigquery.datasetId).table(tableId)
     const jsonlData = rows.map(row => JSON.stringify(row)).join('\n')
@@ -90,7 +153,7 @@ async function uploadToBigQuery(rows, tableId) {
 
     const writeStream = table.createWriteStream({
       sourceFormat: 'NEWLINE_DELIMITED_JSON',
-      schema: { fields: HISTOGRAM_SCHEMA },
+      schema: { fields: schema },
       writeDisposition: 'WRITE_APPEND',
       createDisposition: 'CREATE_IF_NEEDED'
     })
@@ -120,6 +183,8 @@ async function mapLimit(items, limit, fn) {
 }
 
 async function downloadAndParseFile(filename, date, lensPath, metric) {
+  const binType = getBinType(metric)
+  const isFloatVolume = FLOAT64_BIN_METRICS.includes(metric)
   try {
     const data = await downloadObject(filename)
     const rows = JSON.parse(data).map(item => ({
@@ -127,8 +192,8 @@ async function downloadAndParseFile(filename, date, lensPath, metric) {
       date,
       metric,
       lens: lensName(lensPath),
-      bin: (item.bin === null || item.bin === undefined || item.bin === '') ? null : Math.round(Number(item.bin)),
-      volume: (item.volume === null || item.volume === undefined || item.volume === '') ? null : Math.round(Number(item.volume)),
+      volume: (item.volume === null || item.volume === undefined || item.volume === '') ? null : (isFloatVolume ? Number(item.volume) : Math.round(Number(item.volume))),
+      bin: parseBinValue(item.bin, binType),
       pdf: (item.pdf === null || item.pdf === undefined || item.pdf === '') ? null : Number(item.pdf),
       cdf: (item.cdf === null || item.cdf === undefined || item.cdf === '') ? null : Number(item.cdf)
     }))
@@ -144,14 +209,20 @@ async function downloadAndParseFile(filename, date, lensPath, metric) {
 
 async function importMetricHistogram(metric) {
   const tableId = `${metric}_histogram`
+  const schema = getHistogramSchema(metric)
+  const binType = getBinType(metric)
 
   try {
     const table = bigquery.dataset(CONFIG.bigquery.datasetId).table(tableId)
     const [metadata] = await table.getMetadata()
     const numRows = Number(metadata.numRows)
-    if (numRows > 0) {
-      console.log(`=== Skipping ${metric} (table reports.${tableId} already has ${numRows.toLocaleString()} rows) ===`)
+    if (numRows > 0 && !forceOverwrite) {
+      console.log(`=== Skipping ${metric} [${binType}] (table reports.${tableId} already has ${numRows.toLocaleString()} rows) ===`)
       return { metric, totalRows: numRows, totalSuccess: 0, totalNotFound: 0, totalErrors: 0, allFailedTasks: [] }
+    }
+    if (numRows > 0 && forceOverwrite) {
+      console.log(`=== Truncating existing data in reports.${tableId} [${binType}] (--force mode) ===`)
+      await bigquery.query({ query: `TRUNCATE TABLE \`httparchive.reports.${tableId}\`` })
     }
   } catch (error) {
     if (error.code !== 404) {
@@ -159,7 +230,7 @@ async function importMetricHistogram(metric) {
     }
   }
 
-  console.log(`=== Starting ${metric} → reports.${tableId} ===`)
+  console.log(`=== Starting ${metric} [${binType}] → reports.${tableId} ===`)
 
   let totalSuccess = 0, totalNotFound = 0, totalErrors = 0
   const allFailedTasks = []
@@ -208,7 +279,7 @@ async function importMetricHistogram(metric) {
 
     if (chunkRows.length > 0) {
       try {
-        await uploadToBigQuery(chunkRows, tableId)
+        await uploadToBigQuery(chunkRows, tableId, schema)
         totalUploadedRows += chunkRows.length
       } catch (error) {
         console.error(`  ✗ ERROR uploading chunk ${chunkIdx + 1}/${dateChunks.length} to ${tableId}: ${error.message}`)
@@ -221,9 +292,9 @@ async function importMetricHistogram(metric) {
   }
 
   if (totalUploadedRows > 0) {
-    console.log(`  ✓ ${metric}: completed uploading ${totalUploadedRows.toLocaleString()} rows total (${totalSuccess} lenses found, ${totalNotFound} not found, ${totalErrors} errors)`)
+    console.log(`  ✓ ${metric} [${binType}]: completed uploading ${totalUploadedRows.toLocaleString()} rows total (${totalSuccess} lenses found, ${totalNotFound} not found, ${totalErrors} errors)`)
   } else {
-    console.log(`  ${metric}: no data found`)
+    console.log(`  ${metric} [${binType}]: no data found`)
   }
 
   if (allFailedTasks.length) {
@@ -247,10 +318,11 @@ async function processBacklog() {
     const date = dateStr.replace(/_/g, '-')
     const fullFilename = filename.endsWith('.json') ? filename : `${filename}.json`
     const result = await downloadAndParseFile(fullFilename, date, lensPath, metric)
+    const schema = getHistogramSchema(metric)
 
     if (result.success && result.rows.length > 0) {
       try {
-        await uploadToBigQuery(result.rows, `${metric}_histogram`)
+        await uploadToBigQuery(result.rows, `${metric}_histogram`, schema)
         console.log(`✓ ${filename} (${result.rowCount} rows)`)
         ok++
       } catch (e) {
@@ -272,7 +344,7 @@ async function importHistogramData() {
     return
   }
 
-  console.log('Starting parallel histogram backfill...')
+  console.log(`Starting parallel histogram sync for ${METRICS.length} metrics...`)
   // Process 3 metrics at a time in parallel
   await mapLimit(METRICS, 3, importMetricHistogram)
 

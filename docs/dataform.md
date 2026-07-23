@@ -6,7 +6,7 @@ The test repository is used [for development and testing purposes](https://cloud
 
 Pipeline can be [run manually](https://cloud.google.com/dataform/docs/code-lifecycle) from the Dataform UI.
 
-[Configuration](../infra/dataform.tf)
+The infrastructure configurations (formerly located in `infra/`) have been migrated to the [tech-report-apis](../../tech-report-apis) monorepo. Refer to [terraform/dataform.tf](../../tech-report-apis/terraform/dataform.tf) in that repository for Dataform project IaC.
 
 ## Dataform Development Workspace
 
@@ -31,12 +31,9 @@ Pipeline can be [run manually](https://cloud.google.com/dataform/docs/code-lifec
   - `output/` - Contains the main pipeline transformation logic
   - `declarations/` - Contains referenced tables/views declarations and other resources definitions
 - `includes/` - Contains shared JavaScript utilities and constants
-- `infra/` - Infrastructure code and deployment configurations
-  - `bigquery-export/` - BigQuery export service
-  - `dataform-service/` - Cloud Run function for dataform workflows automation
 - `docs/` - Additional documentation
 
-## GiHub to Dataform connection
+## GitHub to Dataform connection
 
 GitHub PAT saved to a [Secret Manager secret](https://console.cloud.google.com/security/secret-manager/secret/GitHub_max-ostapenko_dataform_PAT/versions?authuser=7&project=httparchive).
 

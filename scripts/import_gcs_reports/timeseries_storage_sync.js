@@ -90,7 +90,7 @@ async function uploadToBigQuery(rows, tableId, schemaFields) {
     const writeStream = table.createWriteStream({
       sourceFormat: 'NEWLINE_DELIMITED_JSON',
       schema: { fields: schemaFields },
-      writeDisposition: 'WRITE_APPEND',
+      writeDisposition: 'WRITE_TRUNCATE',
       createDisposition: 'CREATE_IF_NEEDED'
     })
 
