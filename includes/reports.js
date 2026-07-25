@@ -3085,7 +3085,7 @@ const lensArrayExpression = `ARRAY[
   IF('Drupal' IN UNNEST(technologies.technology), 'drupal', NULL),
   IF('Magento' IN UNNEST(technologies.technology), 'magento', NULL),
   IF('WordPress' IN UNNEST(technologies.technology), 'wordpress', NULL)
-]`;
+]`
 
 class HTTPArchiveReports {
   constructor() {
