@@ -9,10 +9,15 @@ publish('tech_report_core_web_vitals_flat', {
     clusterBy: ['client', 'rank', 'geo', 'technology']
   },
   tags: ['crux_ready']
-}).preOps(ctx => `
+})
+  .preOps(
+    (ctx) => `
 DELETE FROM ${ctx.self()}
 WHERE date = '${pastMonth}';
-`).query(ctx => `
+`
+  )
+  .query(
+    (ctx) => `
 SELECT
   date,
   client,
@@ -36,4 +41,5 @@ SELECT
   crux.origins_with_any_inp AS any_inp
 FROM ${ctx.ref('reports', 'tech_crux')}
 WHERE date = '${pastMonth}'
-`)
+`
+  )

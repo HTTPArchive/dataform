@@ -41,11 +41,11 @@ The system supports two types of SQL queries:
 
 ### Quick Decision Guide
 
-| Metric Type                            | Use Timeseries     | Use Histogram       | Use Both  |
-| -------------------------------------- | ------------------ | ------------------- | --------- |
-| Boolean/Adoption (present/not present) | ✅ Always          | ❌ Never            | ❌        |
-| Percentage/Rate                        | ✅ Yes             | ❌ Rarely useful    | ❌        |
-| Continuous values (bytes, time, count) | ✅ For percentiles | ✅ For distribution | ✅ Often  |
+| Metric Type                            | Use Timeseries     | Use Histogram       | Use Both |
+| -------------------------------------- | ------------------ | ------------------- | -------- |
+| Boolean/Adoption (present/not present) | ✅ Always          | ❌ Never            | ❌       |
+| Percentage/Rate                        | ✅ Yes             | ❌ Rarely useful    | ❌       |
+| Continuous values (bytes, time, count) | ✅ For percentiles | ✅ For distribution | ✅ Often |
 
 **Key Rule**: Always use timeseries for boolean/adoption metrics; histogram only for continuous distributions.
 
@@ -94,7 +94,8 @@ const config = {
       SQL: [
         {
           type: 'histogram', // or 'timeseries'
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             WITH pages AS (
               SELECT
                 date,
@@ -129,7 +130,8 @@ const config = {
               )
             )
             ORDER BY bin, client
-          `)
+          `
+          )
         }
       ]
     }
@@ -260,9 +262,9 @@ For each combination of date, metric, SQL type, and lens, the system:
 
 1. **Creates a unique operation name**: `{metricId}_{sqlType}_{date}_{lensName}`
 2. **Generates BigQuery SQL** that:
-    - Deletes existing data for the date/metric/lens combination
-    - Inserts new calculated data
-    - Exports results to Cloud Storage
+   - Deletes existing data for the date/metric/lens combination
+   - Inserts new calculated data
+   - Exports results to Cloud Storage
 3. **Tags operations** with `crawl_complete` tags to be triggered on crawl completion.
 
 ### Table Structure
@@ -279,8 +281,8 @@ Reports are stored in BigQuery tables with this structure:
 1. Data is calculated and stored in BigQuery
 2. A `run_export_job` function exports filtered data to Cloud Storage
 3. Export paths follow the pattern:
-    - Histogram: `reports/[{lens}/]{date_underscore}/{metric_id}.json`
-    - Timeseries: `reports/[{lens}/]{metric_id}.json`
+   - Histogram: `reports/[{lens}/]{date_underscore}/{metric_id}.json`
+   - Timeseries: `reports/[{lens}/]{metric_id}.json`
 
 ### Development vs Production
 
@@ -296,8 +298,8 @@ Modify the `DATE_RANGE` object in `reports_dynamic.js`:
 
 ```javascript
 const DATE_RANGE = {
-  startDate: '2025-01-01',  // Start processing from this date
-  endDate: '2025-07-01'     // Process up to this date
+  startDate: '2025-01-01', // Start processing from this date
+  endDate: '2025-07-01' // Process up to this date
 }
 ```
 
@@ -377,7 +379,8 @@ llmsTxtAdoption: {
   SQL: [
     {
       type: 'timeseries',
-      query: DataformTemplateBuilder.create((ctx, params) => `
+      query: DataformTemplateBuilder.create(
+        (ctx, params) => `
         SELECT
           client,
           ROUND(SAFE_DIVIDE(
@@ -392,7 +395,8 @@ llmsTxtAdoption: {
           ${params.devRankFilter}
         GROUP BY client
         ORDER BY client
-      `)
+      `
+      )
     }
   ]
 }
@@ -414,7 +418,8 @@ jsBytes: {
   SQL: [
     {
       type: 'histogram',
-      query: DataformTemplateBuilder.create((ctx, params) => `
+      query: DataformTemplateBuilder.create(
+        (ctx, params) => `
         WITH pages AS (
           SELECT
             date,
@@ -446,11 +451,13 @@ jsBytes: {
           )
         )
         ORDER BY bin, client
-      `)
+      `
+      )
     },
     {
       type: 'timeseries',
-      query: DataformTemplateBuilder.create((ctx, params) => `
+      query: DataformTemplateBuilder.create(
+        (ctx, params) => `
         WITH pages AS (
           SELECT
             date,
@@ -477,7 +484,8 @@ jsBytes: {
         FROM pages
         GROUP BY date, client, timestamp
         ORDER BY date, client
-      `)
+      `
+      )
     }
   ]
 }

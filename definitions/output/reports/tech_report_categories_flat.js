@@ -4,7 +4,8 @@ publish('tech_report_categories_flat', {
   schema: 'reports',
   type: 'table',
   tags: ['crux_ready']
-}).query(ctx => `
+}).query(
+  (ctx) => `
 WITH pages AS (
   SELECT DISTINCT
     client,
@@ -105,4 +106,5 @@ FROM (
   FROM merged_pages
   GROUP BY client
 )
-`)
+`
+)

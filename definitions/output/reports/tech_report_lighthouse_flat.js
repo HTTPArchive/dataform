@@ -9,10 +9,15 @@ publish('tech_report_lighthouse_flat', {
     clusterBy: ['client', 'rank', 'geo', 'technology']
   },
   tags: ['crux_ready']
-}).preOps(ctx => `
+})
+  .preOps(
+    (ctx) => `
 DELETE FROM ${ctx.self()}
 WHERE date = '${pastMonth}';
-`).query(ctx => `
+`
+  )
+  .query(
+    (ctx) => `
 SELECT
   date,
   client,
@@ -26,4 +31,5 @@ SELECT
   median_lighthouse_score.seo AS median_score_seo
 FROM ${ctx.ref('reports', 'tech_crux')}
 WHERE date = '${pastMonth}'
-`)
+`
+  )

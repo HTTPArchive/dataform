@@ -4,7 +4,9 @@ publish('tech_report_versions', {
   schema: 'reports',
   type: 'table',
   tags: ['crux_ready']
-}).query(ctx => `
+})
+  .query(
+    (ctx) => `
 SELECT
   technology,
   version,
@@ -15,7 +17,10 @@ WHERE
   AND rank = 'ALL'
   AND geo = 'ALL'
   ${constants.devRankFilter}
-`).postOps(ctx => `
+`
+  )
+  .postOps(
+    (ctx) => `
 SELECT
   reports.run_export_job(
     JSON '''{
@@ -28,4 +33,5 @@ SELECT
       "query": "SELECT * FROM ${ctx.self()}"
     }'''
   );
-`)
+`
+  )

@@ -9,10 +9,12 @@ publish('requests_10k', {
   },
   columns: columns,
   tags: ['crawl_complete']
-}).query(ctx => `
+}).query(
+  (ctx) => `
 SELECT *
 FROM ${ctx.ref('crawl', 'requests')}
 WHERE
   date = '${constants.currentMonth}' AND
   rank <= 10000
-`)
+`
+)

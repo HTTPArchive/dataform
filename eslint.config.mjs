@@ -3,7 +3,14 @@ import globals from 'globals'
 
 export default [
   {
-    ignores: ['node_modules/**', 'package-lock.json', '*.log', 'dist/**', 'build/**', '**/*.json']
+    ignores: [
+      'node_modules/**',
+      'package-lock.json',
+      '*.log',
+      'dist/**',
+      'build/**',
+      '**/*.json'
+    ]
   },
   js.configs.recommended,
   {
@@ -28,11 +35,7 @@ export default [
     },
     rules: {
       'no-useless-assignment': 'off',
-      'preserve-caught-error': 'off',
-      // Basic formatting rules
-      'indent': ['error', 2],
-      'quotes': ['error', 'single'],
-      'semi': ['error', 'never']
+      'preserve-caught-error': 'off'
     }
   }
 ]

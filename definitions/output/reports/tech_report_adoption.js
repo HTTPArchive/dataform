@@ -9,10 +9,15 @@ publish('tech_report_adoption', {
     clusterBy: ['rank', 'geo']
   },
   tags: ['crux_ready']
-}).preOps(ctx => `
+})
+  .preOps(
+    (ctx) => `
 DELETE FROM ${ctx.self()}
 WHERE date = '${pastMonth}';
-`).query(ctx => `
+`
+  )
+  .query(
+    (ctx) => `
 SELECT
   date,
   geo,
@@ -31,7 +36,10 @@ GROUP BY
   rank,
   technology,
   version
-`).postOps(ctx => `
+`
+  )
+  .postOps(
+    (ctx) => `
 SELECT
   reports.run_export_job(
     JSON '''{
@@ -61,4 +69,5 @@ SELECT
     }'''
   );
 
-`)
+`
+  )

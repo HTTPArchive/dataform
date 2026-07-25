@@ -14,7 +14,7 @@ The infrastructure configurations (formerly located in `infra/`) have been migra
 2. Make adjustments to the dataform configuration files and manually run a workflow to verify.
 3. Push all your changes to a dev branch & open a PR with the link to the BigQuery artifacts generated in the test workflow.
 
-*Some useful hints:*
+_Some useful hints:_
 
 1. In workflow settings vars set `dev_name: dev` to process sampled data in dev workspace.
 2. Change `current_month` variable to a month in the past. May be helpful for testing pipelines based on `chrome-ux-report` data.

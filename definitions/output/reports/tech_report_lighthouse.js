@@ -9,7 +9,9 @@ publish('tech_report_lighthouse', {
     clusterBy: ['rank', 'geo']
   },
   tags: ['crux_ready']
-}).preOps(ctx => `
+})
+  .preOps(
+    (ctx) => `
 CREATE TEMPORARY FUNCTION GET_LIGHTHOUSE(
   records ARRAY<STRUCT<
     client STRING,
@@ -53,7 +55,10 @@ return Object.values(lighthouse)
 
 DELETE FROM ${ctx.self()}
 WHERE date = '${pastMonth}';
-`).query(ctx => `
+`
+  )
+  .query(
+    (ctx) => `
 SELECT
   date,
   geo,
@@ -75,7 +80,10 @@ GROUP BY
   rank,
   technology,
   version
-`).postOps(ctx => `
+`
+  )
+  .postOps(
+    (ctx) => `
 SELECT
   reports.run_export_job(
     JSON '''{
@@ -104,4 +112,5 @@ SELECT
       "query": "SELECT STRING(date) AS date, * EXCEPT(date, version) FROM ${ctx.self()} WHERE date = '${pastMonth}' AND version = 'ALL'"
     }'''
   );
-`)
+`
+  )

@@ -4,7 +4,9 @@ publish('tech_report_technologies', {
   schema: 'reports',
   type: 'table',
   tags: ['crux_ready']
-}).query(ctx => `
+})
+  .query(
+    (ctx) => `
 WITH tech_origins AS (
   SELECT
   technology,
@@ -56,7 +58,10 @@ SELECT
   origins
 FROM tech_origins
 WHERE technology = 'ALL'
-`).postOps(ctx => `
+`
+  )
+  .postOps(
+    (ctx) => `
 SELECT
   reports.run_export_job(
     JSON '''{
@@ -69,4 +74,5 @@ SELECT
       "query": "SELECT * FROM ${ctx.self()}"
     }'''
   );
-`)
+`
+  )

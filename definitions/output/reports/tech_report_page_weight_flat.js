@@ -9,10 +9,15 @@ publish('tech_report_page_weight_flat', {
     clusterBy: ['client', 'rank', 'geo', 'technology']
   },
   tags: ['crux_ready']
-}).preOps(ctx => `
+})
+  .preOps(
+    (ctx) => `
 DELETE FROM ${ctx.self()}
 WHERE date = '${pastMonth}';
-`).query(ctx => `
+`
+  )
+  .query(
+    (ctx) => `
 SELECT
   date,
   geo,
@@ -25,4 +30,5 @@ SELECT
   median_page_weight_bytes.images AS median_bytes_images
 FROM ${ctx.ref('reports', 'tech_crux')}
 WHERE date = '${pastMonth}'
-`)
+`
+  )
