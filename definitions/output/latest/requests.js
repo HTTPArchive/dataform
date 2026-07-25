@@ -3,8 +3,9 @@ const columns = descriptions.columns.requests
 publish('requests', {
   type: 'view',
   schema: 'latest',
-  columns: columns,
-}).query(ctx => `
+  columns: columns
+}).query(
+  (ctx) => `
 SELECT
   *
 FROM
@@ -27,4 +28,5 @@ WHERE
   /* We should never be more than 60 days old hopefully! */
   date >= DATE_SUB(CURRENT_DATE(), INTERVAL 61 DAY) AND
   date <= CURRENT_DATE()
-`)
+`
+)

@@ -7,7 +7,8 @@ publish('pages_latest', {
     clusterBy: ['client', 'is_root_page', 'rank', 'page']
   },
   tags: ['crawl_complete']
-}).query(ctx => `
+}).query(
+  (ctx) => `
 SELECT
   date,
   client,
@@ -68,4 +69,5 @@ SELECT
 FROM ${ctx.ref('crawl', 'pages')}
 WHERE
   date = '${constants.currentMonth}'
-`)
+`
+)

@@ -1,0 +1,41 @@
+import js from '@eslint/js'
+import globals from 'globals'
+
+export default [
+  {
+    ignores: [
+      'node_modules/**',
+      'package-lock.json',
+      '*.log',
+      'dist/**',
+      'build/**',
+      '**/*.json'
+    ]
+  },
+  js.configs.recommended,
+  {
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: 'module',
+      globals: {
+        ...globals.node,
+
+        // Dataform-specific globals
+        dataform: 'readonly',
+        declare: 'readonly',
+        assert: 'readonly',
+        publish: 'readonly',
+        operate: 'readonly',
+        ctx: 'readonly',
+        constants: 'readonly',
+        reports: 'readonly',
+        reservations: 'readonly',
+        descriptions: 'readonly'
+      }
+    },
+    rules: {
+      'no-useless-assignment': 'off',
+      'preserve-caught-error': 'off'
+    }
+  }
+]

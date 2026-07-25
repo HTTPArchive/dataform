@@ -3,8 +3,9 @@ const columns = descriptions.columns.parsed_css
 publish('parsed_css', {
   type: 'view',
   schema: 'latest',
-  columns: columns,
-}).query(ctx => `
+  columns: columns
+}).query(
+  (ctx) => `
 SELECT
   *
 FROM ${ctx.ref('crawl', 'parsed_css')}
@@ -26,4 +27,5 @@ WHERE
   /* We should never be more than 60 days old hopefully! */
   date >= DATE_SUB(CURRENT_DATE(), INTERVAL 61 DAY) AND
   date <= CURRENT_DATE()
-`)
+`
+)

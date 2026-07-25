@@ -10,7 +10,9 @@ publish('tech_report_audits', {
     clusterBy: ['rank', 'geo']
   },
   tags: ['crux_ready']
-}).preOps(ctx => `
+})
+  .preOps(
+    (ctx) => `
 CREATE TEMP FUNCTION GET_AUDITS(
   records ARRAY<STRUCT<
     client STRING,
@@ -67,7 +69,10 @@ return Object.keys(auditMap).map(function(key) {
 
 DELETE FROM ${ctx.self()}
 WHERE date = '${pastMonth}';
-`).query(ctx => `
+`
+  )
+  .query(
+    (ctx) => `
 SELECT
   date,
   geo,
@@ -86,7 +91,10 @@ GROUP BY
   rank,
   technology,
   version
-`).postOps(ctx => `
+`
+  )
+  .postOps(
+    (ctx) => `
 SELECT
   reports.run_export_job(
     JSON '''{
@@ -100,4 +108,5 @@ SELECT
       "query": "SELECT STRING(date) AS date, * EXCEPT(date) FROM ${ctx.self()} WHERE date = '${pastMonth}'"
     }'''
   );
-`)
+`
+  )

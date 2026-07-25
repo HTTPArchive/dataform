@@ -10,6 +10,3 @@ insert_final_newline = true
 
 [*.{js,json,md,sql,yaml}]
 indent_size = 2
-
-[Makefile]
-indent_style = tab

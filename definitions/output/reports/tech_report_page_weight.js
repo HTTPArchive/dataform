@@ -9,7 +9,9 @@ publish('tech_report_page_weight', {
     clusterBy: ['rank', 'geo']
   },
   tags: ['crux_ready']
-}).preOps(ctx => `
+})
+  .preOps(
+    (ctx) => `
 CREATE TEMPORARY FUNCTION GET_PAGE_WEIGHT(
   records ARRAY<STRUCT<
     client STRING,
@@ -47,7 +49,10 @@ return Object.values(pageWeight)
 
 DELETE FROM ${ctx.self()}
 WHERE date = '${pastMonth}';
-`).query(ctx => `
+`
+  )
+  .query(
+    (ctx) => `
 SELECT
   date,
   geo,
@@ -68,7 +73,10 @@ GROUP BY
   rank,
   technology,
   version
-`).postOps(ctx => `
+`
+  )
+  .postOps(
+    (ctx) => `
 SELECT
   reports.run_export_job(
     JSON '''{
@@ -97,4 +105,5 @@ SELECT
       "query": "SELECT STRING(date) AS date, page_weight AS pageWeight, * EXCEPT(date, version, page_weight) FROM ${ctx.self()} WHERE date = '${pastMonth}' AND version = 'ALL'"
     }'''
   );
-`)
+`
+  )

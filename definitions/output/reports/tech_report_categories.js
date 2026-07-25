@@ -4,7 +4,9 @@ publish('tech_report_categories', {
   schema: 'reports',
   type: 'table',
   tags: ['crux_ready']
-}).query(ctx => `
+})
+  .query(
+    (ctx) => `
 WITH pages AS (
   SELECT DISTINCT
     client,
@@ -94,7 +96,10 @@ SELECT
   NULL AS technologies
 FROM merged_pages
 GROUP BY client
-`).postOps(ctx => `
+`
+  )
+  .postOps(
+    (ctx) => `
 SELECT
   reports.run_export_job(
     JSON '''{
@@ -107,4 +112,5 @@ SELECT
       "query": "SELECT * FROM ${ctx.self()}"
     }'''
   );
-`)
+`
+  )

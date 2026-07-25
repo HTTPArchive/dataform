@@ -6,27 +6,17 @@
 
 version: 2
 updates:
-  - package-ecosystem: "npm"
+  - package-ecosystem: 'npm'
     directories:
-      - "/"
-      - "/infra/bigquery-export"
-      - "/infra/dataform-service"
+      - '/'
     schedule:
-      interval: "weekly"
+      interval: 'weekly'
     cooldown:
       default-days: 7
 
-  - package-ecosystem: "terraform"
-    directories:
-      - "/infra/tf/"
+  - package-ecosystem: 'github-actions'
+    directory: '/'
     schedule:
-      interval: "weekly"
-    cooldown:
-      default-days: 7
-
-  - package-ecosystem: "github-actions"
-    directory: "/"
-    schedule:
-      interval: "weekly"
+      interval: 'weekly'
     cooldown:
       default-days: 7

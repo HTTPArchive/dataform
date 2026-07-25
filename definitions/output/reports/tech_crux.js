@@ -11,7 +11,9 @@ publish('tech_crux', {
   },
   dependOnDependencyAssertions: true,
   tags: ['crux_ready']
-}).preOps(ctx => `
+})
+  .preOps(
+    (ctx) => `
 DELETE FROM ${ctx.self()}
 WHERE date = '${pastMonth}';
 
@@ -37,14 +39,25 @@ RETURNS ARRAY<STRUCT<
   id STRING
 >>
 LANGUAGE js AS """
-const results = []
+const results = [];
+const categories = lighthouse?.categories;
+if (!categories) return results;
 
-for (const category of Object.keys(lighthouse?.categories ? lighthouse.categories : {})) {
-  for (const audit of lighthouse.categories[category].auditRefs) {
-    if (
-      lighthouse.audits[audit.id].score === 1 // Only include audits that passed
-        && !['metrics', 'hidden'].includes(audit.group) // Exclude metrics and hidden audits
-    ) {
+const audits = lighthouse?.audits;
+if (!audits) return results;
+
+for (const category in categories) {
+  const auditRefs = categories[category].auditRefs;
+  if (!auditRefs) continue;
+
+  for (let i = 0; i < auditRefs.length; i++) {
+    const audit = auditRefs[i];
+    const group = audit.group;
+
+    if (group === 'metrics' || group === 'hidden') continue;
+
+    const auditData = audits[audit.id];
+    if (auditData && auditData.score === 1) {
       results.push({
         category,
         id: audit.id
@@ -55,7 +68,10 @@ for (const category of Object.keys(lighthouse?.categories ? lighthouse.categorie
 
 return results;
 """;
-`).query(ctx => `
+`
+  )
+  .query(
+    (ctx) => `
 WITH pages AS (
   SELECT
     client,
@@ -373,4 +389,5 @@ SELECT
 FROM base_summary
 LEFT JOIN audits_summary
 USING (geo, client, rank, technology, version)
-`)
+`
+  )
