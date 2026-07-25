@@ -11,7 +11,9 @@ publish('tech_crux', {
   },
   dependOnDependencyAssertions: true,
   tags: ['crux_ready']
-}).preOps(ctx => `
+})
+  .preOps(
+    (ctx) => `
 DELETE FROM ${ctx.self()}
 WHERE date = '${pastMonth}';
 
@@ -66,7 +68,10 @@ for (const category in categories) {
 
 return results;
 """;
-`).query(ctx => `
+`
+  )
+  .query(
+    (ctx) => `
 WITH pages AS (
   SELECT
     client,
@@ -384,4 +389,5 @@ SELECT
 FROM base_summary
 LEFT JOIN audits_summary
 USING (geo, client, rank, technology, version)
-`)
+`
+  )

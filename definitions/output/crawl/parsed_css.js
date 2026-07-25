@@ -11,18 +11,26 @@ publish('parsed_css', {
   },
   columns: columns,
   tags: ['crawl_complete']
-}).preOps(ctx => `
+})
+  .preOps(
+    (ctx) => `
 DELETE FROM ${ctx.self()}
 WHERE date = '${constants.currentMonth}'
   AND client = 'desktop';
-`).query(ctx => `
+`
+  )
+  .query(
+    (ctx) => `
 SELECT
   *
 FROM ${ctx.ref('crawl_staging', 'parsed_css')}
 WHERE date = '${constants.currentMonth}'
   AND client = 'desktop'
   ${constants.devRankFilter}
-`).postOps(ctx => `
+`
+  )
+  .postOps(
+    (ctx) => `
 DELETE FROM ${ctx.self()}
 WHERE date = '${constants.currentMonth}'
   AND client = 'mobile';
@@ -34,4 +42,5 @@ FROM ${ctx.ref('crawl_staging', 'parsed_css')}
 WHERE date = '${constants.currentMonth}'
   AND client = 'mobile'
   ${constants.devRankFilter};
-`)
+`
+  )

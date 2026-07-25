@@ -15,30 +15,105 @@ const CONFIG = {
 // Schema is auto-detected from GCS data — no need to classify manually.
 // Some metrics only exist as timeseries (no histogram counterpart), and vice versa.
 const METRICS = [
-  'a11yButtonName', 'a11yColorContrast', 'a11yImageAlt', 'a11yLabel', 'a11yLinkName', 'a11yScores',
-  'asyncClipboardRead', 'badgeClear', 'badgeSet', 'bootupJs', 'bytesCss', 'bytesFont', 'bytesHtml',
-  'bytesImg', 'bytesJs', 'bytesOther', 'bytesTotal', 'bytesVideo', 'canonical', 'compileJs',
-  'contentIndex', 'cruxFastDcl', 'cruxFastFcp', 'cruxFastFp', 'cruxFastInp', 'cruxFastLcp',
-  'cruxFastOl', 'cruxFastTtfb', 'cruxLargeCls', 'cruxPassesCWV', 'cruxSlowFcp', 'cruxSlowInp',
-  'cruxSlowLcp', 'cruxSlowTtfb', 'cruxSmallCls', 'dcl', 'evalJs', 'fcp', 'fontDisplay',
-  'getInstalledRelatedApps', 'gzipSavings', 'h2', 'h3', 'hreflang', 'idleDetection', 'imgLazy',
-  'imgSavings', 'legible', 'linkText', 'notificationTriggers', 'numUrls', 'offscreenImages', 'ol',
-  'optimizedImages', 'pctHttps', 'periodicBackgroundSync', 'periodicBackgroundSyncRegister',
-  'quicTransport', 'reqCss', 'reqFont', 'reqHtml', 'reqImg', 'reqJs', 'reqOther', 'reqTotal',
-  'reqVideo', 'screenWakeLock', 'speedIndex', 'storageEstimate', 'storagePersist',
-  'swControlledPages', 'tcp', 'ttci', 'webSocketStream'
+  'a11yButtonName',
+  'a11yColorContrast',
+  'a11yImageAlt',
+  'a11yLabel',
+  'a11yLinkName',
+  'a11yScores',
+  'asyncClipboardRead',
+  'badgeClear',
+  'badgeSet',
+  'bootupJs',
+  'bytesCss',
+  'bytesFont',
+  'bytesHtml',
+  'bytesImg',
+  'bytesJs',
+  'bytesOther',
+  'bytesTotal',
+  'bytesVideo',
+  'canonical',
+  'compileJs',
+  'contentIndex',
+  'cruxFastDcl',
+  'cruxFastFcp',
+  'cruxFastFp',
+  'cruxFastInp',
+  'cruxFastLcp',
+  'cruxFastOl',
+  'cruxFastTtfb',
+  'cruxLargeCls',
+  'cruxPassesCWV',
+  'cruxSlowFcp',
+  'cruxSlowInp',
+  'cruxSlowLcp',
+  'cruxSlowTtfb',
+  'cruxSmallCls',
+  'dcl',
+  'evalJs',
+  'fcp',
+  'fontDisplay',
+  'getInstalledRelatedApps',
+  'gzipSavings',
+  'h2',
+  'h3',
+  'hreflang',
+  'idleDetection',
+  'imgLazy',
+  'imgSavings',
+  'legible',
+  'linkText',
+  'notificationTriggers',
+  'numUrls',
+  'offscreenImages',
+  'ol',
+  'optimizedImages',
+  'pctHttps',
+  'periodicBackgroundSync',
+  'periodicBackgroundSyncRegister',
+  'quicTransport',
+  'reqCss',
+  'reqFont',
+  'reqHtml',
+  'reqImg',
+  'reqJs',
+  'reqOther',
+  'reqTotal',
+  'reqVideo',
+  'screenWakeLock',
+  'speedIndex',
+  'storageEstimate',
+  'storagePersist',
+  'swControlledPages',
+  'tcp',
+  'ttci',
+  'webSocketStream'
 ]
 
 // GCS lens path prefix → BQ lens name (mirrors reports.js lenses config)
-const lenses = ['', 'drupal/', 'magento/', 'top100k/', 'top10k/', 'top1k/', 'top1m/', 'wordpress/']
-const lensName = (lensPath) => lensPath === '' ? 'all' : lensPath.replace('/', '')
+const lenses = [
+  '',
+  'drupal/',
+  'magento/',
+  'top100k/',
+  'top10k/',
+  'top1k/',
+  'top1m/',
+  'wordpress/'
+]
+const lensName = (lensPath) =>
+  lensPath === '' ? 'all' : lensPath.replace('/', '')
 
 // Reserved GCS columns that are NOT stored in BQ
 // (timestamp is derived from date; date is reformatted)
 const EXCLUDE_KEYS = new Set(['client', 'date', 'timestamp'])
 
 async function downloadObject(srcFilename) {
-  const contents = await storage.bucket(CONFIG.bucket).file(srcFilename).download()
+  const contents = await storage
+    .bucket(CONFIG.bucket)
+    .file(srcFilename)
+    .download()
   return contents.toString()
 }
 
@@ -57,10 +132,13 @@ function inferSchema(sampleRow) {
   ]
 
   const metricFields = Object.keys(sampleRow)
-    .filter(k => !EXCLUDE_KEYS.has(k))
-    .map(k => ({ name: k, type: 'FLOAT64' }))
+    .filter((k) => !EXCLUDE_KEYS.has(k))
+    .map((k) => ({ name: k, type: 'FLOAT64' }))
 
-  return { fields: [...fixedFields, ...metricFields], metricKeys: metricFields.map(f => f.name) }
+  return {
+    fields: [...fixedFields, ...metricFields],
+    metricKeys: metricFields.map((f) => f.name)
+  }
 }
 
 /**
@@ -76,7 +154,10 @@ function mapRow(item, lensPath, metricId, metricKeys) {
     lens: lensName(lensPath)
   }
   for (const key of metricKeys) {
-    row[key] = (item[key] === null || item[key] === undefined || item[key] === '') ? null : Number(item[key])
+    row[key] =
+      item[key] === null || item[key] === undefined || item[key] === ''
+        ? null
+        : Number(item[key])
   }
   return row
 }
@@ -84,7 +165,7 @@ function mapRow(item, lensPath, metricId, metricKeys) {
 async function uploadToBigQuery(rows, tableId, schemaFields) {
   return new Promise((resolve, reject) => {
     const table = bigquery.dataset(CONFIG.datasetId).table(tableId)
-    const jsonlData = rows.map(row => JSON.stringify(row)).join('\n')
+    const jsonlData = rows.map((row) => JSON.stringify(row)).join('\n')
     const dataStream = Readable.from([jsonlData])
 
     const writeStream = table.createWriteStream({
@@ -125,7 +206,8 @@ async function importMetricTimeseries(metricId) {
   let schemaFields = null
   let metricKeys = null
   let allRows = []
-  let notFoundCount = 0, errorCount = 0
+  let notFoundCount = 0,
+    errorCount = 0
   const failedFiles = []
 
   // Download all lenses in parallel
@@ -166,7 +248,9 @@ async function importMetricTimeseries(metricId) {
 
   for (const res of downloadResults) {
     if (!res || !res.parsed || !res.parsed.length) continue
-    const rows = res.parsed.map(item => mapRow(item, res.lensPath, metricId, metricKeys))
+    const rows = res.parsed.map((item) =>
+      mapRow(item, res.lensPath, metricId, metricKeys)
+    )
     for (const row of rows) {
       allRows.push(row)
     }
@@ -175,7 +259,9 @@ async function importMetricTimeseries(metricId) {
   if (allRows.length > 0) {
     try {
       await uploadToBigQuery(allRows, tableId, schemaFields)
-      console.log(`  ✓ ${metricId}: uploaded ${allRows.length} rows [schema: ${metricKeys.join(', ')}]`)
+      console.log(
+        `  ✓ ${metricId}: uploaded ${allRows.length} rows [schema: ${metricKeys.join(', ')}]`
+      )
     } catch (error) {
       console.error(`  ✗ ERROR uploading ${tableId}: ${error.message}`)
       errorCount++
@@ -195,23 +281,29 @@ async function importTimeseriesData() {
   const results = await mapLimit(METRICS, 5, importMetricTimeseries)
 
   console.log('\n=== FINAL SUMMARY ===')
-  const withData = results.filter(r => r.totalRows > 0)
-  const noData = results.filter(r => r.totalRows === 0 && r.errorCount === 0)
-  const withErrors = results.filter(r => r.errorCount > 0)
+  const withData = results.filter((r) => r.totalRows > 0)
+  const noData = results.filter((r) => r.totalRows === 0 && r.errorCount === 0)
+  const withErrors = results.filter((r) => r.errorCount > 0)
 
   for (const r of withData) {
     console.log(`  ✓ ${r.metricId}: ${r.totalRows.toLocaleString()} rows`)
   }
   if (noData.length) {
-    console.log(`\n  No data (not in GCS): ${noData.map(r => r.metricId).join(', ')}`)
+    console.log(
+      `\n  No data (not in GCS): ${noData.map((r) => r.metricId).join(', ')}`
+    )
   }
   if (withErrors.length) {
     console.log('\n  Errors:')
-    withErrors.forEach(r => console.log(`  ✗ ${r.metricId}: ${r.errorCount} errors`))
+    withErrors.forEach((r) =>
+      console.log(`  ✗ ${r.metricId}: ${r.errorCount} errors`)
+    )
   }
 
   const totalRows = results.reduce((s, r) => s + r.totalRows, 0)
-  console.log(`\nTotal: ${totalRows.toLocaleString()} rows across ${withData.length} metrics`)
+  console.log(
+    `\nTotal: ${totalRows.toLocaleString()} rows across ${withData.length} metrics`
+  )
 }
 
 importTimeseriesData().catch(console.error)

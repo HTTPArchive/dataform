@@ -9,9 +9,11 @@ publish('parsed_css_10k', {
   },
   columns: columns,
   tags: ['crawl_complete']
-}).query(ctx => `
+}).query(
+  (ctx) => `
 SELECT *
 FROM ${ctx.ref('crawl', 'parsed_css')}
 WHERE date = '${constants.currentMonth}' AND
     rank <= 10000
-`)
+`
+)

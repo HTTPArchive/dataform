@@ -14,18 +14,48 @@ const CONFIG = {
 const TEST_CASES = {
   timeseries: [
     { metric: 'bytesCss', lens: 'all', client: 'desktop', date: '2024-01-01' },
-    { metric: 'offscreenImages', lens: 'wordpress', client: 'mobile', date: '2023-06-01' },
-    { metric: 'cruxFastLcp', lens: 'top10k', client: 'mobile', date: '2025-02-01' },
-    { metric: 'storageEstimate', lens: 'all', client: 'desktop', date: '2022-12-01' }
+    {
+      metric: 'offscreenImages',
+      lens: 'wordpress',
+      client: 'mobile',
+      date: '2023-06-01'
+    },
+    {
+      metric: 'cruxFastLcp',
+      lens: 'top10k',
+      client: 'mobile',
+      date: '2025-02-01'
+    },
+    {
+      metric: 'storageEstimate',
+      lens: 'all',
+      client: 'desktop',
+      date: '2022-12-01'
+    }
   ],
   histogram: [
-    { metric: 'bytesTotal', lens: 'all', client: 'desktop', date: '2025-05-01' },
-    { metric: 'optimizedImages', lens: 'wordpress', client: 'mobile', date: '2024-08-01' },
-    { metric: 'cruxFp', lens: 'top100k', client: 'desktop', date: '2023-11-01' }
+    {
+      metric: 'bytesTotal',
+      lens: 'all',
+      client: 'desktop',
+      date: '2025-05-01'
+    },
+    {
+      metric: 'optimizedImages',
+      lens: 'wordpress',
+      client: 'mobile',
+      date: '2024-08-01'
+    },
+    {
+      metric: 'cruxFp',
+      lens: 'top100k',
+      client: 'desktop',
+      date: '2023-11-01'
+    }
   ]
 }
 
-const lensPath = (lens) => lens === 'all' ? '' : `${lens}/`
+const lensPath = (lens) => (lens === 'all' ? '' : `${lens}/`)
 
 async function runVerification() {
   console.log('=== STARTING BACKFILL VERIFICATION ===\n')
@@ -36,25 +66,34 @@ async function runVerification() {
     const gcsPath = `reports/${lensPath(tc.lens)}${tc.metric}.json`
     const bqTable = `${tc.metric}_timeseries`
 
-    console.log(`\nCase: ${tc.metric} timeseries | Lens: ${tc.lens} | Client: ${tc.client} | Date: ${tc.date}`)
+    console.log(
+      `\nCase: ${tc.metric} timeseries | Lens: ${tc.lens} | Client: ${tc.client} | Date: ${tc.date}`
+    )
     console.log(`  GCS Source: gs://${CONFIG.bucket}/${gcsPath}`)
     console.log(`  BQ Table:   reports.${bqTable}`)
 
     // Get GCS row
     let gcsRowData
     try {
-      const [content] = await storage.bucket(CONFIG.bucket).file(gcsPath).download()
+      const [content] = await storage
+        .bucket(CONFIG.bucket)
+        .file(gcsPath)
+        .download()
       const data = JSON.parse(content.toString())
       // GCS dates are YYYY_MM_DD
       const targetGcsDate = tc.date.replace(/-/g, '_')
-      gcsRowData = data.find(r => r.date === targetGcsDate && r.client === tc.client)
+      gcsRowData = data.find(
+        (r) => r.date === targetGcsDate && r.client === tc.client
+      )
     } catch (e) {
       console.log(`  ❌ Failed to fetch/parse GCS file: ${e.message}`)
       continue
     }
 
     if (!gcsRowData) {
-      console.log(`  ⚠️ GCS row not found for client ${tc.client} and date ${tc.date}`)
+      console.log(
+        `  ⚠️ GCS row not found for client ${tc.client} and date ${tc.date}`
+      )
       continue
     }
 
@@ -75,21 +114,28 @@ async function runVerification() {
     }
 
     if (!bqRowData) {
-      console.log(`  ❌ BQ row not found for client ${tc.client} and date ${tc.date}`)
+      console.log(
+        `  ❌ BQ row not found for client ${tc.client} and date ${tc.date}`
+      )
       continue
     }
 
     // Compare fields
     console.log('  Comparing fields:')
     let allMatch = true
-    const keysToCompare = Object.keys(bqRowData).filter(k => !['date', 'lens', 'client', 'metric'].includes(k))
+    const keysToCompare = Object.keys(bqRowData).filter(
+      (k) => !['date', 'lens', 'client', 'metric'].includes(k)
+    )
 
     for (const key of keysToCompare) {
       const bqVal = bqRowData[key]
       const gcsVal = Number(gcsRowData[key])
 
       // Check if both are NaN/null or match closely
-      const match = (isNaN(bqVal) && isNaN(gcsVal)) || (bqVal === null && gcsVal === null) || Math.abs(bqVal - gcsVal) < 0.001
+      const match =
+        (isNaN(bqVal) && isNaN(gcsVal)) ||
+        (bqVal === null && gcsVal === null) ||
+        Math.abs(bqVal - gcsVal) < 0.001
       if (match) {
         console.log(`    ✓ ${key}: GCS = ${gcsVal} | BQ = ${bqVal}`)
       } else {
@@ -112,16 +158,23 @@ async function runVerification() {
     const gcsPath = `reports/${lensPath(tc.lens)}${dateFolder}/${tc.metric}.json`
     const bqTable = `${tc.metric}_histogram`
 
-    console.log(`\nCase: ${tc.metric} histogram | Date: ${tc.date} | Lens: ${tc.lens} | Client: ${tc.client}`)
+    console.log(
+      `\nCase: ${tc.metric} histogram | Date: ${tc.date} | Lens: ${tc.lens} | Client: ${tc.client}`
+    )
     console.log(`  GCS Source: gs://${CONFIG.bucket}/${gcsPath}`)
     console.log(`  BQ Table:   reports.${bqTable}`)
 
     // Get GCS rows
     let gcsRows = []
     try {
-      const [content] = await storage.bucket(CONFIG.bucket).file(gcsPath).download()
+      const [content] = await storage
+        .bucket(CONFIG.bucket)
+        .file(gcsPath)
+        .download()
       const data = JSON.parse(content.toString())
-      gcsRows = data.filter(r => r.client === tc.client).sort((a, b) => Number(a.bin) - Number(b.bin))
+      gcsRows = data
+        .filter((r) => r.client === tc.client)
+        .sort((a, b) => Number(a.bin) - Number(b.bin))
     } catch (e) {
       console.log(`  ❌ Failed to fetch/parse GCS file: ${e.message}`)
       continue
@@ -155,16 +208,22 @@ async function runVerification() {
     }
 
     // Compare first 3 bins, last bin, and total counts
-    console.log(`  Comparing histograms (GCS had ${gcsRows.length} bins | BQ has ${bqRowsData.length} bins):`)
+    console.log(
+      `  Comparing histograms (GCS had ${gcsRows.length} bins | BQ has ${bqRowsData.length} bins):`
+    )
 
     if (gcsRows.length !== bqRowsData.length) {
-      console.log(`    ✗ Mismatch in bin count: GCS = ${gcsRows.length} | BQ = ${bqRowsData.length}`)
+      console.log(
+        `    ✗ Mismatch in bin count: GCS = ${gcsRows.length} | BQ = ${bqRowsData.length}`
+      )
     } else {
       console.log(`    ✓ Bin counts match (${bqRowsData.length} bins)`)
     }
 
     let sampleMatch = true
-    const sampleIndices = [0, 1, 2, gcsRows.length - 1].filter(idx => idx >= 0 && idx < gcsRows.length)
+    const sampleIndices = [0, 1, 2, gcsRows.length - 1].filter(
+      (idx) => idx >= 0 && idx < gcsRows.length
+    )
 
     for (const idx of sampleIndices) {
       const gRow = gcsRows[idx]
@@ -176,28 +235,48 @@ async function runVerification() {
         continue
       }
 
-      const gBin = (gRow.bin === null || gRow.bin === undefined || gRow.bin === '') ? null : Math.round(Number(gRow.bin))
+      const gBin =
+        gRow.bin === null || gRow.bin === undefined || gRow.bin === ''
+          ? null
+          : Math.round(Number(gRow.bin))
       const bBin = bRow.bin
       const binMatch = gBin === bBin
 
-      const gVol = (gRow.volume === null || gRow.volume === undefined || gRow.volume === '') ? null : Math.round(Number(gRow.volume))
+      const gVol =
+        gRow.volume === null || gRow.volume === undefined || gRow.volume === ''
+          ? null
+          : Math.round(Number(gRow.volume))
       const bVol = bRow.volume
       const volMatch = gVol === bVol
 
-      const gPdf = (gRow.pdf === null || gRow.pdf === undefined || gRow.pdf === '') ? null : Number(gRow.pdf)
+      const gPdf =
+        gRow.pdf === null || gRow.pdf === undefined || gRow.pdf === ''
+          ? null
+          : Number(gRow.pdf)
       const bPdf = bRow.pdf
-      const pdfMatch = (gPdf === null && bPdf === null) || Math.abs(gPdf - bPdf) < 0.0001
+      const pdfMatch =
+        (gPdf === null && bPdf === null) || Math.abs(gPdf - bPdf) < 0.0001
 
-      const gCdf = (gRow.cdf === null || gRow.cdf === undefined || gRow.cdf === '') ? null : Number(gRow.cdf)
+      const gCdf =
+        gRow.cdf === null || gRow.cdf === undefined || gRow.cdf === ''
+          ? null
+          : Number(gRow.cdf)
       const bCdf = bRow.cdf
-      const cdfMatch = (gCdf === null && bCdf === null) || Math.abs(gCdf - bCdf) < 0.0001
+      const cdfMatch =
+        (gCdf === null && bCdf === null) || Math.abs(gCdf - bCdf) < 0.0001
 
       if (binMatch && volMatch && pdfMatch && cdfMatch) {
-        console.log(`    ✓ Bin ${bRow.bin}: GCS [vol=${gRow.volume}, pdf=${gPdf !== null ? gPdf.toFixed(4) : null}, cdf=${gCdf !== null ? gCdf.toFixed(4) : null}] matches BQ [vol=${bRow.volume}, pdf=${bRow.pdf !== null ? bRow.pdf.toFixed(4) : null}, cdf=${bRow.cdf !== null ? bRow.cdf.toFixed(4) : null}]`)
+        console.log(
+          `    ✓ Bin ${bRow.bin}: GCS [vol=${gRow.volume}, pdf=${gPdf !== null ? gPdf.toFixed(4) : null}, cdf=${gCdf !== null ? gCdf.toFixed(4) : null}] matches BQ [vol=${bRow.volume}, pdf=${bRow.pdf !== null ? bRow.pdf.toFixed(4) : null}, cdf=${bRow.cdf !== null ? bRow.cdf.toFixed(4) : null}]`
+        )
       } else {
         console.log(`    ✗ Bin Mismatch at index ${idx}:`)
-        console.log(`      GCS: bin=${gRow.bin}, vol=${gRow.volume}, pdf=${gRow.pdf}, cdf=${gRow.cdf}`)
-        console.log(`      BQ:  bin=${bRow.bin}, vol=${bRow.volume}, pdf=${bRow.pdf}, cdf=${bRow.cdf}`)
+        console.log(
+          `      GCS: bin=${gRow.bin}, vol=${gRow.volume}, pdf=${gRow.pdf}, cdf=${gRow.cdf}`
+        )
+        console.log(
+          `      BQ:  bin=${bRow.bin}, vol=${bRow.volume}, pdf=${bRow.pdf}, cdf=${bRow.cdf}`
+        )
         sampleMatch = false
       }
     }

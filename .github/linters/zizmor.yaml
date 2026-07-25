@@ -1,9 +1,0 @@
----
-rules:
-  unpinned-uses:
-    ignore:
-      - ci.yaml
-      - infra.yaml
-  secrets-outside-env:
-    ignore:
-      - infra.yaml

@@ -4,7 +4,8 @@ publish('pages', {
   type: 'view',
   schema: 'latest',
   columns: columns
-}).query(ctx => `
+}).query(
+  (ctx) => `
 SELECT
   *
 FROM ${ctx.ref('crawl', 'pages')}
@@ -26,4 +27,5 @@ WHERE
   /* We should never be more than 60 days old hopefully! */
   date >= DATE_SUB(CURRENT_DATE(), INTERVAL 61 DAY) AND
   date <= CURRENT_DATE()
-`)
+`
+)

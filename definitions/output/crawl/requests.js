@@ -11,7 +11,9 @@ publish('requests', {
   },
   columns: columns,
   tags: ['crawl_complete']
-}).preOps(ctx => `
+})
+  .preOps(
+    (ctx) => `
 FOR client_var IN (SELECT * FROM UNNEST(['desktop', 'mobile']) AS value) DO
   FOR is_root_page_var IN (SELECT * FROM UNNEST([TRUE, FALSE]) AS value) DO
     FOR rank_lt_50M_var IN (SELECT * FROM UNNEST([TRUE, FALSE]) AS value) DO
@@ -35,9 +37,13 @@ FOR client_var IN (SELECT * FROM UNNEST(['desktop', 'mobile']) AS value) DO
     END FOR;
   END FOR;
 END FOR;
-`).query(ctx => `
+`
+  )
+  .query(
+    (ctx) => `
 SELECT *
 FROM ${ctx.ref('crawl_staging', 'requests')}
 WHERE date IS NULL ${constants.devRankFilter}
 LIMIT 0
-`)
+`
+  )

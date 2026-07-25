@@ -26,19 +26,20 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
       - name: Lint Code Base
-        uses: super-linter/super-linter/slim@v8.7.0
-        env:
-          DEFAULT_BRANCH: main
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ENABLE_GITHUB_PULL_REQUEST_SUMMARY_COMMENT: false
-          VALIDATE_BIOME_FORMAT: false
-          VALIDATE_BIOME_LINT: false
-          VALIDATE_CHECKOV: false
-          VALIDATE_GIT_COMMITLINT: false
-          VALIDATE_JSCPD: false
-          VALIDATE_PYTHON_RUFF_FORMAT: false
-          VALIDATE_PYTHON_RUFF: false
+        run: npm run lint
+
+      - name: Compile Dataform Models
+        run: npm run compile
 
   dependabot:
     name: Dependabot auto-merge
@@ -56,7 +57,7 @@ jobs:
         id: metadata
         uses: dependabot/fetch-metadata@v3
         with:
-          github-token: "${{ secrets.GITHUB_TOKEN }}"
+          github-token: '${{ secrets.GITHUB_TOKEN }}'
 
       - name: Enable auto-merge for Dependabot PRs
         if: >-

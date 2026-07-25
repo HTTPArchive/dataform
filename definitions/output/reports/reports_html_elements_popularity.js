@@ -3,7 +3,9 @@ publish('html_elements_popularity', {
   type: 'incremental',
   tags: ['crawl_complete'],
   description: 'Contact: https://github.com/bkardell'
-}).preOps(ctx => `
+})
+  .preOps(
+    (ctx) => `
 CREATE TEMPORARY FUNCTION getElements(payload STRING)
 RETURNS ARRAY<STRING> LANGUAGE js AS '''
 try {
@@ -17,7 +19,10 @@ try {
 
 DELETE FROM ${ctx.self()}
 WHERE date = '${constants.currentMonth}';
-`).query(ctx => `
+`
+  )
+  .query(
+    (ctx) => `
 WITH pages_data AS (
   SELECT
     date,
@@ -60,7 +65,10 @@ HAVING
 ORDER BY
   pages / total DESC,
   client
-`).postOps(ctx => `
+`
+  )
+  .postOps(
+    (ctx) => `
 SELECT
   reports.run_export_job(
     JSON '''{
@@ -72,4 +80,5 @@ SELECT
       "query": "SELECT * EXCEPT(date) FROM ${ctx.self()} WHERE date = '${constants.currentMonth}'"
     }'''
   );
-`)
+`
+  )

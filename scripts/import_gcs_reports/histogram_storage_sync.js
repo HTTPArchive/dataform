@@ -15,17 +15,47 @@ const CONFIG = {
 
 // Metrics with INT64 bin schemas (byte sizes, request counts, integer calculations)
 export const INT64_BIN_METRICS = [
-  'bytesCss', 'bytesFont', 'bytesHtml', 'bytesImg', 'bytesJs',
-  'bytesOther', 'bytesTotal', 'bytesVideo', 'compileJs', 'evalJs',
-  'fcp', 'gzipSavings', 'imgSavings', 'offscreenImages',
-  'optimizedImages', 'speedIndex', 'tcp', 'ttci'
+  'bytesCss',
+  'bytesFont',
+  'bytesHtml',
+  'bytesImg',
+  'bytesJs',
+  'bytesOther',
+  'bytesTotal',
+  'bytesVideo',
+  'compileJs',
+  'evalJs',
+  'fcp',
+  'gzipSavings',
+  'imgSavings',
+  'offscreenImages',
+  'optimizedImages',
+  'speedIndex',
+  'tcp',
+  'ttci'
 ]
 
 // Metrics with FLOAT64 bin schemas (timing in seconds/ms with fractional precision, CrUX distributions)
 export const FLOAT64_BIN_METRICS = [
-  'bootupJs', 'cruxCls', 'cruxDcl', 'cruxFcp', 'cruxFp', 'cruxInp',
-  'cruxLcp', 'cruxOl', 'cruxTtfb', 'dcl', 'ol', 'reqCss', 'reqFont',
-  'reqHtml', 'reqImg', 'reqJs', 'reqOther', 'reqTotal', 'reqVideo'
+  'bootupJs',
+  'cruxCls',
+  'cruxDcl',
+  'cruxFcp',
+  'cruxFp',
+  'cruxInp',
+  'cruxLcp',
+  'cruxOl',
+  'cruxTtfb',
+  'dcl',
+  'ol',
+  'reqCss',
+  'reqFont',
+  'reqHtml',
+  'reqImg',
+  'reqJs',
+  'reqOther',
+  'reqTotal',
+  'reqVideo'
 ]
 
 export const ALL_METRICS = [...INT64_BIN_METRICS, ...FLOAT64_BIN_METRICS].sort()
@@ -85,10 +115,11 @@ export function parseBinValue(rawBin, binType) {
 }
 
 // CLI Flags & Arguments
-const forceOverwrite = process.argv.includes('--force') || process.argv.includes('-f')
+const forceOverwrite =
+  process.argv.includes('--force') || process.argv.includes('-f')
 const int64Only = process.argv.includes('--int64-only')
 const float64Only = process.argv.includes('--float64-only')
-const cliMetrics = process.argv.slice(2).filter(arg => !arg.startsWith('-'))
+const cliMetrics = process.argv.slice(2).filter((arg) => !arg.startsWith('-'))
 
 let METRICS = ALL_METRICS
 if (cliMetrics.length > 0) {
@@ -106,8 +137,18 @@ const storage = new Storage()
 const bigquery = new BigQuery({ projectId: CONFIG.bigquery.projectId })
 
 // GCS lens path prefix → BQ lens name (mirrors reports.js lenses config)
-const lenses = ['', 'drupal/', 'magento/', 'top100k/', 'top10k/', 'top1k/', 'top1m/', 'wordpress/']
-const lensName = (lensPath) => lensPath === '' ? 'all' : lensPath.replace('/', '')
+const lenses = [
+  '',
+  'drupal/',
+  'magento/',
+  'top100k/',
+  'top10k/',
+  'top1k/',
+  'top1m/',
+  'wordpress/'
+]
+const lensName = (lensPath) =>
+  lensPath === '' ? 'all' : lensPath.replace('/', '')
 
 // Generate dates: HTTPArchive collection schedule
 function generateHTTPArchiveDates(startDate, endDate) {
@@ -115,8 +156,10 @@ function generateHTTPArchiveDates(startDate, endDate) {
   const start = new Date(startDate)
   const end = new Date(endDate)
 
-  if (isNaN(start.getTime()) || isNaN(end.getTime())) throw new Error('Invalid date format. Use YYYY-MM-DD.')
-  if (start > end) throw new Error('Start date must be before or equal to end date.')
+  if (isNaN(start.getTime()) || isNaN(end.getTime()))
+    throw new Error('Invalid date format. Use YYYY-MM-DD.')
+  if (start > end)
+    throw new Error('Start date must be before or equal to end date.')
 
   const startYear = start.getFullYear()
   const startMonth = start.getMonth() + 1
@@ -143,12 +186,14 @@ function generateHTTPArchiveDates(startDate, endDate) {
 const dates = generateHTTPArchiveDates('2011-06-01', '2026-07-01')
 
 const downloadObject = async (filename) =>
-  (await storage.bucket(CONFIG.storage.bucket).file(filename).download()).toString()
+  (
+    await storage.bucket(CONFIG.storage.bucket).file(filename).download()
+  ).toString()
 
 async function uploadToBigQuery(rows, tableId, schema) {
   return new Promise((resolve, reject) => {
     const table = bigquery.dataset(CONFIG.bigquery.datasetId).table(tableId)
-    const jsonlData = rows.map(row => JSON.stringify(row)).join('\n')
+    const jsonlData = rows.map((row) => JSON.stringify(row)).join('\n')
     const dataStream = Readable.from([jsonlData])
 
     const writeStream = table.createWriteStream({
@@ -187,20 +232,40 @@ async function downloadAndParseFile(filename, date, lensPath, metric) {
   const isFloatVolume = FLOAT64_BIN_METRICS.includes(metric)
   try {
     const data = await downloadObject(filename)
-    const rows = JSON.parse(data).map(item => ({
+    const rows = JSON.parse(data).map((item) => ({
       client: item.client,
       date,
       metric,
       lens: lensName(lensPath),
-      volume: (item.volume === null || item.volume === undefined || item.volume === '') ? null : (isFloatVolume ? Number(item.volume) : Math.round(Number(item.volume))),
+      volume:
+        item.volume === null || item.volume === undefined || item.volume === ''
+          ? null
+          : isFloatVolume
+            ? Number(item.volume)
+            : Math.round(Number(item.volume)),
       bin: parseBinValue(item.bin, binType),
-      pdf: (item.pdf === null || item.pdf === undefined || item.pdf === '') ? null : Number(item.pdf),
-      cdf: (item.cdf === null || item.cdf === undefined || item.cdf === '') ? null : Number(item.cdf)
+      pdf:
+        item.pdf === null || item.pdf === undefined || item.pdf === ''
+          ? null
+          : Number(item.pdf),
+      cdf:
+        item.cdf === null || item.cdf === undefined || item.cdf === ''
+          ? null
+          : Number(item.cdf)
     }))
-    return { filename, success: true, rows, rowCount: rows.length, isNotFound: false }
+    return {
+      filename,
+      success: true,
+      rows,
+      rowCount: rows.length,
+      isNotFound: false
+    }
   } catch (error) {
     return {
-      filename, success: false, rows: [], rowCount: 0,
+      filename,
+      success: false,
+      rows: [],
+      rowCount: 0,
       error: error.message,
       isNotFound: error.code === 404 || error.message.includes('No such object')
     }
@@ -217,22 +282,39 @@ async function importMetricHistogram(metric) {
     const [metadata] = await table.getMetadata()
     const numRows = Number(metadata.numRows)
     if (numRows > 0 && !forceOverwrite) {
-      console.log(`=== Skipping ${metric} [${binType}] (table reports.${tableId} already has ${numRows.toLocaleString()} rows) ===`)
-      return { metric, totalRows: numRows, totalSuccess: 0, totalNotFound: 0, totalErrors: 0, allFailedTasks: [] }
+      console.log(
+        `=== Skipping ${metric} [${binType}] (table reports.${tableId} already has ${numRows.toLocaleString()} rows) ===`
+      )
+      return {
+        metric,
+        totalRows: numRows,
+        totalSuccess: 0,
+        totalNotFound: 0,
+        totalErrors: 0,
+        allFailedTasks: []
+      }
     }
     if (numRows > 0 && forceOverwrite) {
-      console.log(`=== Truncating existing data in reports.${tableId} [${binType}] (--force mode) ===`)
-      await bigquery.query({ query: `TRUNCATE TABLE \`httparchive.reports.${tableId}\`` })
+      console.log(
+        `=== Truncating existing data in reports.${tableId} [${binType}] (--force mode) ===`
+      )
+      await bigquery.query({
+        query: `TRUNCATE TABLE \`httparchive.reports.${tableId}\``
+      })
     }
   } catch (error) {
     if (error.code !== 404) {
-      console.warn(`  Warning checking metadata for ${tableId}: ${error.message}`)
+      console.warn(
+        `  Warning checking metadata for ${tableId}: ${error.message}`
+      )
     }
   }
 
   console.log(`=== Starting ${metric} [${binType}] → reports.${tableId} ===`)
 
-  let totalSuccess = 0, totalNotFound = 0, totalErrors = 0
+  let totalSuccess = 0,
+    totalNotFound = 0,
+    totalErrors = 0
   const allFailedTasks = []
   let totalUploadedRows = 0
 
@@ -258,7 +340,12 @@ async function importMetricHistogram(metric) {
 
     // Download files in this chunk concurrently with a limit of 40
     const results = await mapLimit(tasks, 40, async (task) => {
-      return downloadAndParseFile(task.filename, task.date, task.lensPath, task.metric)
+      return downloadAndParseFile(
+        task.filename,
+        task.date,
+        task.lensPath,
+        task.metric
+      )
     })
 
     const chunkRows = []
@@ -282,7 +369,9 @@ async function importMetricHistogram(metric) {
         await uploadToBigQuery(chunkRows, tableId, schema)
         totalUploadedRows += chunkRows.length
       } catch (error) {
-        console.error(`  ✗ ERROR uploading chunk ${chunkIdx + 1}/${dateChunks.length} to ${tableId}: ${error.message}`)
+        console.error(
+          `  ✗ ERROR uploading chunk ${chunkIdx + 1}/${dateChunks.length} to ${tableId}: ${error.message}`
+        )
         totalErrors += totalSuccess
         for (const r of results) {
           if (r.success) allFailedTasks.push(r.filename)
@@ -292,32 +381,55 @@ async function importMetricHistogram(metric) {
   }
 
   if (totalUploadedRows > 0) {
-    console.log(`  ✓ ${metric} [${binType}]: completed uploading ${totalUploadedRows.toLocaleString()} rows total (${totalSuccess} lenses found, ${totalNotFound} not found, ${totalErrors} errors)`)
+    console.log(
+      `  ✓ ${metric} [${binType}]: completed uploading ${totalUploadedRows.toLocaleString()} rows total (${totalSuccess} lenses found, ${totalNotFound} not found, ${totalErrors} errors)`
+    )
   } else {
     console.log(`  ${metric} [${binType}]: no data found`)
   }
 
   if (allFailedTasks.length) {
     console.log(`  Failed tasks for ${metric}:`)
-    allFailedTasks.forEach(f => console.log(`    '${f}',`))
+    allFailedTasks.forEach((f) => console.log(`    '${f}',`))
   }
 
-  return { metric, totalRows: totalUploadedRows, totalSuccess, totalNotFound, totalErrors, allFailedTasks }
+  return {
+    metric,
+    totalRows: totalUploadedRows,
+    totalSuccess,
+    totalNotFound,
+    totalErrors,
+    allFailedTasks
+  }
 }
 
 async function processBacklog() {
   if (!BACKLOG.length) return
   console.log(`\nProcessing ${BACKLOG.length} backlog files...`)
-  let ok = 0, fail = 0
+  let ok = 0,
+    fail = 0
 
   await mapLimit(BACKLOG, 10, async (filename) => {
-    const match = filename.match(/reports\/(?:([^/]+)\/)?(\d{4}_\d{2}_\d{2})\/(.+?)(?:\.json)?$/)
-    if (!match) { console.log(`✗ ${filename}: invalid format`); fail++; return }
+    const match = filename.match(
+      /reports\/(?:([^/]+)\/)?(\d{4}_\d{2}_\d{2})\/(.+?)(?:\.json)?$/
+    )
+    if (!match) {
+      console.log(`✗ ${filename}: invalid format`)
+      fail++
+      return
+    }
 
     const [, lensPath = '', dateStr, metric] = match
     const date = dateStr.replace(/_/g, '-')
-    const fullFilename = filename.endsWith('.json') ? filename : `${filename}.json`
-    const result = await downloadAndParseFile(fullFilename, date, lensPath, metric)
+    const fullFilename = filename.endsWith('.json')
+      ? filename
+      : `${filename}.json`
+    const result = await downloadAndParseFile(
+      fullFilename,
+      date,
+      lensPath,
+      metric
+    )
     const schema = getHistogramSchema(metric)
 
     if (result.success && result.rows.length > 0) {
@@ -344,7 +456,9 @@ async function importHistogramData() {
     return
   }
 
-  console.log(`Starting parallel histogram sync for ${METRICS.length} metrics...`)
+  console.log(
+    `Starting parallel histogram sync for ${METRICS.length} metrics...`
+  )
   // Process 3 metrics at a time in parallel
   await mapLimit(METRICS, 3, importMetricHistogram)
 

@@ -36,14 +36,14 @@ Tag: `crux_ready`
 
 1. Install dependencies:
 
-    ```bash
-    npm install
-    ```
+   ```bash
+   npm install
+   ```
 
 2. Available Scripts:
 
-    - `npm run format` - Format code and fix Markdown issues
-    - `npm run lint` - Run linting checks on Markdown files, and compile Dataform configs
+   - `npm run format` - Format code and fix Markdown issues
+   - `npm run lint` - Run linting checks on Markdown files, and compile Dataform configs
 
 ## Code Quality
 

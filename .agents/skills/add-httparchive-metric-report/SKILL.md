@@ -36,18 +36,18 @@ description: Add new metrics to HTTPArchive reports config. USE FOR adding perfo
 metricName: {
   SQL: [
     {
-      type: "timeseries", // or 'histogram'
+      type: 'timeseries', // or 'histogram'
       query: DataformTemplateBuilder.create(
         (ctx, params) => `
         SELECT client, /* your calculations */
-        FROM ${ctx.ref("crawl", "pages")}
+        FROM ${ctx.ref('crawl', 'pages')}
         WHERE date = '${params.date}' AND is_root_page
           ${params.lens.sql} ${params.devRankFilter}
         GROUP BY client ORDER BY client
-      `,
-      ),
-    },
-  ];
+      `
+      )
+    }
+  ]
 }
 ```
 

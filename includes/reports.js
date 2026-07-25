@@ -76,7 +76,9 @@ class DataformTemplateBuilder {
 
       // Generate the template with the provided context and global context
       return templateFn(ctx, params).replace(/\${(.*?)}/g, (match, p1) => {
-        const [scope, path] = p1.includes(':') ? p1.split(':') : ['params', p1.trim()]
+        const [scope, path] = p1.includes(':')
+          ? p1.split(':')
+          : ['params', p1.trim()]
         return scope === 'ctx'
           ? resolveVariable(path.trim(), ctx)
           : resolveVariable(path.trim(), params)
@@ -91,7 +93,8 @@ const config = {
       SQL: [
         {
           type: 'histogram',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT
               *,
               SUM(pdf) OVER (PARTITION BY client, lens ORDER BY bin) AS cdf
@@ -113,11 +116,13 @@ const config = {
               )
             )
             ORDER BY lens, client, bin
-          `)
+          `
+          )
         },
         {
           type: 'timeseries',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT client, lens,
               ROUND(APPROX_QUANTILES(bytesCss, 1001)[OFFSET(101)] / 1024, 2) AS p10,
               ROUND(APPROX_QUANTILES(bytesCss, 1001)[OFFSET(251)] / 1024, 2) AS p25,
@@ -134,7 +139,8 @@ const config = {
             WHERE lens IS NOT NULL
             GROUP BY client, lens
             ORDER BY lens, client
-          `)
+          `
+          )
         }
       ]
     },
@@ -142,7 +148,8 @@ const config = {
       SQL: [
         {
           type: 'histogram',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT
               *,
               SUM(pdf) OVER (PARTITION BY client, lens ORDER BY bin) AS cdf
@@ -164,11 +171,13 @@ const config = {
               )
             )
             ORDER BY lens, client, bin
-          `)
+          `
+          )
         },
         {
           type: 'timeseries',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT client, lens,
               ROUND(APPROX_QUANTILES(bytesHtml, 1001)[OFFSET(101)] / 1024, 2) AS p10,
               ROUND(APPROX_QUANTILES(bytesHtml, 1001)[OFFSET(251)] / 1024, 2) AS p25,
@@ -185,7 +194,8 @@ const config = {
             WHERE lens IS NOT NULL
             GROUP BY client, lens
             ORDER BY lens, client
-          `)
+          `
+          )
         }
       ]
     },
@@ -193,7 +203,8 @@ const config = {
       SQL: [
         {
           type: 'histogram',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT
               *,
               SUM(pdf) OVER (PARTITION BY client, lens ORDER BY bin) AS cdf
@@ -215,11 +226,13 @@ const config = {
               )
             )
             ORDER BY lens, client, bin
-          `)
+          `
+          )
         },
         {
           type: 'timeseries',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT client, lens,
               ROUND(APPROX_QUANTILES(bytesOther, 1001)[OFFSET(101)] / 1024, 2) AS p10,
               ROUND(APPROX_QUANTILES(bytesOther, 1001)[OFFSET(251)] / 1024, 2) AS p25,
@@ -236,7 +249,8 @@ const config = {
             WHERE lens IS NOT NULL
             GROUP BY client, lens
             ORDER BY lens, client
-          `)
+          `
+          )
         }
       ]
     },
@@ -244,7 +258,8 @@ const config = {
       SQL: [
         {
           type: 'timeseries',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT client, lens,
               ROUND(SAFE_DIVIDE(
                 COUNTIF(valid),
@@ -259,7 +274,8 @@ const config = {
             WHERE lens IS NOT NULL
             GROUP BY client, lens
             ORDER BY lens, client
-          `)
+          `
+          )
         }
       ]
     },
@@ -267,7 +283,8 @@ const config = {
       SQL: [
         {
           type: 'histogram',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT
               *,
               SUM(pdf) OVER (PARTITION BY client, lens ORDER BY bin) AS cdf
@@ -289,11 +306,13 @@ const config = {
               )
             )
             ORDER BY lens, client, bin
-          `)
+          `
+          )
         },
         {
           type: 'timeseries',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT client, lens,
               ROUND(APPROX_QUANTILES(bytesFont, 1001)[OFFSET(101)] / 1024, 2) AS p10,
               ROUND(APPROX_QUANTILES(bytesFont, 1001)[OFFSET(251)] / 1024, 2) AS p25,
@@ -310,7 +329,8 @@ const config = {
             WHERE lens IS NOT NULL
             GROUP BY client, lens
             ORDER BY lens, client
-          `)
+          `
+          )
         }
       ]
     },
@@ -318,7 +338,8 @@ const config = {
       SQL: [
         {
           type: 'histogram',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT
               *,
               SUM(pdf) OVER (PARTITION BY client, lens ORDER BY bin) AS cdf
@@ -340,11 +361,13 @@ const config = {
               )
             )
             ORDER BY lens, client, bin
-          `)
+          `
+          )
         },
         {
           type: 'timeseries',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT client, lens,
               ROUND(APPROX_QUANTILES(bytesImg, 1001)[OFFSET(101)] / 1024, 2) AS p10,
               ROUND(APPROX_QUANTILES(bytesImg, 1001)[OFFSET(251)] / 1024, 2) AS p25,
@@ -361,7 +384,8 @@ const config = {
             WHERE lens IS NOT NULL
             GROUP BY client, lens
             ORDER BY lens, client
-          `)
+          `
+          )
         }
       ]
     },
@@ -369,7 +393,8 @@ const config = {
       SQL: [
         {
           type: 'histogram',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT
               *,
               SUM(pdf) OVER (PARTITION BY client, lens ORDER BY bin) AS cdf
@@ -391,11 +416,13 @@ const config = {
               )
             )
             ORDER BY lens, client, bin
-          `)
+          `
+          )
         },
         {
           type: 'timeseries',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT client, lens,
               ROUND(APPROX_QUANTILES(bytesJS, 1001)[OFFSET(101)] / 1024, 2) AS p10,
               ROUND(APPROX_QUANTILES(bytesJS, 1001)[OFFSET(251)] / 1024, 2) AS p25,
@@ -412,7 +439,8 @@ const config = {
             WHERE lens IS NOT NULL
             GROUP BY client, lens
             ORDER BY lens, client
-          `)
+          `
+          )
         }
       ]
     },
@@ -420,7 +448,8 @@ const config = {
       SQL: [
         {
           type: 'histogram',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT
               *,
               SUM(pdf) OVER (PARTITION BY client, lens ORDER BY bin) AS cdf
@@ -442,11 +471,13 @@ const config = {
               )
             )
             ORDER BY lens, client, bin
-          `)
+          `
+          )
         },
         {
           type: 'timeseries',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT client, lens,
               ROUND(APPROX_QUANTILES(bytesTotal, 1001)[OFFSET(101)] / 1024, 2) AS p10,
               ROUND(APPROX_QUANTILES(bytesTotal, 1001)[OFFSET(251)] / 1024, 2) AS p25,
@@ -463,7 +494,8 @@ const config = {
             WHERE lens IS NOT NULL
             GROUP BY client, lens
             ORDER BY lens, client
-          `)
+          `
+          )
         }
       ]
     },
@@ -471,7 +503,8 @@ const config = {
       SQL: [
         {
           type: 'histogram',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT
               *,
               SUM(pdf) OVER (PARTITION BY client, lens ORDER BY bin) AS cdf
@@ -500,11 +533,13 @@ const config = {
               )
             )
             ORDER BY lens, client, bin
-          `)
+          `
+          )
         },
         {
           type: 'timeseries',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT client, lens,
               ROUND(APPROX_QUANTILES(value, 1000)[OFFSET(100)], 2) AS p10,
               ROUND(APPROX_QUANTILES(value, 1000)[OFFSET(250)], 2) AS p25,
@@ -530,7 +565,8 @@ const config = {
             WHERE lens IS NOT NULL
             GROUP BY client, lens
             ORDER BY lens, client
-          `)
+          `
+          )
         }
       ]
     },
@@ -538,7 +574,8 @@ const config = {
       SQL: [
         {
           type: 'timeseries',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT client, lens,
               ROUND(SUM(IF(STARTS_WITH(url, 'https'), 1, 0)) * 100 / COUNT(0), 2) AS percent
             FROM ${ctx.ref('crawl', 'requests')}
@@ -553,7 +590,8 @@ const config = {
             WHERE lens IS NOT NULL
             GROUP BY client, lens
             ORDER BY lens, client
-          `)
+          `
+          )
         }
       ]
     },
@@ -561,7 +599,8 @@ const config = {
       SQL: [
         {
           type: 'timeseries',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT client, lens,
               SUM(IF(feat.id IS NOT NULL, 1, 0)) AS num_urls,
               ROUND(SUM(IF(feat.id IS NOT NULL, 1, 0)) / COUNT(0) * 100, 5) AS percent
@@ -577,7 +616,8 @@ const config = {
             WHERE lens IS NOT NULL
             GROUP BY client, lens
             ORDER BY lens, client, num_urls DESC
-          `)
+          `
+          )
         }
       ]
     },
@@ -585,7 +625,8 @@ const config = {
       SQL: [
         {
           type: 'histogram',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT
               *,
               SUM(pdf) OVER (PARTITION BY client, lens ORDER BY bin) AS cdf
@@ -608,11 +649,13 @@ const config = {
               )
             )
             ORDER BY lens, client, bin
-          `)
+          `
+          )
         },
         {
           type: 'timeseries',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT client, lens,
               ROUND(APPROX_QUANTILES(value, 1000)[OFFSET(100)], 2) AS p10,
               ROUND(APPROX_QUANTILES(value, 1000)[OFFSET(250)], 2) AS p25,
@@ -636,7 +679,8 @@ const config = {
             WHERE lens IS NOT NULL
             GROUP BY client, lens
             ORDER BY lens, client
-          `)
+          `
+          )
         }
       ]
     },
@@ -644,7 +688,8 @@ const config = {
       SQL: [
         {
           type: 'histogram',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT
               *,
               SUM(pdf) OVER (PARTITION BY client, lens ORDER BY bin) AS cdf
@@ -666,11 +711,13 @@ const config = {
               )
             )
             ORDER BY lens, client, bin
-          `)
+          `
+          )
         },
         {
           type: 'timeseries',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT client, lens,
               ROUND(APPROX_QUANTILES(bytesVideo, 1001)[OFFSET(101)] / 1024, 2) AS p10,
               ROUND(APPROX_QUANTILES(bytesVideo, 1001)[OFFSET(251)] / 1024, 2) AS p25,
@@ -687,7 +734,8 @@ const config = {
             WHERE lens IS NOT NULL
             GROUP BY client, lens
             ORDER BY lens, client
-          `)
+          `
+          )
         }
       ]
     },
@@ -695,7 +743,8 @@ const config = {
       SQL: [
         {
           type: 'histogram',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT
               *,
               SUM(pdf) OVER (PARTITION BY client, lens ORDER BY bin) AS cdf
@@ -718,11 +767,13 @@ const config = {
               )
             )
             ORDER BY lens, client, bin
-          `)
+          `
+          )
         },
         {
           type: 'timeseries',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT client, lens,
               ROUND(APPROX_QUANTILES(value, 1000)[OFFSET(100)], 2) AS p10,
               ROUND(APPROX_QUANTILES(value, 1000)[OFFSET(250)], 2) AS p25,
@@ -744,7 +795,8 @@ const config = {
             WHERE lens IS NOT NULL
             GROUP BY client, lens
             ORDER BY lens, client
-          `)
+          `
+          )
         }
       ]
     },
@@ -752,7 +804,8 @@ const config = {
       SQL: [
         {
           type: 'histogram',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT
               *,
               SUM(pdf) OVER (PARTITION BY client, lens ORDER BY bin) AS cdf
@@ -775,11 +828,13 @@ const config = {
               )
             )
             ORDER BY lens, client, bin
-          `)
+          `
+          )
         },
         {
           type: 'timeseries',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT client, lens,
               ROUND(APPROX_QUANTILES(onContentLoaded, 1001)[OFFSET(101)], 2) AS p10,
               ROUND(APPROX_QUANTILES(onContentLoaded, 1001)[OFFSET(251)], 2) AS p25,
@@ -796,7 +851,8 @@ const config = {
             WHERE lens IS NOT NULL
             GROUP BY client, lens
             ORDER BY lens, client
-          `)
+          `
+          )
         }
       ]
     },
@@ -804,7 +860,8 @@ const config = {
       SQL: [
         {
           type: 'histogram',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT
               *,
               SUM(pdf) OVER (PARTITION BY client, lens ORDER BY bin) AS cdf
@@ -829,7 +886,8 @@ const config = {
               )
             )
             ORDER BY lens, client, bin
-          `)
+          `
+          )
         }
       ]
     },
@@ -837,7 +895,8 @@ const config = {
       SQL: [
         {
           type: 'histogram',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT
               *,
               SUM(pdf) OVER (PARTITION BY client, lens ORDER BY bin) AS cdf
@@ -860,11 +919,13 @@ const config = {
               )
             )
             ORDER BY lens, client, bin
-          `)
+          `
+          )
         },
         {
           type: 'timeseries',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT client, lens,
               ROUND(APPROX_QUANTILES(fcp, 1001)[OFFSET(101)] / 1024, 2) AS p10,
               ROUND(APPROX_QUANTILES(fcp, 1001)[OFFSET(251)] / 1024, 2) AS p25,
@@ -881,7 +942,8 @@ const config = {
             GROUP BY client, lens
             HAVING p50 IS NOT NULL
             ORDER BY lens, client
-          `)
+          `
+          )
         }
       ]
     },
@@ -889,7 +951,8 @@ const config = {
       SQL: [
         {
           type: 'histogram',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT
               *,
               SUM(pdf) OVER (PARTITION BY client, lens ORDER BY bin) AS cdf
@@ -912,11 +975,13 @@ const config = {
               )
             )
             ORDER BY lens, client, bin
-          `)
+          `
+          )
         },
         {
           type: 'timeseries',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT client, lens,
               ROUND(APPROX_QUANTILES(gzip_savings, 1001)[OFFSET(101)] / 1024, 2) AS p10,
               ROUND(APPROX_QUANTILES(gzip_savings, 1001)[OFFSET(251)] / 1024, 2) AS p25,
@@ -932,7 +997,8 @@ const config = {
             WHERE lens IS NOT NULL
             GROUP BY client, lens
             ORDER BY lens, client
-          `)
+          `
+          )
         }
       ]
     },
@@ -940,7 +1006,8 @@ const config = {
       SQL: [
         {
           type: 'histogram',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT
               *,
               SUM(pdf) OVER (PARTITION BY client, lens ORDER BY bin) AS cdf
@@ -963,11 +1030,13 @@ const config = {
               )
             )
             ORDER BY lens, client, bin
-          `)
+          `
+          )
         },
         {
           type: 'timeseries',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT client, lens,
               ROUND(APPROX_QUANTILES(onLoad, 1001)[OFFSET(101)] / 1000, 2) AS p10,
               ROUND(APPROX_QUANTILES(onLoad, 1001)[OFFSET(251)] / 1000, 2) AS p25,
@@ -984,7 +1053,8 @@ const config = {
             WHERE lens IS NOT NULL
             GROUP BY client, lens
             ORDER BY lens, client
-          `)
+          `
+          )
         }
       ]
     },
@@ -992,7 +1062,8 @@ const config = {
       SQL: [
         {
           type: 'histogram',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT
               *,
               SUM(pdf) OVER (PARTITION BY client, lens ORDER BY bin) AS cdf
@@ -1014,11 +1085,13 @@ const config = {
               )
             )
             ORDER BY lens, client, bin
-          `)
+          `
+          )
         },
         {
           type: 'timeseries',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT client, lens,
               ROUND(APPROX_QUANTILES(reqCss, 1001)[OFFSET(101)], 2) AS p10,
               ROUND(APPROX_QUANTILES(reqCss, 1001)[OFFSET(251)], 2) AS p25,
@@ -1035,7 +1108,8 @@ const config = {
             WHERE lens IS NOT NULL
             GROUP BY client, lens
             ORDER BY lens, client
-          `)
+          `
+          )
         }
       ]
     },
@@ -1043,7 +1117,8 @@ const config = {
       SQL: [
         {
           type: 'histogram',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT
               *,
               SUM(pdf) OVER (PARTITION BY client, lens ORDER BY bin) AS cdf
@@ -1065,11 +1140,13 @@ const config = {
               )
             )
             ORDER BY lens, client, bin
-          `)
+          `
+          )
         },
         {
           type: 'timeseries',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT client, lens,
               ROUND(APPROX_QUANTILES(reqFont, 1001)[OFFSET(101)], 2) AS p10,
               ROUND(APPROX_QUANTILES(reqFont, 1001)[OFFSET(251)], 2) AS p25,
@@ -1086,7 +1163,8 @@ const config = {
             WHERE lens IS NOT NULL
             GROUP BY client, lens
             ORDER BY lens, client
-          `)
+          `
+          )
         }
       ]
     },
@@ -1094,7 +1172,8 @@ const config = {
       SQL: [
         {
           type: 'histogram',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT
               *,
               SUM(pdf) OVER (PARTITION BY client, lens ORDER BY bin) AS cdf
@@ -1116,11 +1195,13 @@ const config = {
               )
             )
             ORDER BY lens, client, bin
-          `)
+          `
+          )
         },
         {
           type: 'timeseries',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT client, lens,
               ROUND(APPROX_QUANTILES(reqHtml, 1001)[OFFSET(101)], 2) AS p10,
               ROUND(APPROX_QUANTILES(reqHtml, 1001)[OFFSET(251)], 2) AS p25,
@@ -1137,7 +1218,8 @@ const config = {
             WHERE lens IS NOT NULL
             GROUP BY client, lens
             ORDER BY lens, client
-          `)
+          `
+          )
         }
       ]
     },
@@ -1145,7 +1227,8 @@ const config = {
       SQL: [
         {
           type: 'histogram',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT
               *,
               SUM(pdf) OVER (PARTITION BY client, lens ORDER BY bin) AS cdf
@@ -1167,11 +1250,13 @@ const config = {
               )
             )
             ORDER BY lens, client, bin
-          `)
+          `
+          )
         },
         {
           type: 'timeseries',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT client, lens,
               ROUND(APPROX_QUANTILES(reqImg, 1001)[OFFSET(101)], 2) AS p10,
               ROUND(APPROX_QUANTILES(reqImg, 1001)[OFFSET(251)], 2) AS p25,
@@ -1188,7 +1273,8 @@ const config = {
             WHERE lens IS NOT NULL
             GROUP BY client, lens
             ORDER BY lens, client
-          `)
+          `
+          )
         }
       ]
     },
@@ -1196,7 +1282,8 @@ const config = {
       SQL: [
         {
           type: 'histogram',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT
               *,
               SUM(pdf) OVER (PARTITION BY client, lens ORDER BY bin) AS cdf
@@ -1218,11 +1305,13 @@ const config = {
               )
             )
             ORDER BY lens, client, bin
-          `)
+          `
+          )
         },
         {
           type: 'timeseries',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT client, lens,
               ROUND(APPROX_QUANTILES(reqJS, 1001)[OFFSET(101)], 2) AS p10,
               ROUND(APPROX_QUANTILES(reqJS, 1001)[OFFSET(251)], 2) AS p25,
@@ -1239,7 +1328,8 @@ const config = {
             WHERE lens IS NOT NULL
             GROUP BY client, lens
             ORDER BY lens, client
-          `)
+          `
+          )
         }
       ]
     },
@@ -1247,7 +1337,8 @@ const config = {
       SQL: [
         {
           type: 'histogram',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT
               *,
               SUM(pdf) OVER (PARTITION BY client, lens ORDER BY bin) AS cdf
@@ -1269,11 +1360,13 @@ const config = {
               )
             )
             ORDER BY lens, client, bin
-          `)
+          `
+          )
         },
         {
           type: 'timeseries',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT client, lens,
               ROUND(APPROX_QUANTILES(reqOther, 1001)[OFFSET(101)], 2) AS p10,
               ROUND(APPROX_QUANTILES(reqOther, 1001)[OFFSET(251)], 2) AS p25,
@@ -1290,7 +1383,8 @@ const config = {
             WHERE lens IS NOT NULL
             GROUP BY client, lens
             ORDER BY lens, client
-          `)
+          `
+          )
         }
       ]
     },
@@ -1298,7 +1392,8 @@ const config = {
       SQL: [
         {
           type: 'histogram',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT
               *,
               SUM(pdf) OVER (PARTITION BY client, lens ORDER BY bin) AS cdf
@@ -1320,11 +1415,13 @@ const config = {
               )
             )
             ORDER BY lens, client, bin
-          `)
+          `
+          )
         },
         {
           type: 'timeseries',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT client, lens,
               ROUND(APPROX_QUANTILES(reqTotal, 1001)[OFFSET(101)], 2) AS p10,
               ROUND(APPROX_QUANTILES(reqTotal, 1001)[OFFSET(251)], 2) AS p25,
@@ -1341,7 +1438,8 @@ const config = {
             WHERE lens IS NOT NULL
             GROUP BY client, lens
             ORDER BY lens, client
-          `)
+          `
+          )
         }
       ]
     },
@@ -1349,7 +1447,8 @@ const config = {
       SQL: [
         {
           type: 'histogram',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT
               *,
               SUM(pdf) OVER (PARTITION BY client, lens ORDER BY bin) AS cdf
@@ -1371,11 +1470,13 @@ const config = {
               )
             )
             ORDER BY lens, client, bin
-          `)
+          `
+          )
         },
         {
           type: 'timeseries',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT client, lens,
               ROUND(APPROX_QUANTILES(reqVideo, 1001)[OFFSET(101)], 2) AS p10,
               ROUND(APPROX_QUANTILES(reqVideo, 1001)[OFFSET(251)], 2) AS p25,
@@ -1392,7 +1493,8 @@ const config = {
             WHERE lens IS NOT NULL
             GROUP BY client, lens
             ORDER BY lens, client
-          `)
+          `
+          )
         }
       ]
     },
@@ -1400,7 +1502,8 @@ const config = {
       SQL: [
         {
           type: 'histogram',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT
               *,
               SUM(pdf) OVER (PARTITION BY client, lens ORDER BY bin) AS cdf
@@ -1423,11 +1526,13 @@ const config = {
               )
             )
             ORDER BY lens, client, bin
-          `)
+          `
+          )
         },
         {
           type: 'timeseries',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT client, lens,
               ROUND(APPROX_QUANTILES(image_savings, 1001)[OFFSET(101)] / 1024, 2) AS p10,
               ROUND(APPROX_QUANTILES(image_savings, 1001)[OFFSET(251)] / 1024, 2) AS p25,
@@ -1443,7 +1548,8 @@ const config = {
             WHERE lens IS NOT NULL
             GROUP BY client, lens
             ORDER BY lens, client
-          `)
+          `
+          )
         }
       ]
     },
@@ -1451,7 +1557,8 @@ const config = {
       SQL: [
         {
           type: 'histogram',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT
               *,
               SUM(pdf) OVER (PARTITION BY client, lens ORDER BY bin) AS cdf
@@ -1477,11 +1584,13 @@ const config = {
               )
             )
             ORDER BY lens, client, bin
-          `)
+          `
+          )
         },
         {
           type: 'timeseries',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT client, lens,
               ROUND(APPROX_QUANTILES(wasted_bytes, 1001)[OFFSET(101)] / 1024, 2) AS p10,
               ROUND(APPROX_QUANTILES(wasted_bytes, 1001)[OFFSET(251)] / 1024, 2) AS p25,
@@ -1500,7 +1609,8 @@ const config = {
             WHERE lens IS NOT NULL
             GROUP BY client, lens
             ORDER BY lens, client
-          `)
+          `
+          )
         }
       ]
     },
@@ -1508,7 +1618,8 @@ const config = {
       SQL: [
         {
           type: 'histogram',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT
               *,
               SUM(pdf) OVER (PARTITION BY client, lens ORDER BY bin) AS cdf
@@ -1534,11 +1645,13 @@ const config = {
               )
             )
             ORDER BY lens, client, bin
-          `)
+          `
+          )
         },
         {
           type: 'timeseries',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT client, lens,
               ROUND(APPROX_QUANTILES(wasted_bytes, 1001)[OFFSET(101)] / 1024, 2) AS p10,
               ROUND(APPROX_QUANTILES(wasted_bytes, 1001)[OFFSET(251)] / 1024, 2) AS p25,
@@ -1557,7 +1670,8 @@ const config = {
             WHERE lens IS NOT NULL
             GROUP BY client, lens
             ORDER BY lens, client
-          `)
+          `
+          )
         }
       ]
     },
@@ -1565,7 +1679,8 @@ const config = {
       SQL: [
         {
           type: 'histogram',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT
               *,
               SUM(pdf) OVER (PARTITION BY client, lens ORDER BY bin) AS cdf
@@ -1588,11 +1703,13 @@ const config = {
               )
             )
             ORDER BY lens, client, bin
-          `)
+          `
+          )
         },
         {
           type: 'timeseries',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT client, lens,
               ROUND(APPROX_QUANTILES(SpeedIndex, 1001)[OFFSET(101)] / 1000, 2) AS p10,
               ROUND(APPROX_QUANTILES(SpeedIndex, 1001)[OFFSET(251)] / 1000, 2) AS p25,
@@ -1608,7 +1725,8 @@ const config = {
             WHERE lens IS NOT NULL
             GROUP BY client, lens
             ORDER BY lens, client
-          `)
+          `
+          )
         }
       ]
     },
@@ -1616,7 +1734,8 @@ const config = {
       SQL: [
         {
           type: 'histogram',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT
               *,
               SUM(pdf) OVER (PARTITION BY client, lens ORDER BY bin) AS cdf
@@ -1639,11 +1758,13 @@ const config = {
               )
             )
             ORDER BY lens, client, bin
-          `)
+          `
+          )
         },
         {
           type: 'timeseries',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT client, lens,
               APPROX_QUANTILES(connections, 1001)[OFFSET(101)] AS p10,
               APPROX_QUANTILES(connections, 1001)[OFFSET(251)] AS p25,
@@ -1660,7 +1781,8 @@ const config = {
             WHERE lens IS NOT NULL
             GROUP BY client, lens
             ORDER BY lens, client
-          `)
+          `
+          )
         }
       ]
     },
@@ -1668,7 +1790,8 @@ const config = {
       SQL: [
         {
           type: 'timeseries',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT client, lens,
               ROUND(COUNT(DISTINCT IF(LOWER(LAX_STRING(attr)) = 'lazy', page, NULL)) * 100 / COUNT(DISTINCT page), 2) AS percent
             FROM (
@@ -1683,7 +1806,8 @@ const config = {
             WHERE lens IS NOT NULL
             GROUP BY client, lens
             ORDER BY lens, client
-          `)
+          `
+          )
         }
       ]
     },
@@ -1691,7 +1815,8 @@ const config = {
       SQL: [
         {
           type: 'timeseries',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT client, lens,
               ROUND(SUM(IF(LAX_STRING(r.summary.respHttpVersion) = 'HTTP/2', 1, 0)) * 100 / COUNT(0), 2) AS percent
             FROM ${ctx.ref('crawl', 'requests')} r
@@ -1705,7 +1830,8 @@ const config = {
             WHERE lens IS NOT NULL
             GROUP BY client, lens
             ORDER BY lens, client
-          `)
+          `
+          )
         }
       ]
     },
@@ -1713,7 +1839,8 @@ const config = {
       SQL: [
         {
           type: 'timeseries',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT client, lens,
               ROUND(
                 SUM(
@@ -1738,7 +1865,8 @@ const config = {
             WHERE lens IS NOT NULL
             GROUP BY client, lens
             ORDER BY lens, client
-          `)
+          `
+          )
         }
       ]
     },
@@ -1746,7 +1874,8 @@ const config = {
       SQL: [
         {
           type: 'timeseries',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT client, lens,
               ROUND(SUM(IF(score IN ('true', '1'), 1, 0)) * 100 / COUNT(0), 2) AS percent
             FROM (
@@ -1760,7 +1889,8 @@ const config = {
             WHERE lens IS NOT NULL
             GROUP BY client, lens
             ORDER BY lens, client
-          `)
+          `
+          )
         }
       ]
     },
@@ -1768,7 +1898,8 @@ const config = {
       SQL: [
         {
           type: 'timeseries',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT client, lens,
               ROUND(SUM(IF(score IN ('true', '1'), 1, 0)) * 100 / COUNT(0), 2) AS percent
             FROM (
@@ -1781,7 +1912,8 @@ const config = {
             WHERE lens IS NOT NULL
             GROUP BY client, lens
             ORDER BY lens, client
-          `)
+          `
+          )
         }
       ]
     },
@@ -1789,7 +1921,8 @@ const config = {
       SQL: [
         {
           type: 'timeseries',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT client, lens,
               ROUND(SUM(IF(score IN ('true', '1'), 1, 0)) * 100 / COUNT(0), 2) AS percent
             FROM (
@@ -1802,7 +1935,8 @@ const config = {
             WHERE lens IS NOT NULL
             GROUP BY client, lens
             ORDER BY lens, client
-          `)
+          `
+          )
         }
       ]
     },
@@ -1810,7 +1944,8 @@ const config = {
       SQL: [
         {
           type: 'timeseries',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT client, lens,
               ROUND(SUM(IF(score IN ('true', '1'), 1, 0)) * 100 / COUNT(0), 2) AS percent
             FROM (
@@ -1824,7 +1959,8 @@ const config = {
             WHERE lens IS NOT NULL
             GROUP BY client, lens
             ORDER BY lens, client
-          `)
+          `
+          )
         }
       ]
     },
@@ -1832,7 +1968,8 @@ const config = {
       SQL: [
         {
           type: 'timeseries',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT client, lens,
               COUNT(0) AS urls
             FROM (
@@ -1843,7 +1980,8 @@ const config = {
             WHERE lens IS NOT NULL
             GROUP BY client, lens
             ORDER BY lens, client
-          `)
+          `
+          )
         }
       ]
     },
@@ -1851,7 +1989,8 @@ const config = {
       SQL: [
         {
           type: 'timeseries',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT client, lens,
               SUM(IF(feat.id IS NOT NULL, 1, 0)) AS num_urls,
               ROUND(SUM(IF(feat.id IS NOT NULL, 1, 0)) / COUNT(0) * 100, 5) AS percent
@@ -1867,7 +2006,8 @@ const config = {
             WHERE lens IS NOT NULL
             GROUP BY client, lens
             ORDER BY lens, client, num_urls DESC
-          `)
+          `
+          )
         }
       ]
     },
@@ -1875,7 +2015,8 @@ const config = {
       SQL: [
         {
           type: 'timeseries',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT client, lens,
               ROUND(SUM(IF(score IN ('true', '1'), 1, 0)) * 100 / COUNT(0), 2) AS percent
             FROM (
@@ -1889,7 +2030,8 @@ const config = {
             WHERE lens IS NOT NULL
             GROUP BY client, lens
             ORDER BY lens, client
-          `)
+          `
+          )
         }
       ]
     },
@@ -1897,7 +2039,8 @@ const config = {
       SQL: [
         {
           type: 'timeseries',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT client, lens,
               ROUND(SUM(IF(score IN ('true', '1'), 1, 0)) * 100 / COUNT(0), 2) AS percent
             FROM (
@@ -1910,7 +2053,8 @@ const config = {
             WHERE lens IS NOT NULL
             GROUP BY client, lens
             ORDER BY lens, client
-          `)
+          `
+          )
         }
       ]
     },
@@ -1918,7 +2062,8 @@ const config = {
       SQL: [
         {
           type: 'timeseries',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT client, lens,
               ROUND(SUM(IF(score IN ('true', '1'), 1, 0)) * 100 / COUNT(0), 2) AS percent
             FROM (
@@ -1931,7 +2076,8 @@ const config = {
             WHERE lens IS NOT NULL
             GROUP BY client, lens
             ORDER BY lens, client
-          `)
+          `
+          )
         }
       ]
     },
@@ -1939,7 +2085,8 @@ const config = {
       SQL: [
         {
           type: 'timeseries',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT client, lens,
               ROUND(SUM(IF(score IN ('true', '1'), 1, 0)) * 100 / COUNT(0), 2) AS percent
             FROM (
@@ -1952,7 +2099,8 @@ const config = {
             WHERE lens IS NOT NULL
             GROUP BY client, lens
             ORDER BY lens, client
-          `)
+          `
+          )
         }
       ]
     },
@@ -1960,7 +2108,8 @@ const config = {
       SQL: [
         {
           type: 'timeseries',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT client, lens,
               ROUND(SUM(IF(score IN ('true', '1'), 1, 0)) * 100 / COUNT(0), 2) AS percent
             FROM (
@@ -1973,7 +2122,8 @@ const config = {
             WHERE lens IS NOT NULL
             GROUP BY client, lens
             ORDER BY lens, client
-          `)
+          `
+          )
         }
       ]
     },
@@ -1981,7 +2131,8 @@ const config = {
       SQL: [
         {
           type: 'timeseries',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT client, lens,
               ROUND(APPROX_QUANTILES(score, 1000)[OFFSET(100)], 2) AS p10,
               ROUND(APPROX_QUANTILES(score, 1000)[OFFSET(250)], 2) AS p25,
@@ -2001,7 +2152,8 @@ const config = {
             WHERE lens IS NOT NULL
             GROUP BY client, lens
             ORDER BY lens, client
-          `)
+          `
+          )
         }
       ]
     },
@@ -2009,7 +2161,8 @@ const config = {
       SQL: [
         {
           type: 'timeseries',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT client, lens,
               SUM(IF(feat.id IS NOT NULL, 1, 0)) AS num_urls,
               ROUND(SUM(IF(feat.id IS NOT NULL, 1, 0)) / COUNT(0) * 100, 5) AS percent
@@ -2025,7 +2178,8 @@ const config = {
             WHERE lens IS NOT NULL
             GROUP BY client, lens
             ORDER BY lens, client, num_urls DESC
-          `)
+          `
+          )
         }
       ]
     },
@@ -2033,7 +2187,8 @@ const config = {
       SQL: [
         {
           type: 'timeseries',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT client, lens,
               SUM(IF(feat.id IS NOT NULL, 1, 0)) AS num_urls,
               ROUND(SUM(IF(feat.id IS NOT NULL, 1, 0)) / COUNT(0) * 100, 5) AS percent
@@ -2049,7 +2204,8 @@ const config = {
             WHERE lens IS NOT NULL
             GROUP BY client, lens
             ORDER BY lens, client, num_urls DESC
-          `)
+          `
+          )
         }
       ]
     },
@@ -2057,7 +2213,8 @@ const config = {
       SQL: [
         {
           type: 'timeseries',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT client, lens,
               SUM(IF(feat.id IS NOT NULL, 1, 0)) AS num_urls,
               ROUND(SUM(IF(feat.id IS NOT NULL, 1, 0)) / COUNT(0) * 100, 5) AS percent
@@ -2072,7 +2229,8 @@ const config = {
             WHERE lens IS NOT NULL
             GROUP BY client, lens
             ORDER BY lens, client, num_urls DESC
-          `)
+          `
+          )
         }
       ]
     },
@@ -2080,7 +2238,8 @@ const config = {
       SQL: [
         {
           type: 'timeseries',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT client, lens,
               SUM(IF(feat.id IS NOT NULL, 1, 0)) AS num_urls,
               ROUND(SUM(IF(feat.id IS NOT NULL, 1, 0)) / COUNT(0) * 100, 5) AS percent
@@ -2095,7 +2254,8 @@ const config = {
             WHERE lens IS NOT NULL
             GROUP BY client, lens
             ORDER BY lens, client, num_urls DESC
-          `)
+          `
+          )
         }
       ]
     },
@@ -2103,7 +2263,8 @@ const config = {
       SQL: [
         {
           type: 'timeseries',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT client, lens,
               SUM(IF(feat.id IS NOT NULL, 1, 0)) AS num_urls,
               ROUND(SUM(IF(feat.id IS NOT NULL, 1, 0)) / COUNT(0) * 100, 5) AS percent
@@ -2119,7 +2280,8 @@ const config = {
             WHERE lens IS NOT NULL
             GROUP BY client, lens
             ORDER BY lens, client, num_urls DESC
-          `)
+          `
+          )
         }
       ]
     },
@@ -2127,7 +2289,8 @@ const config = {
       SQL: [
         {
           type: 'timeseries',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT client, lens,
               ROUND(SUM(IF(score IN ('true', '1'), 1, 0)) * 100 / COUNT(0), 2) AS percent
             FROM (
@@ -2140,7 +2303,8 @@ const config = {
             WHERE lens IS NOT NULL
             GROUP BY client, lens
             ORDER BY lens, client
-          `)
+          `
+          )
         }
       ]
     },
@@ -2148,7 +2312,8 @@ const config = {
       SQL: [
         {
           type: 'timeseries',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT client, lens,
               SUM(IF(feat.id IS NOT NULL, 1, 0)) AS num_urls,
               ROUND(SUM(IF(feat.id IS NOT NULL, 1, 0)) / COUNT(0) * 100, 5) AS percent
@@ -2164,7 +2329,8 @@ const config = {
             WHERE lens IS NOT NULL
             GROUP BY client, lens
             ORDER BY lens, client, num_urls DESC
-          `)
+          `
+          )
         }
       ]
     },
@@ -2172,7 +2338,8 @@ const config = {
       SQL: [
         {
           type: 'timeseries',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT client, lens,
               SUM(IF(feat.id IS NOT NULL, 1, 0)) AS num_urls,
               ROUND(SUM(IF(feat.id IS NOT NULL, 1, 0)) / COUNT(0) * 100, 5) AS percent
@@ -2188,7 +2355,8 @@ const config = {
             WHERE lens IS NOT NULL
             GROUP BY client, lens
             ORDER BY lens, client, num_urls DESC
-          `)
+          `
+          )
         }
       ]
     },
@@ -2196,7 +2364,8 @@ const config = {
       SQL: [
         {
           type: 'timeseries',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT client, lens,
               SUM(IF(feat.id IS NOT NULL, 1, 0)) AS num_urls,
               ROUND(SUM(IF(feat.id IS NOT NULL, 1, 0)) / COUNT(0) * 100, 5) AS percent
@@ -2211,7 +2380,8 @@ const config = {
             WHERE lens IS NOT NULL
             GROUP BY client, lens
             ORDER BY lens, client, num_urls DESC
-          `)
+          `
+          )
         }
       ]
     },
@@ -2219,7 +2389,8 @@ const config = {
       SQL: [
         {
           type: 'timeseries',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT client, lens,
               SUM(IF(feat.id IS NOT NULL, 1, 0)) AS num_urls,
               ROUND(SUM(IF(feat.id IS NOT NULL, 1, 0)) / COUNT(0) * 100, 5) AS percent
@@ -2235,7 +2406,8 @@ const config = {
             WHERE lens IS NOT NULL
             GROUP BY client, lens
             ORDER BY lens, client, num_urls DESC
-          `)
+          `
+          )
         }
       ]
     },
@@ -2243,7 +2415,8 @@ const config = {
       SQL: [
         {
           type: 'timeseries',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT client, lens,
               SUM(IF(feat.id IS NOT NULL, 1, 0)) AS num_urls,
               ROUND(SUM(IF(feat.id IS NOT NULL, 1, 0)) / COUNT(0) * 100, 5) AS percent
@@ -2259,7 +2432,8 @@ const config = {
             WHERE lens IS NOT NULL
             GROUP BY client, lens
             ORDER BY lens, client, num_urls DESC
-          `)
+          `
+          )
         }
       ]
     },
@@ -2267,7 +2441,8 @@ const config = {
       SQL: [
         {
           type: 'timeseries',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT client, lens,
               SUM(IF(feat.id IS NOT NULL, 1, 0)) AS num_urls,
               ROUND(SUM(IF(feat.id IS NOT NULL, 1, 0)) / COUNT(0) * 100, 5) AS percent
@@ -2283,7 +2458,8 @@ const config = {
             WHERE lens IS NOT NULL
             GROUP BY client, lens
             ORDER BY lens, client, num_urls DESC
-          `)
+          `
+          )
         }
       ]
     },
@@ -2291,7 +2467,8 @@ const config = {
       SQL: [
         {
           type: 'timeseries',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT client, lens,
               SUM(IF(feat.id = '990' OR feat.feature = 'ServiceWorkerControlledPage', 1, 0)) AS num_urls,
               ROUND(SUM(IF(feat.id = '990' OR feat.feature = 'ServiceWorkerControlledPage', 1, 0)) / COUNT(0) * 100, 5) AS percent
@@ -2307,7 +2484,8 @@ const config = {
             WHERE lens IS NOT NULL
             GROUP BY client, lens
             ORDER BY lens, client, num_urls DESC
-          `)
+          `
+          )
         }
       ]
     },
@@ -2315,7 +2493,8 @@ const config = {
       SQL: [
         {
           type: 'timeseries',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT client, lens,
               SUM(IF(feat.id = '3018' OR feat.feature = 'WebSocketStreamConstructor', 1, 0)) AS num_urls,
               ROUND(SUM(IF(feat.id = '3018' OR feat.feature = 'WebSocketStreamConstructor', 1, 0)) / COUNT(0) * 100, 5) AS percent
@@ -2331,7 +2510,8 @@ const config = {
             WHERE lens IS NOT NULL
             GROUP BY client, lens
             ORDER BY lens, client, num_urls DESC
-          `)
+          `
+          )
         }
       ]
     },
@@ -2340,7 +2520,8 @@ const config = {
       SQL: [
         {
           type: 'histogram',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT
               *,
               SUM(pdf) OVER (PARTITION BY client, lens ORDER BY bin) AS cdf
@@ -2372,7 +2553,8 @@ const config = {
               )
             )
             ORDER BY lens, client, bin
-          `)
+          `
+          )
         }
       ]
     },
@@ -2380,7 +2562,8 @@ const config = {
       SQL: [
         {
           type: 'histogram',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT
               *,
               SUM(pdf) OVER (PARTITION BY client, lens ORDER BY bin) AS cdf
@@ -2412,7 +2595,8 @@ const config = {
               )
             )
             ORDER BY lens, client, bin
-          `)
+          `
+          )
         }
       ]
     },
@@ -2420,7 +2604,8 @@ const config = {
       SQL: [
         {
           type: 'histogram',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT
               *,
               SUM(pdf) OVER (PARTITION BY client, lens ORDER BY bin) AS cdf
@@ -2452,7 +2637,8 @@ const config = {
               )
             )
             ORDER BY lens, client, bin
-          `)
+          `
+          )
         }
       ]
     },
@@ -2460,7 +2646,8 @@ const config = {
       SQL: [
         {
           type: 'histogram',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT
               *,
               SUM(pdf) OVER (PARTITION BY client, lens ORDER BY bin) AS cdf
@@ -2492,7 +2679,8 @@ const config = {
               )
             )
             ORDER BY lens, client, bin
-          `)
+          `
+          )
         }
       ]
     },
@@ -2500,7 +2688,8 @@ const config = {
       SQL: [
         {
           type: 'histogram',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT
               *,
               SUM(pdf) OVER (PARTITION BY client, lens ORDER BY bin) AS cdf
@@ -2527,7 +2716,8 @@ const config = {
               )
             )
             ORDER BY lens, client, bin
-          `)
+          `
+          )
         }
       ]
     },
@@ -2535,7 +2725,8 @@ const config = {
       SQL: [
         {
           type: 'histogram',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT
               *,
               SUM(pdf) OVER (PARTITION BY client, lens ORDER BY bin) AS cdf
@@ -2571,7 +2762,8 @@ const config = {
               )
             )
             ORDER BY lens, client, bin
-          `)
+          `
+          )
         }
       ]
     },
@@ -2579,7 +2771,8 @@ const config = {
       SQL: [
         {
           type: 'histogram',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT
               *,
               SUM(pdf) OVER (PARTITION BY client, lens ORDER BY bin) AS cdf
@@ -2615,7 +2808,8 @@ const config = {
               )
             )
             ORDER BY lens, client, bin
-          `)
+          `
+          )
         }
       ]
     },
@@ -2623,7 +2817,8 @@ const config = {
       SQL: [
         {
           type: 'histogram',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT
               *,
               SUM(pdf) OVER (PARTITION BY client, lens ORDER BY bin) AS cdf
@@ -2650,7 +2845,8 @@ const config = {
               )
             )
             ORDER BY lens, client, bin
-          `)
+          `
+          )
         }
       ]
     },
@@ -2659,7 +2855,8 @@ const config = {
       SQL: [
         {
           type: 'timeseries',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT
               IF(device = 'desktop', 'desktop', 'mobile') AS client,
               lens,
@@ -2679,7 +2876,8 @@ const config = {
               AND device IN ('desktop', 'phone')
             GROUP BY client, lens
             ORDER BY lens, client
-          `)
+          `
+          )
         }
       ]
     },
@@ -2687,7 +2885,8 @@ const config = {
       SQL: [
         {
           type: 'timeseries',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT
               IF(device = 'desktop', 'desktop', 'mobile') AS client,
               lens,
@@ -2707,7 +2906,8 @@ const config = {
               AND device IN ('desktop', 'phone')
             GROUP BY client, lens
             ORDER BY lens, client
-          `)
+          `
+          )
         }
       ]
     },
@@ -2715,7 +2915,8 @@ const config = {
       SQL: [
         {
           type: 'timeseries',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT
               IF(device = 'desktop', 'desktop', 'mobile') AS client,
               lens,
@@ -2736,7 +2937,8 @@ const config = {
               AND yyyymm >= 201909
             GROUP BY client, lens
             ORDER BY lens, client
-          `)
+          `
+          )
         }
       ]
     },
@@ -2744,7 +2946,8 @@ const config = {
       SQL: [
         {
           type: 'timeseries',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT
               IF(device = 'desktop', 'desktop', 'mobile') AS client,
               lens,
@@ -2765,7 +2968,8 @@ const config = {
               AND yyyymm >= 201909
             GROUP BY client, lens
             ORDER BY lens, client
-          `)
+          `
+          )
         }
       ]
     },
@@ -2773,7 +2977,8 @@ const config = {
       SQL: [
         {
           type: 'timeseries',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT
               IF(device = 'desktop', 'desktop', 'mobile') AS client,
               lens,
@@ -2794,7 +2999,8 @@ const config = {
               AND yyyymm >= 201905
             GROUP BY client, lens
             ORDER BY lens, client
-          `)
+          `
+          )
         }
       ]
     },
@@ -2802,7 +3008,8 @@ const config = {
       SQL: [
         {
           type: 'timeseries',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT
               IF(device = 'desktop', 'desktop', 'mobile') AS client,
               lens,
@@ -2823,7 +3030,8 @@ const config = {
               AND yyyymm >= 201905
             GROUP BY client, lens
             ORDER BY lens, client
-          `)
+          `
+          )
         }
       ]
     },
@@ -2831,7 +3039,8 @@ const config = {
       SQL: [
         {
           type: 'timeseries',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT
               IF(device = 'desktop', 'desktop', 'mobile') AS client,
               lens,
@@ -2852,7 +3061,8 @@ const config = {
               AND yyyymm >= 202202
             GROUP BY client, lens
             ORDER BY lens, client
-          `)
+          `
+          )
         }
       ]
     },
@@ -2860,7 +3070,8 @@ const config = {
       SQL: [
         {
           type: 'timeseries',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT
               IF(device = 'desktop', 'desktop', 'mobile') AS client,
               lens,
@@ -2881,7 +3092,8 @@ const config = {
               AND yyyymm >= 202202
             GROUP BY client, lens
             ORDER BY lens, client
-          `)
+          `
+          )
         }
       ]
     },
@@ -2889,7 +3101,8 @@ const config = {
       SQL: [
         {
           type: 'timeseries',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT
               IF(device = 'desktop', 'desktop', 'mobile') AS client,
               lens,
@@ -2909,7 +3122,8 @@ const config = {
               AND device IN ('desktop', 'phone')
             GROUP BY client, lens
             ORDER BY lens, client
-          `)
+          `
+          )
         }
       ]
     },
@@ -2917,7 +3131,8 @@ const config = {
       SQL: [
         {
           type: 'timeseries',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT
               IF(device = 'desktop', 'desktop', 'mobile') AS client,
               lens,
@@ -2937,7 +3152,8 @@ const config = {
               AND device IN ('desktop', 'phone')
             GROUP BY client, lens
             ORDER BY lens, client
-          `)
+          `
+          )
         }
       ]
     },
@@ -2945,7 +3161,8 @@ const config = {
       SQL: [
         {
           type: 'timeseries',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT
               IF(device = 'desktop', 'desktop', 'mobile') AS client,
               lens,
@@ -2965,7 +3182,8 @@ const config = {
               AND device IN ('desktop', 'phone')
             GROUP BY client, lens
             ORDER BY lens, client
-          `)
+          `
+          )
         }
       ]
     },
@@ -2973,7 +3191,8 @@ const config = {
       SQL: [
         {
           type: 'timeseries',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT
               IF(device = 'desktop', 'desktop', 'mobile') AS client,
               lens,
@@ -2993,7 +3212,8 @@ const config = {
               AND device IN ('desktop', 'phone')
             GROUP BY client, lens
             ORDER BY lens, client
-          `)
+          `
+          )
         }
       ]
     },
@@ -3001,7 +3221,8 @@ const config = {
       SQL: [
         {
           type: 'timeseries',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT
               IF(device = 'desktop', 'desktop', 'mobile') AS client,
               lens,
@@ -3021,7 +3242,8 @@ const config = {
               AND device IN ('desktop', 'phone')
             GROUP BY client, lens
             ORDER BY lens, client
-          `)
+          `
+          )
         }
       ]
     },
@@ -3029,7 +3251,8 @@ const config = {
       SQL: [
         {
           type: 'timeseries',
-          query: DataformTemplateBuilder.create((ctx, params) => `
+          query: DataformTemplateBuilder.create(
+            (ctx, params) => `
             SELECT
               IF(device = 'desktop', 'desktop', 'mobile') AS client,
               lens,
@@ -3058,7 +3281,8 @@ const config = {
               AND yyyymm >= 201910 AND p75_lcp IS NOT NULL AND p75_cls IS NOT NULL
             GROUP BY client, lens
             ORDER BY lens, client
-          `)
+          `
+          )
         }
       ]
     }
@@ -3071,9 +3295,9 @@ const lenses = {
   top10k: 'AND rank <= 10000',
   top100k: 'AND rank <= 100000',
   top1m: 'AND rank <= 1000000',
-  drupal: 'AND \'Drupal\' IN UNNEST(technologies.technology)',
-  magento: 'AND \'Magento\' IN UNNEST(technologies.technology)',
-  wordpress: 'AND \'WordPress\' IN UNNEST(technologies.technology)'
+  drupal: "AND 'Drupal' IN UNNEST(technologies.technology)",
+  magento: "AND 'Magento' IN UNNEST(technologies.technology)",
+  wordpress: "AND 'WordPress' IN UNNEST(technologies.technology)"
 }
 
 const lensArrayExpression = `ARRAY[
@@ -3097,7 +3321,7 @@ class HTTPArchiveReports {
   listReports() {
     const reportIds = this.config._reports
 
-    const reports = reportIds.map(reportId => {
+    const reports = reportIds.map((reportId) => {
       const report = this.getReport(reportId)
       return report
     })
@@ -3115,20 +3339,24 @@ class HTTPArchiveReports {
 
   listMetrics(reportId) {
     if (reportId === undefined) {
-      const metrics = Object.keys(this.config._metrics).map(metricId => {
-        const metric = this.getMetric(metricId)
-        return metric
-      }).filter(metric => metric.SQL)
+      const metrics = Object.keys(this.config._metrics)
+        .map((metricId) => {
+          const metric = this.getMetric(metricId)
+          return metric
+        })
+        .filter((metric) => metric.SQL)
 
       return metrics
     } else {
       const report = this.getReport(reportId)
       const metricIds = report.metrics
 
-      const metrics = metricIds.map(metricId => {
-        const metric = this.getMetric(metricId)
-        return metric
-      }).filter(metric => metric.SQL)
+      const metrics = metricIds
+        .map((metricId) => {
+          const metric = this.getMetric(metricId)
+          return metric
+        })
+        .filter((metric) => metric.SQL)
 
       return metrics
     }

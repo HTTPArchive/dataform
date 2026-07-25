@@ -1,7 +1,8 @@
 const pastMonth = constants.fnPastMonth(constants.currentMonth)
 
 publish('tech_detections', {
-  description: 'Used in dashboard: https://lookerstudio.google.com/u/7/reporting/1jh_ScPlCIbSYTf2r2Y6EftqmX9SQy4Gn/origin/p_an38lbzywc/edit',
+  description:
+    'Used in dashboard: https://lookerstudio.google.com/u/7/reporting/1jh_ScPlCIbSYTf2r2Y6EftqmX9SQy4Gn/origin/p_an38lbzywc/edit',
   schema: 'wappalyzer',
   type: 'incremental',
   protected: true,
@@ -9,10 +10,15 @@ publish('tech_detections', {
     partitionBy: 'date'
   },
   tags: ['crawl_complete']
-}).preOps(ctx => `
+})
+  .preOps(
+    (ctx) => `
 DELETE FROM ${ctx.self()}
 WHERE date = '${constants.currentMonth}';
-`).query(ctx => `
+`
+  )
+  .query(
+    (ctx) => `
 WITH source AS (
   SELECT DISTINCT
     date,
@@ -141,4 +147,5 @@ LEFT JOIN tech_deprecated_gone_origins
   ON before_summary.technology = tech_deprecated_gone_origins.technology
 FULL OUTER JOIN wappalyzer.technologies
   ON before_summary.technology = technologies.name
-`)
+`
+  )

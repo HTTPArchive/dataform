@@ -7,7 +7,9 @@ publish('requests_latest', {
     clusterBy: ['client', 'is_root_page', 'rank', 'type']
   },
   tags: ['crawl_complete']
-}).query(ctx => `
+})
+  .query(
+    (ctx) => `
 SELECT
   date,
   client,
@@ -28,7 +30,10 @@ FROM ${ctx.ref('crawl', 'requests')}
 WHERE
   date = '${constants.currentMonth}' AND
   client = 'mobile'
-`).postOps(ctx => `
+`
+  )
+  .postOps(
+    (ctx) => `
 INSERT INTO ${ctx.self()}
 SELECT
   date,
@@ -49,4 +54,5 @@ SELECT
 FROM ${ctx.ref('crawl', 'requests')}
 WHERE date = '${constants.currentMonth}' AND
   client = 'desktop'
-`)
+`
+  )

@@ -4,7 +4,8 @@ publish('tech_report_technologies_flat', {
   schema: 'reports',
   type: 'table',
   tags: ['crux_ready']
-}).query(ctx => `
+}).query(
+  (ctx) => `
 WITH tech_origins AS (
   SELECT
     technology,
@@ -56,4 +57,5 @@ SELECT
   mobile_origins
 FROM tech_origins
 WHERE technology = 'ALL'
-`)
+`
+)
