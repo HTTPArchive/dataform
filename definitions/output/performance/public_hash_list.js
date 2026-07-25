@@ -10,12 +10,16 @@ Repo: https://github.com/tomayac/public-hash-list`,
   columns: {
     body_hash: 'SHA-256 body hash of the resource from WebPageTest payload',
     type: 'Simplified type of the resource (script, css, font, wasm)',
-    num_origins: 'Number of independent origins hosting the resource (privacy-gated threshold of >= 100)',
-    traffic_weighted_score: 'Traffic-weighted popularity score (SUM(100000 / min_rank) across origins, where min_rank is the CrUX rank bucket of the hosting page)',
+    num_origins:
+      'Number of independent origins hosting the resource (privacy-gated threshold of >= 100)',
+    traffic_weighted_score:
+      'Traffic-weighted popularity score (SUM(100000 / min_rank) across origins, where min_rank is the CrUX rank bucket of the hosting page)',
     sample_url: 'A sample URL where this resource was detected'
   },
   tags: ['crawl_complete']
-}).query(ctx => `
+})
+  .query(
+    (ctx) => `
 WITH request_origins AS (
   SELECT
     SAFE.STRING(payload._body_hash) AS body_hash,
@@ -59,7 +63,10 @@ WHERE
   num_origins >= 100
 ORDER BY
   traffic_weighted_score DESC
-`).postOps(ctx => `
+`
+  )
+  .postOps(
+    (ctx) => `
 SELECT
   reports.run_export_job(
     JSON '''{
@@ -72,5 +79,5 @@ SELECT
       "query": "SELECT * FROM ${ctx.self()}"
     }'''
   );
-`)
-
+`
+  )
