@@ -59,4 +59,18 @@ WHERE
   num_origins >= 100
 ORDER BY
   traffic_weighted_score DESC
+`).postOps(ctx => `
+SELECT
+  reports.run_export_job(
+    JSON '''{
+      "destination": "cloud_storage",
+      "config": {
+        "bucket": "${constants.bucket}",
+        "name": "${constants.storagePath}public_hash_list.csv",
+        "format": "csv"
+      },
+      "query": "SELECT * FROM ${ctx.self()}"
+    }'''
+  );
 `)
+
