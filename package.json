@@ -16,7 +16,7 @@
     "globals": "17.8.0",
     "markdownlint-cli": "0.49.1",
     "prettier": "^3.5.0",
-    "@dataform/cli": "3.0.61"
+    "@dataform/cli": "3.0.62"
   },
   "prettier": {
     "semi": false,
