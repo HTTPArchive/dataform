@@ -73,8 +73,7 @@ SELECT
       "destination": "cloud_storage",
       "config": {
         "bucket": "${constants.bucket}",
-        "name": "${constants.storagePath}public_hash_list.csv",
-        "format": "csv"
+        "name": "${constants.storagePath}public_hash_list.csv"
       },
       "query": "SELECT * FROM ${ctx.self()}"
     }'''
