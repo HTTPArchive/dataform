@@ -236,7 +236,7 @@ ${exportStatements}
 const reportConfigurations = generateReportConfigurations()
 
 // Concurrency limits configuration
-const MAX_GLOBAL_CONCURRENCY = 10 // Max active operations globally across all reports
+const MAX_GLOBAL_CONCURRENCY = 5 // Max active operations globally across all reports
 const MAX_PER_REPORT_CONCURRENCY = 1 // Max active operations per report destination table
 
 // Map to track operations created per report table
