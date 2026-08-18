@@ -7,7 +7,7 @@
     "lint": "prettier --check . && eslint . && markdownlint ."
   },
   "dependencies": {
-    "@dataform/core": "3.0.63",
+    "@dataform/core": "3.0.64",
     "@masthead-data/dataform-package": "0.2.0"
   },
   "devDependencies": {
