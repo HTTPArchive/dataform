@@ -836,11 +836,11 @@ const config = {
           query: DataformTemplateBuilder.create(
             (ctx, params) => `
             SELECT client, lens,
-              ROUND(APPROX_QUANTILES(onContentLoaded, 1001)[OFFSET(101)], 2) AS p10,
-              ROUND(APPROX_QUANTILES(onContentLoaded, 1001)[OFFSET(251)], 2) AS p25,
-              ROUND(APPROX_QUANTILES(onContentLoaded, 1001)[OFFSET(501)], 2) AS p50,
-              ROUND(APPROX_QUANTILES(onContentLoaded, 1001)[OFFSET(751)], 2) AS p75,
-              ROUND(APPROX_QUANTILES(onContentLoaded, 1001)[OFFSET(901)], 2) AS p90
+              ROUND(APPROX_QUANTILES(onContentLoaded, 1001)[OFFSET(101)] / 1000, 2) AS p10,
+              ROUND(APPROX_QUANTILES(onContentLoaded, 1001)[OFFSET(251)] / 1000, 2) AS p25,
+              ROUND(APPROX_QUANTILES(onContentLoaded, 1001)[OFFSET(501)] / 1000, 2) AS p50,
+              ROUND(APPROX_QUANTILES(onContentLoaded, 1001)[OFFSET(751)] / 1000, 2) AS p75,
+              ROUND(APPROX_QUANTILES(onContentLoaded, 1001)[OFFSET(901)] / 1000, 2) AS p90
             FROM (
               SELECT client, ${lensArrayExpression} AS lens_array,
                 FLOAT64(summary.onContentLoaded) AS onContentLoaded
@@ -927,11 +927,11 @@ const config = {
           query: DataformTemplateBuilder.create(
             (ctx, params) => `
             SELECT client, lens,
-              ROUND(APPROX_QUANTILES(fcp, 1001)[OFFSET(101)] / 1024, 2) AS p10,
-              ROUND(APPROX_QUANTILES(fcp, 1001)[OFFSET(251)] / 1024, 2) AS p25,
-              ROUND(APPROX_QUANTILES(fcp, 1001)[OFFSET(501)] / 1024, 2) AS p50,
-              ROUND(APPROX_QUANTILES(fcp, 1001)[OFFSET(751)] / 1024, 2) AS p75,
-              ROUND(APPROX_QUANTILES(fcp, 1001)[OFFSET(901)] / 1024, 2) AS p90
+              ROUND(APPROX_QUANTILES(fcp, 1001)[OFFSET(101)] / 1000, 2) AS p10,
+              ROUND(APPROX_QUANTILES(fcp, 1001)[OFFSET(251)] / 1000, 2) AS p25,
+              ROUND(APPROX_QUANTILES(fcp, 1001)[OFFSET(501)] / 1000, 2) AS p50,
+              ROUND(APPROX_QUANTILES(fcp, 1001)[OFFSET(751)] / 1000, 2) AS p75,
+              ROUND(APPROX_QUANTILES(fcp, 1001)[OFFSET(901)] / 1000, 2) AS p90
             FROM (
               SELECT client, ${lensArrayExpression} AS lens_array,
                 SAFE.FLOAT64(payload['_chromeUserTiming.firstContentfulPaint']) AS fcp
