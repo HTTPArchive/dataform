@@ -222,12 +222,25 @@ ROUND(SAFE_DIVIDE(
 
 #### Percentile Distributions (Timeseries)
 
+Check the expected metric unit in `config/reports.json` (`type: "seconds"`, `"type": "KB"`, etc.):
+
+- **Byte metrics (Bytes → KB)**: Divide by `1024`
+- **Timing metrics (Milliseconds → Seconds)**: Divide by `1000` (`APPROX_QUANTILES(...) / 1000`).
+
 ```sql
-ROUND(APPROX_QUANTILES(FLOAT64(metric), 1001)[OFFSET(101)] / 1024, 2) AS p10,
-ROUND(APPROX_QUANTILES(FLOAT64(metric), 1001)[OFFSET(251)] / 1024, 2) AS p25,
-ROUND(APPROX_QUANTILES(FLOAT64(metric), 1001)[OFFSET(501)] / 1024, 2) AS p50,
-ROUND(APPROX_QUANTILES(FLOAT64(metric), 1001)[OFFSET(751)] / 1024, 2) AS p75,
-ROUND(APPROX_QUANTILES(FLOAT64(metric), 1001)[OFFSET(901)] / 1024, 2) AS p90
+-- For byte metrics (raw bytes → KB):
+ROUND(APPROX_QUANTILES(FLOAT64(bytes_val), 1001)[OFFSET(101)] / 1024, 2) AS p10,
+ROUND(APPROX_QUANTILES(FLOAT64(bytes_val), 1001)[OFFSET(251)] / 1024, 2) AS p25,
+ROUND(APPROX_QUANTILES(FLOAT64(bytes_val), 1001)[OFFSET(501)] / 1024, 2) AS p50,
+ROUND(APPROX_QUANTILES(FLOAT64(bytes_val), 1001)[OFFSET(751)] / 1024, 2) AS p75,
+ROUND(APPROX_QUANTILES(FLOAT64(bytes_val), 1001)[OFFSET(901)] / 1024, 2) AS p90
+
+-- For timing metrics (raw milliseconds → seconds):
+ROUND(APPROX_QUANTILES(FLOAT64(ms_val), 1001)[OFFSET(101)] / 1000, 2) AS p10,
+ROUND(APPROX_QUANTILES(FLOAT64(ms_val), 1001)[OFFSET(251)] / 1000, 2) AS p25,
+ROUND(APPROX_QUANTILES(FLOAT64(ms_val), 1001)[OFFSET(501)] / 1000, 2) AS p50,
+ROUND(APPROX_QUANTILES(FLOAT64(ms_val), 1001)[OFFSET(751)] / 1000, 2) AS p75,
+ROUND(APPROX_QUANTILES(FLOAT64(ms_val), 1001)[OFFSET(901)] / 1000, 2) AS p90
 -- Important: Add WHERE condition: AND FLOAT64(metric) > 0 for continuous metrics
 ```
 
@@ -245,10 +258,11 @@ COUNT(0) AS volume
 
 1. **Filter root pages**: Always include `AND is_root_page` unless you specifically need all pages
 2. **Handle null values**: Use appropriate null checks and filtering
-3. **Use consistent binning**: For histograms, use logical bin sizes (e.g., 100KB increments for page weight)
-4. **Optimize performance**: Use appropriate WHERE clauses and avoid expensive operations
-5. **Test with dev filters**: Your queries should work with the development rank filter
-6. **Use safe functions**: `SAFE.BOOL()` for custom metrics, `SAFE_DIVIDE()` for percentages
+3. **Verify unit scaling**: Check `httparchive.org/config/reports.json` to ensure timeseries percentiles and histogram bins match the frontend units (ms vs. s, bytes vs. KB)
+4. **Use consistent binning**: For histograms, use logical bin sizes (e.g., 100KB increments for page weight, 1s for load time)
+5. **Optimize performance**: Use appropriate WHERE clauses and avoid expensive operations
+6. **Test with dev filters**: Your queries should work with the development rank filter
+7. **Use safe functions**: `SAFE.BOOL()` for custom metrics, `SAFE_DIVIDE()` for percentages
 
 ## Lenses
 
@@ -283,6 +297,15 @@ Reports are stored in BigQuery tables with this structure:
 3. Export paths follow the pattern:
    - Histogram: `reports/[{lens}/]{date_underscore}/{metric_id}.json`
    - Timeseries: `reports/[{lens}/]{metric_id}.json`
+4. **Cloud CDN Caching & Invalidation**:
+   - Files are served via Google Cloud CDN on `cdn.httparchive.org` (`s-maxage=86400` / 24 hours).
+   - Whenever historical or current reports are re-exported or backfilled to Cloud Storage, the CDN cache must be invalidated to propagate updates to the frontend and API:
+
+     ```bash
+     gcloud compute url-maps invalidate-cdn-cache httparchive-load-balancer \
+       --path="/v1/static/reports/*" \
+       --project=httparchive
+     ```
 
 ### Development vs Production
 
