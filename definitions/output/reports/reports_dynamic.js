@@ -103,9 +103,10 @@ function buildExportQuery(reportConfig, lensName) {
  * @param {string} date - Report date (YYYY-MM-DD)
  * @param {Object} metric - Metric configuration
  * @param {Object} sql - SQL configuration (type and query)
+ * @param {boolean} isCrux - Whether the metric relies on CrUX
  * @returns {Object} - Complete report configuration
  */
-function createReportConfig(date, metric, sql) {
+function createReportConfig(date, metric, sql, isCrux) {
   let tableName
   if (sql.type === 'timeseries' || sql.type === 'histogram') {
     tableName = `${metric.id}_${sql.type}`
@@ -118,7 +119,8 @@ function createReportConfig(date, metric, sql) {
     metric,
     sql,
     devRankFilter: constants.devRankFilter,
-    tableName: tableName
+    tableName: tableName,
+    isCrux
   }
 }
 
@@ -143,7 +145,7 @@ function generateReportConfigurations() {
 
       // For each SQL type (histogram, timeseries)
       metric.SQL.forEach((sql) => {
-        const config = createReportConfig(targetDate, metric, sql)
+        const config = createReportConfig(targetDate, metric, sql, isCrux)
         reportConfigs.push(config)
       })
     })
@@ -236,28 +238,35 @@ ${exportStatements}
 const reportConfigurations = generateReportConfigurations()
 
 // Concurrency limits configuration
-const MAX_GLOBAL_CONCURRENCY = 5 // Max active operations globally across all reports
+const MAX_GLOBAL_CONCURRENCY = 5 // Max active operations globally across reports per tag group
 const MAX_PER_REPORT_CONCURRENCY = 1 // Max active operations per report destination table
 
-// Map to track operations created per report table
+// Maps to track operations created per tag group and per report table
+const opsByTag = {
+  crawl_complete_reports: [],
+  crux_ready_reports: []
+}
 const opsByTable = {}
 
-reportConfigurations.forEach((reportConfig, index) => {
+reportConfigurations.forEach((reportConfig) => {
   const operationName = createOperationName(reportConfig)
   const table = reportConfig.tableName
+  const tag = reportConfig.isCrux
+    ? 'crux_ready_reports'
+    : 'crawl_complete_reports'
 
   if (!opsByTable[table]) {
     opsByTable[table] = []
   }
   const tableHistory = opsByTable[table]
+  const tagHistory = opsByTag[tag]
   const dependencies = []
 
-  // 1. Global sliding stream constraint (max global concurrency)
-  if (index >= MAX_GLOBAL_CONCURRENCY) {
-    const globalPredecessor = createOperationName(
-      reportConfigurations[index - MAX_GLOBAL_CONCURRENCY]
-    )
-    dependencies.push(globalPredecessor)
+  // 1. Sliding stream constraint per tag group (max global concurrency)
+  if (tagHistory.length >= MAX_GLOBAL_CONCURRENCY) {
+    const tagPredecessor =
+      tagHistory[tagHistory.length - MAX_GLOBAL_CONCURRENCY]
+    dependencies.push(tagPredecessor)
   }
 
   // 2. Per-report sliding stream constraint (max per-table concurrency)
@@ -269,7 +278,7 @@ reportConfigurations.forEach((reportConfig, index) => {
 
   // Create Dataform operation
   const op = operate(operationName)
-    .tags(['crawl_complete_reports'])
+    .tags([tag])
     .queries((ctx) => generateOperationSQL(ctx, reportConfig))
 
   // Apply deduplicated dependencies
@@ -278,6 +287,7 @@ reportConfigurations.forEach((reportConfig, index) => {
     op.dependencies(uniqueDeps)
   }
 
-  // Record operation in table history
+  // Record operation in table and tag history
   tableHistory.push(operationName)
+  tagHistory.push(operationName)
 })
