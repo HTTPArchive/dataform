@@ -34,4 +34,4 @@ jobs:
 
       - name: Sync DAGs to Composer GCS Bucket
         run: |
-          gcloud storage rsync --recursive airflow/dags/ gs://us-central1-httparchive-pip-77e1b883-bucket/dags/
+          gcloud storage rsync --recursive airflow/dags/ gs://us-central1-httparchive-pip-77e1b883-bucket/dags
