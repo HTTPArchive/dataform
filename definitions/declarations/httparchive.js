@@ -14,10 +14,10 @@
   })
 )
 
-// Public Suffix List private domains synced via Airflow DAG (crawl_complete)
+// Public Suffix List synced via Airflow DAG (crawl_complete)
 declare({
   schema: 'urls',
-  name: 'public_suffix_private'
+  name: 'public_suffix_list'
 })
 
 operate('httparchive_project_options').queries(`

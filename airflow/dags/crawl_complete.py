@@ -22,7 +22,7 @@ from common.config import (
     DEFAULT_DAG_ARGS,
     PROJECT_ID,
 )
-from common.public_suffix import sync_public_suffix_private
+from common.public_suffix import sync_public_suffix_list
 
 with DAG(
     dag_id="crawl_complete",
@@ -48,11 +48,11 @@ with DAG(
         mode="reschedule",
     )
 
-    # 2. Download latest Public Suffix List private domains and sync into BigQuery
-    @task(task_id="sync_public_suffix_private")
+    # 2. Download latest Public Suffix List (ICANN + private) and sync into BigQuery
+    @task(task_id="sync_public_suffix_list")
     def update_public_suffix_table() -> int:
-        """Download latest Public Suffix List private domains and load into BigQuery."""
-        return sync_public_suffix_private(project_id=PROJECT_ID)
+        """Download latest Public Suffix List and load into BigQuery."""
+        return sync_public_suffix_list(project_id=PROJECT_ID)
 
     sync_psl = update_public_suffix_table()
 
