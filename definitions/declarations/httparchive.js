@@ -14,6 +14,12 @@
   })
 )
 
+// Public Suffix List private domains synced via Airflow DAG (crawl_complete)
+declare({
+  schema: 'urls',
+  name: 'public_suffix_private'
+})
+
 operate('httparchive_project_options').queries(`
 ALTER PROJECT httparchive SET OPTIONS (
   \`region-US.default_sql_dialect_option\` = 'only_google_sql',
