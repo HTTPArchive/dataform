@@ -30,7 +30,8 @@ export default [
         constants: 'readonly',
         reports: 'readonly',
         reservations: 'readonly',
-        descriptions: 'readonly'
+        descriptions: 'readonly',
+        public_suffix_private: 'readonly'
       }
     },
     rules: {

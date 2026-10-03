@@ -1,0 +1,51 @@
+# SPDX-FileCopyrightText: 2026 Google LLC
+# SPDX-License-Identifier: Apache-2.0
+---
+name: Update Public Suffix List
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Monthly, ahead of the crawl that `public_hash_list` is built from.
+    - cron: '0 6 1 * *'
+
+permissions:
+  contents: read
+
+jobs:
+  update:
+    name: Update private suffixes
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write # To push the update branch
+      pull-requests: write # To open the PR
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+
+      - name: Regenerate private suffix list
+        run: node scripts/update_public_suffix_private.mjs
+
+      # Opens a PR only when the rules changed, and updates it in place on
+      # later runs while it is still open.
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v8.1.1
+        with:
+          branch: automation/update-public-suffix-list
+          delete-branch: true
+          add-paths: includes/public_suffix_private.js
+          commit-message: 'chore: update private Public Suffix List rules'
+          title: 'chore: update private Public Suffix List rules'
+          body: |
+            Regenerated `includes/public_suffix_private.js` from https://publicsuffix.org/list/public_suffix_list.dat with `scripts/update_public_suffix_private.mjs`.
+
+            `public_hash_list` uses these rules to count sites. BigQuery's `NET.PUBLIC_SUFFIX()` only covers the ICANN section.
