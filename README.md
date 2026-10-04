@@ -2,35 +2,17 @@
 
 This repository handles the HTTP Archive data pipeline, which takes the results of the monthly HTTP Archive run and saves this to the `httparchive` dataset in BigQuery.
 
-## Pipelines
+## Pipelines & Orchestration
 
-The pipelines are run in Dataform service in Google Cloud Platform (GCP) and are kicked off automatically on crawl completion and other events. The code in the `main` branch is used on each triggered pipeline run.
+Pipelines are transformed via Dataform and orchestrated by Google Cloud Composer (Apache Airflow) in GCP. Airflow DAGs reside in [`airflow/dags/`](./airflow/dags/) and are synced to Cloud Composer on merge to `main`.
 
-### HTTP Archive Crawl
+| Pipeline               | DAG                                                                  | Dataform Tags                              | Primary Outputs                                                                                                                                                                                                                                                                                                   |
+| ---------------------- | -------------------------------------------------------------------- | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **HTTP Archive Crawl** | [`airflow/dags/crawl_complete.py`](./airflow/dags/crawl_complete.py) | `crawl_complete`, `crawl_complete_reports` | `httparchive.crawl.*` ([Analytics Hub](https://console.cloud.google.com/bigquery/analytics-hub/discovery/projects/httparchive/locations/us/dataExchanges/httparchive/listings/crawl)), `httparchive.blink_features.usage` ([chromestatus.com](https://chromestatus.com/metrics/feature/timeline/popularity/2089)) |
+| **Technology Report**  | [`airflow/dags/crux_ready.py`](./airflow/dags/crux_ready.py)         | `crux_ready`, `crux_ready_reports`         | `httparchive.reports.cwv_tech_*`, `httparchive.reports.tech_*` ([Tech Report](https://httparchive.org/reports/techreport/landing))                                                                                                                                                                                |
 
-Tag: `crawl_complete`
-
-- Crawl dataset `httparchive.crawl.*`
-
-  Consumers:
-
-  - public dataset and [BQ Sharing Listing](https://console.cloud.google.com/bigquery/analytics-hub/discovery/projects/httparchive/locations/us/dataExchanges/httparchive/listings/crawl)
-
-- Blink Features Report `httparchive.blink_features.usage`
-
-  Consumers:
-
-  - [chromestatus.com](https://chromestatus.com/metrics/feature/timeline/popularity/2089)
-
-### HTTP Archive Technology Report
-
-Tag: `crux_ready`
-
-- `httparchive.reports.cwv_tech_*` and `httparchive.reports.tech_*`
-
-  Consumers:
-
-  - [HTTP Archive Tech Report](https://httparchive.org/reports/techreport/landing)
+For complete orchestration details (triggers, sensors, pre-tasks) and development workspace guidelines, see [Dataform Documentation](docs/dataform.md).
+For overall GCP infrastructure and data flows, see [Infrastructure Overview](../tech-report-apis/docs/infra.md).
 
 ## Development Setup
 

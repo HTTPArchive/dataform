@@ -4,9 +4,31 @@ Runs the batch processing workflows. There are two Dataform repositories for [de
 
 The test repository is used [for development and testing purposes](https://cloud.google.com/dataform/docs/workspaces) and not connected to the rest of the pipeline infra.
 
-Pipeline can be [run manually](https://cloud.google.com/dataform/docs/code-lifecycle) from the Dataform UI.
+Pipelines can be [run manually](https://cloud.google.com/dataform/docs/code-lifecycle) from the Dataform UI or orchestrated automatically via Apache Airflow.
 
-The infrastructure configurations (formerly located in `infra/`) have been migrated to the [tech-report-apis](../../tech-report-apis) monorepo. Refer to [terraform/dataform.tf](../../tech-report-apis/terraform/dataform.tf) in that repository for Dataform project IaC.
+The infrastructure configurations are in the [tech-report-apis](../../tech-report-apis) monorepo. Refer to [terraform/dataform.tf](../../tech-report-apis/terraform/dataform.tf) and [terraform/airflow.tf](../../tech-report-apis/terraform/airflow.tf) for Dataform and Composer IaC.
+
+## Pipeline Orchestration (Apache Airflow)
+
+Production pipeline invocations are managed by Google Cloud Composer ([httparchive-pipelines](https://console.cloud.google.com/composer/environments/detail/us-central1/httparchive-pipelines/overview?authuser=2&project=httparchive)). The DAG definitions are maintained in [`airflow/dags/`](../airflow/dags/):
+
+1. **`crawl_complete` DAG** ([`airflow/dags/crawl_complete.py`](../airflow/dags/crawl_complete.py)):
+   - Triggered by the `crawl-complete` Pub/Sub topic via `PubSubPullSensor`.
+   - Executes `sync_public_suffix_list` task to fetch the full Public Suffix List (ICANN + private) into `httparchive.urls.public_suffix_list`.
+   - Creates a compilation result against the production release config and invokes Dataform with tags:
+     - `crawl_complete`
+     - `crawl_complete_reports`
+
+2. **`crux_ready` DAG** ([`airflow/dags/crux_ready.py`](../airflow/dags/crux_ready.py)):
+   - Scheduled at 08:00, 12:00, and 16:00 UTC during the CrUX release window (8th–14th of each month).
+   - Sensor queries BigQuery to verify that the previous month's `chrome-ux-report` table has been published.
+   - Creates a compilation result and invokes Dataform with tags:
+     - `crux_ready`
+     - `crux_ready_reports`
+
+### DAG Deployment
+
+Airflow DAGs are automatically synchronized from `airflow/dags/` to the Cloud Composer Cloud Storage bucket (`gs://us-central1-httparchive-pip-77e1b883-bucket/dags`) via the [Deploy Airflow DAGs GitHub Actions workflow](../.github/workflows/deploy_dags.yaml) on merge to `main`.
 
 ## Dataform Development Workspace
 
@@ -27,9 +49,11 @@ _Some useful hints:_
 
 ## Repository Structure
 
+- `airflow/` - Cloud Composer / Apache Airflow DAG definitions and helper modules
+  - `dags/` - Production Airflow DAGs (`crawl_complete.py`, `crux_ready.py`) and shared utilities (`common/`)
 - `definitions/` - Contains the core Dataform SQL definitions and declarations
   - `output/` - Contains the main pipeline transformation logic
-  - `declarations/` - Contains referenced tables/views declarations and other resources definitions
+  - `declarations/` - Contains referenced tables/views declarations and external resources
 - `includes/` - Contains shared JavaScript utilities and constants
 - `docs/` - Additional documentation
 
@@ -40,10 +64,10 @@ GitHub PAT saved to a [Secret Manager secret](https://console.cloud.google.com/s
 - repository: HTTPArchive/dataform
 - permissions:
   - Commit statuses: read
-  - Contents: read, write
+  - Contents: read
 
 ## Monitoring
 
+- [Airflow Web UI](https://225068d09fdc4614b12e9aa283e4e4ab-dot-us-central1.composer.googleusercontent.com)
 - [Production Dataform workflow execution logs](https://console.cloud.google.com/bigquery/dataform/locations/us-central1/repositories/crawl-data/details/workflows?authuser=7&project=httparchive)
-
 - [Dataform Workflow Invocation Failed](https://console.cloud.google.com/monitoring/alerting/policies/16526940745374967367?authuser=7&project=httparchive) policy
