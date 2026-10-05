@@ -4,6 +4,7 @@ from datetime import datetime
 from airflow import DAG
 import sys
 from pathlib import Path
+from airflow.decorators import task
 from airflow.providers.google.cloud.operators.dataform import (
     DataformCreateCompilationResultOperator,
     DataformCreateWorkflowInvocationOperator,
@@ -21,6 +22,7 @@ from common.config import (
     DEFAULT_DAG_ARGS,
     PROJECT_ID,
 )
+from common.public_suffix import sync_public_suffix_list
 
 with DAG(
     dag_id="crawl_complete",
@@ -46,7 +48,15 @@ with DAG(
         mode="reschedule",
     )
 
-    # 2. Create compilation result from the Dataform production release configuration
+    # 2. Download latest Public Suffix List (ICANN + private) and sync into BigQuery
+    @task(task_id="sync_public_suffix_list")
+    def update_public_suffix_table() -> int:
+        """Download latest Public Suffix List and load into BigQuery."""
+        return sync_public_suffix_list(project_id=PROJECT_ID)
+
+    sync_psl = update_public_suffix_table()
+
+    # 3. Create compilation result from the Dataform production release configuration
     create_compilation_result = DataformCreateCompilationResultOperator(
         task_id="create_compilation_result",
         project_id=PROJECT_ID,
@@ -60,7 +70,7 @@ with DAG(
         },
     )
 
-    # 3. Invoke Dataform workflow with crawl_complete and crawl_complete_reports tags
+    # 4. Invoke Dataform workflow with crawl_complete and crawl_complete_reports tags
     run_dataform_workflow = DataformCreateWorkflowInvocationOperator(
         task_id="run_dataform_workflow",
         project_id=PROJECT_ID,
@@ -85,4 +95,4 @@ with DAG(
         },
     )
 
-    wait_for_crawl_complete >> create_compilation_result >> run_dataform_workflow
+    wait_for_crawl_complete >> sync_psl >> create_compilation_result >> run_dataform_workflow
