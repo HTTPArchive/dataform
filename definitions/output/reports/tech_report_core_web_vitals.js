@@ -28,7 +28,15 @@ CREATE TEMPORARY FUNCTION GET_VITALS(
     origins_with_any_ttfb INT64,
     origins_with_any_inp INT64,
     origins_with_good_cwv INT64,
-    origins_eligible_for_cwv INT64
+    origins_eligible_for_cwv INT64,
+    origins_with_good_cwv_sn INT64,
+    origins_eligible_for_cwv_sn INT64,
+    origins_with_good_lcp_sn INT64,
+    origins_with_any_lcp_sn INT64,
+    origins_with_good_cls_sn INT64,
+    origins_with_any_cls_sn INT64,
+    origins_with_good_inp_sn INT64,
+    origins_with_any_inp_sn INT64
 >>)
 RETURNS ARRAY<STRUCT<
   name STRING,
@@ -48,7 +56,11 @@ const METRIC_MAP = {
   FID: ['origins_with_good_fid', 'origins_with_any_fid'],
   FCP: ['origins_with_good_fcp', 'origins_with_any_fcp'],
   TTFB: ['origins_with_good_ttfb', 'origins_with_any_ttfb'],
-  INP: ['origins_with_good_inp', 'origins_with_any_inp']
+  INP: ['origins_with_good_inp', 'origins_with_any_inp'],
+  overall_sn: ['origins_with_good_cwv_sn', 'origins_eligible_for_cwv_sn'],
+  LCP_sn: ['origins_with_good_lcp_sn', 'origins_with_any_lcp_sn'],
+  CLS_sn: ['origins_with_good_cls_sn', 'origins_with_any_cls_sn'],
+  INP_sn: ['origins_with_good_inp_sn', 'origins_with_any_inp_sn']
 };
 
 // Initialize the vitals map.
@@ -94,7 +106,15 @@ SELECT
     crux.origins_with_any_ttfb,
     crux.origins_with_any_inp,
     crux.origins_with_good_cwv,
-    crux.origins_eligible_for_cwv
+    crux.origins_eligible_for_cwv,
+    crux.origins_with_good_cwv_sn,
+    crux.origins_eligible_for_cwv_sn,
+    crux.origins_with_good_lcp_sn,
+    crux.origins_with_any_lcp_sn,
+    crux.origins_with_good_cls_sn,
+    crux.origins_with_any_cls_sn,
+    crux.origins_with_good_inp_sn,
+    crux.origins_with_any_inp_sn
   ))) AS vitals
 FROM ${ctx.ref('reports', 'tech_crux')}
 WHERE date = '${pastMonth}'

@@ -109,7 +109,16 @@ crux_base AS (
     slow_ttfb,
     small_cls,
     medium_cls,
-    large_cls
+    large_cls,
+    fast_lcp_sn,
+    avg_lcp_sn,
+    slow_lcp_sn,
+    fast_cls_sn,
+    avg_cls_sn,
+    slow_cls_sn,
+    fast_inp_sn,
+    avg_inp_sn,
+    slow_inp_sn
   FROM ${ctx.ref('chrome-ux-report', 'materialized', 'country_summary')}
   WHERE
     yyyymm = CAST(FORMAT_DATE('%Y%m', '${pastMonth}') AS INT64) AND
@@ -140,7 +149,16 @@ crux_base AS (
     slow_ttfb,
     small_cls,
     medium_cls,
-    large_cls
+    large_cls,
+    fast_lcp_sn,
+    avg_lcp_sn,
+    slow_lcp_sn,
+    fast_cls_sn,
+    avg_cls_sn,
+    slow_cls_sn,
+    fast_inp_sn,
+    avg_inp_sn,
+    slow_inp_sn
   FROM ${ctx.ref('chrome-ux-report', 'materialized', 'device_summary')}
   WHERE
     date = '${pastMonth}' AND
@@ -168,7 +186,15 @@ crux AS (
     any_ttfb,
     good_ttfb,
     any_inp,
-    good_inp
+    good_inp,
+
+    any_lcp_sn,
+    good_lcp_sn,
+    any_cls_sn,
+    good_cls_sn,
+    any_inp_sn,
+    good_inp_sn,
+    good_cwv_sn
   FROM (
     SELECT
       geo,
@@ -205,7 +231,18 @@ crux AS (
       IS_NON_ZERO(fast_ttfb, avg_ttfb, slow_ttfb) AS any_ttfb,
       IS_GOOD(fast_ttfb, avg_ttfb, slow_ttfb) AS good_ttfb,
       IS_NON_ZERO(fast_inp, avg_inp, slow_inp) AS any_inp,
-      IS_GOOD(fast_inp, avg_inp, slow_inp) AS good_inp
+      IS_GOOD(fast_inp, avg_inp, slow_inp) AS good_inp,
+
+      # CWV with soft navigations
+      IS_NON_ZERO(fast_lcp_sn, avg_lcp_sn, slow_lcp_sn) AS any_lcp_sn,
+      IS_GOOD(fast_lcp_sn, avg_lcp_sn, slow_lcp_sn) AS good_lcp_sn,
+      IS_NON_ZERO(fast_cls_sn, avg_cls_sn, slow_cls_sn) AS any_cls_sn,
+      IS_GOOD(fast_cls_sn, avg_cls_sn, slow_cls_sn) AS good_cls_sn,
+      IS_NON_ZERO(fast_inp_sn, avg_inp_sn, slow_inp_sn) AS any_inp_sn,
+      IS_GOOD(fast_inp_sn, avg_inp_sn, slow_inp_sn) AS good_inp_sn,
+      (IS_GOOD(fast_inp_sn, avg_inp_sn, slow_inp_sn) OR fast_inp_sn IS NULL) AND
+        IS_GOOD(fast_cls_sn, avg_cls_sn, slow_cls_sn) AND
+        IS_GOOD(fast_lcp_sn, avg_lcp_sn, slow_lcp_sn) AS good_cwv_sn
     FROM crux_base
   ),
     UNNEST(eligible_ranks) AS rank
@@ -292,7 +329,16 @@ base_summary AS (
       COUNTIF(any_inp) AS origins_with_any_inp,
       COUNTIF(good_cwv) AS origins_with_good_cwv,
       COUNTIF(any_lcp AND any_cls) AS origins_eligible_for_cwv,
-      SAFE_DIVIDE(COUNTIF(good_cwv), COUNTIF(any_lcp AND any_cls)) AS pct_eligible_origins_with_good_cwv
+      SAFE_DIVIDE(COUNTIF(good_cwv), COUNTIF(any_lcp AND any_cls)) AS pct_eligible_origins_with_good_cwv,
+      COUNTIF(good_lcp_sn) AS origins_with_good_lcp_sn,
+      COUNTIF(any_lcp_sn) AS origins_with_any_lcp_sn,
+      COUNTIF(good_cls_sn) AS origins_with_good_cls_sn,
+      COUNTIF(any_cls_sn) AS origins_with_any_cls_sn,
+      COUNTIF(good_inp_sn) AS origins_with_good_inp_sn,
+      COUNTIF(any_inp_sn) AS origins_with_any_inp_sn,
+      COUNTIF(good_cwv_sn) AS origins_with_good_cwv_sn,
+      COUNTIF(any_lcp_sn AND any_cls_sn) AS origins_eligible_for_cwv_sn,
+      SAFE_DIVIDE(COUNTIF(good_cwv_sn), COUNTIF(any_lcp_sn AND any_cls_sn)) AS pct_eligible_origins_with_good_cwv_sn
     ) AS crux,
 
     STRUCT(
