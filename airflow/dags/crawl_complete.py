@@ -1,10 +1,13 @@
 """Airflow DAG to orchestrate HTTP Archive Dataform pipelines upon crawl completion."""
 
 from datetime import datetime
-from airflow import DAG
+import logging
 import sys
 from pathlib import Path
+from airflow import DAG
 from airflow.decorators import task
+from airflow.operators.python import ShortCircuitOperator
+from airflow.providers.google.cloud.hooks.bigquery import BigQueryHook
 from airflow.providers.google.cloud.operators.dataform import (
     DataformCreateCompilationResultOperator,
     DataformCreateWorkflowInvocationOperator,
@@ -25,6 +28,53 @@ from common.config import (
     PROJECT_ID,
 )
 from common.public_suffix import sync_public_suffix_list
+
+logger = logging.getLogger(__name__)
+
+CRAWL_READINESS_QUERY = f"""
+WITH staging AS (
+  SELECT
+    MAX(partition_id) AS staging_partition,
+    MAX(last_modified_time) AS staging_last_modified
+  FROM `{PROJECT_ID}.crawl_staging.INFORMATION_SCHEMA.PARTITIONS`
+  WHERE table_name = 'pages' AND total_rows > 0
+),
+prod AS (
+  SELECT
+    MAX(partition_id) AS prod_partition,
+    MAX(last_modified_time) AS prod_last_modified
+  FROM `{PROJECT_ID}.crawl.INFORMATION_SCHEMA.PARTITIONS`
+  WHERE table_name = 'pages' AND total_rows > 0
+)
+SELECT
+  staging_partition IS NOT NULL AND (
+    staging_partition > IFNULL(prod_partition, '')
+    OR staging_last_modified > IFNULL(prod_last_modified, TIMESTAMP('1970-01-01'))
+  ) AS needs_processing
+FROM staging, prod;
+"""
+
+
+def check_crawl_readiness() -> bool:
+    """Check if staging crawl data is ready and newer than production.
+
+    Returns True if new or updated crawl data needs processing, False to skip.
+    """
+    logger.info("Checking if crawl staging data needs processing...")
+    hook = BigQueryHook(gcp_conn_id="google_cloud_default", use_legacy_sql=False)
+    client = hook.get_client(project_id=PROJECT_ID, location="US")
+
+    query_job = client.query(CRAWL_READINESS_QUERY)
+    results = list(query_job.result())
+
+    if not results:
+        logger.info("No rows returned from crawl readiness query. Short-circuiting.")
+        return False
+
+    needs_processing = bool(results[0].get("needs_processing", False))
+    logger.info("Crawl readiness evaluated to: %s", needs_processing)
+    return needs_processing
+
 
 with DAG(
     dag_id="crawl_complete",
@@ -48,9 +98,16 @@ with DAG(
         poke_interval=60,
         timeout=3600,
         mode="reschedule",
+        soft_fail=True,
     )
 
-    # 2. Download latest Public Suffix List (ICANN + private) and sync into BigQuery
+    # 2. Check if crawl data in staging is newer than production and needs processing
+    check_crawl_condition = ShortCircuitOperator(
+        task_id="check_crawl_readiness",
+        python_callable=check_crawl_readiness,
+    )
+
+    # 3. Download latest Public Suffix List (ICANN + private) and sync into BigQuery
     @task(task_id="sync_public_suffix_list")
     def update_public_suffix_table() -> int:
         """Download latest Public Suffix List and load into BigQuery."""
@@ -58,7 +115,7 @@ with DAG(
 
     sync_psl = update_public_suffix_table()
 
-    # 3. Create compilation result from the Dataform production release configuration
+    # 4. Create compilation result from the Dataform production release configuration
     create_compilation_result = DataformCreateCompilationResultOperator(
         task_id="create_compilation_result",
         project_id=PROJECT_ID,
@@ -72,7 +129,7 @@ with DAG(
         },
     )
 
-    # 4. Trigger Dataform workflow asynchronously (fail-fast, retries=0 prevents duplicate invocations)
+    # 5. Trigger Dataform workflow asynchronously (fail-fast, retries=0 prevents duplicate invocations)
     trigger_dataform_workflow = DataformCreateWorkflowInvocationOperator(
         task_id="trigger_dataform_workflow",
         project_id=PROJECT_ID,
@@ -98,7 +155,7 @@ with DAG(
         },
     )
 
-    # 5. Wait for Dataform workflow completion using sensor in reschedule mode
+    # 6. Wait for Dataform workflow completion using sensor in reschedule mode
     wait_for_dataform_workflow = DataformWorkflowInvocationStateSensor(
         task_id="wait_for_dataform_workflow",
         project_id=PROJECT_ID,
@@ -121,6 +178,7 @@ with DAG(
 
     (
         wait_for_crawl_complete
+        >> check_crawl_condition
         >> sync_psl
         >> create_compilation_result
         >> trigger_dataform_workflow
