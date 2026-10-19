@@ -11,6 +11,8 @@ from airflow.providers.google.cloud.operators.dataform import (
     DataformCreateCompilationResultOperator,
     DataformCreateWorkflowInvocationOperator,
 )
+from airflow.providers.google.cloud.sensors.dataform import DataformWorkflowInvocationStateSensor
+from google.cloud.dataform_v1beta1 import WorkflowInvocation
 
 # Ensure DAG directory is in sys.path for Composer environment
 sys.path.append(str(Path(__file__).parent))
@@ -101,13 +103,14 @@ with DAG(
         },
     )
 
-    # 3. Invoke Dataform workflow with crux_ready and crux_ready_reports tags
-    run_dataform_workflow = DataformCreateWorkflowInvocationOperator(
-        task_id="run_dataform_workflow",
+    # 3. Trigger Dataform workflow asynchronously (fail-fast, retries=0 prevents duplicate invocations)
+    trigger_dataform_workflow = DataformCreateWorkflowInvocationOperator(
+        task_id="trigger_dataform_workflow",
         project_id=PROJECT_ID,
         region=DATAFORM_REGION,
         repository_id=DATAFORM_REPOSITORY,
-        asynchronous=False,
+        asynchronous=True,
+        retries=0,
         workflow_invocation={
             "compilation_result": (
                 "{{ task_instance.xcom_pull('create_compilation_result')['name'] "
@@ -126,4 +129,30 @@ with DAG(
         },
     )
 
-    check_crux_condition >> create_compilation_result >> run_dataform_workflow
+    # 4. Wait for Dataform workflow completion using sensor in reschedule mode
+    wait_for_dataform_workflow = DataformWorkflowInvocationStateSensor(
+        task_id="wait_for_dataform_workflow",
+        project_id=PROJECT_ID,
+        region=DATAFORM_REGION,
+        repository_id=DATAFORM_REPOSITORY,
+        workflow_invocation_id=(
+            "{{ (task_instance.xcom_pull('trigger_dataform_workflow')['name'] "
+            "if task_instance.xcom_pull('trigger_dataform_workflow') is mapping "
+            "else task_instance.xcom_pull('trigger_dataform_workflow')).split('/')[-1] }}"
+        ),
+        expected_statuses={WorkflowInvocation.State.SUCCEEDED},
+        failure_statuses={
+            WorkflowInvocation.State.FAILED,
+            WorkflowInvocation.State.CANCELLED,
+        },
+        poke_interval=60,
+        timeout=3600,
+        mode="reschedule",
+    )
+
+    (
+        check_crux_condition
+        >> create_compilation_result
+        >> trigger_dataform_workflow
+        >> wait_for_dataform_workflow
+    )
