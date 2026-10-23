@@ -5,7 +5,7 @@ publish('requests_10k', {
   schema: 'sample_data',
   bigquery: {
     partitionBy: 'date',
-    clusterBy: ['client', 'is_root_page', 'rank', 'type']
+    clusterBy: ['client', 'is_root_page', 'type', 'rank']
   },
   columns: columns,
   tags: ['crawl_complete']
