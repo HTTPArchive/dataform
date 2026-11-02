@@ -2,14 +2,13 @@ const { autoAssignActions } = require('@masthead-data/dataform-package')
 
 const RESERVATION_CONFIG = [
   {
-    tag: 'reservation',
-    reservation: 'projects/httparchive/locations/US/reservations/pipeline',
+    tag: 'on_demand',
+    reservation: 'none',
     actions: [
-      'httparchive.crawl.pages',
-      'httparchive.crawl.requests',
-      'httparchive.crawl.parsed_css',
-      'httparchive.f1.pages_latest',
-      'httparchive.f1.requests_latest'
+      'httparchive.blink_features.usage',
+      'httparchive.reports.html_elements_popularity',
+      'httparchive.sample_data.pages_10k',
+      'httparchive.wappalyzer.tech_detections'
     ]
   }
 ]
