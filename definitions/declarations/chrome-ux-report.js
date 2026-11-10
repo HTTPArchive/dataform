@@ -44,5 +44,5 @@ for (let i = 0; i < 180; i++) {
     schema: 'all',
     name: yyyymm
   })
-  d.setMonth(d.getMonth() - 1)
+  d.setUTCMonth(d.getUTCMonth() - 1)
 }

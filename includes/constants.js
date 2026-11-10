@@ -7,7 +7,7 @@ function fnDateUnderscored(dateStr) {
 
 function fnPastMonth(monthISOstring) {
   const monthDate = new Date(monthISOstring)
-  monthDate.setMonth(monthDate.getMonth() - 1)
+  monthDate.setUTCMonth(monthDate.getUTCMonth() - 1)
   return monthDate.toISOString().substring(0, 10)
 }
 

@@ -113,9 +113,9 @@ crux_base AS (
     fast_lcp_sn,
     avg_lcp_sn,
     slow_lcp_sn,
-    fast_cls_sn,
-    avg_cls_sn,
-    slow_cls_sn,
+    small_cls_sn,
+    medium_cls_sn,
+    large_cls_sn,
     fast_inp_sn,
     avg_inp_sn,
     slow_inp_sn
@@ -153,9 +153,9 @@ crux_base AS (
     fast_lcp_sn,
     avg_lcp_sn,
     slow_lcp_sn,
-    fast_cls_sn,
-    avg_cls_sn,
-    slow_cls_sn,
+    small_cls_sn,
+    medium_cls_sn,
+    large_cls_sn,
     fast_inp_sn,
     avg_inp_sn,
     slow_inp_sn
@@ -236,12 +236,12 @@ crux AS (
       # CWV with soft navigations
       IS_NON_ZERO(fast_lcp_sn, avg_lcp_sn, slow_lcp_sn) AS any_lcp_sn,
       IS_GOOD(fast_lcp_sn, avg_lcp_sn, slow_lcp_sn) AS good_lcp_sn,
-      IS_NON_ZERO(fast_cls_sn, avg_cls_sn, slow_cls_sn) AS any_cls_sn,
-      IS_GOOD(fast_cls_sn, avg_cls_sn, slow_cls_sn) AS good_cls_sn,
+      IS_NON_ZERO(small_cls_sn, medium_cls_sn, large_cls_sn) AS any_cls_sn,
+      IS_GOOD(small_cls_sn, medium_cls_sn, large_cls_sn) AS good_cls_sn,
       IS_NON_ZERO(fast_inp_sn, avg_inp_sn, slow_inp_sn) AS any_inp_sn,
       IS_GOOD(fast_inp_sn, avg_inp_sn, slow_inp_sn) AS good_inp_sn,
       (IS_GOOD(fast_inp_sn, avg_inp_sn, slow_inp_sn) OR fast_inp_sn IS NULL) AND
-        IS_GOOD(fast_cls_sn, avg_cls_sn, slow_cls_sn) AND
+        IS_GOOD(small_cls_sn, medium_cls_sn, large_cls_sn) AND
         IS_GOOD(fast_lcp_sn, avg_lcp_sn, slow_lcp_sn) AS good_cwv_sn
     FROM crux_base
   ),
