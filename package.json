@@ -4,7 +4,8 @@
   "scripts": {
     "compile": "dataform compile",
     "format": "prettier --write . && eslint --fix . && markdownlint . --fix",
-    "lint": "prettier --check . && eslint . && markdownlint ."
+    "lint": "prettier --check . && eslint . && markdownlint .",
+    "test": "node --test tests/*.test.js"
   },
   "dependencies": {
     "@dataform/core": "3.1.2",

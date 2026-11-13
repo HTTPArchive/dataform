@@ -38,6 +38,9 @@ jobs:
       - name: Lint Code Base
         run: npm run lint
 
+      - name: Run Unit Tests
+        run: npm test
+
       - name: Compile Dataform Models
         run: npm run compile
 

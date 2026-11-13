@@ -50,22 +50,26 @@ class DataformTemplateBuilder {
    * @returns {function} A function that can be called with a context to resolve the template
    */
   static create(templateFn) {
-    return (ctx, params) => {
+    if (typeof templateFn !== 'function') {
+      throw new TypeError('templateFn must be a function')
+    }
+
+    return (ctx = {}, params = {}) => {
       // Custom replacer function to handle nested variables
       const resolveVariable = (path, scope) => {
         // Split the path into parts (handles nested objects like 'constants.devRankFilter')
         const parts = path.split('.')
 
-        // Traverse the provided scope (ctx or global) to find the value
+        // Traverse the provided scope (ctx or params) to find the value
         let value = scope
         for (const part of parts) {
           if (value === undefined || value === null) break
           value = value[part]
         }
 
-        // Convert value to appropriate string representation
+        // Convert value to appropriate string representation without wrapping identifiers in quotes
         if (value === undefined || value === null) return ''
-        if (typeof value === 'string') return `'${value}'`
+        if (typeof value === 'string') return value
         if (typeof value === 'number') return value.toString()
         if (typeof value === 'boolean') return value.toString()
         if (typeof value === 'function') return value.toString()
@@ -74,7 +78,7 @@ class DataformTemplateBuilder {
         return JSON.stringify(value)
       }
 
-      // Generate the template with the provided context and global context
+      // Generate the template with the provided context and parameters
       return templateFn(ctx, params).replace(/\${(.*?)}/g, (match, p1) => {
         const [scope, path] = p1.includes(':')
           ? p1.split(':')
@@ -3312,14 +3316,16 @@ const lensArrayExpression = `ARRAY[
 ]`
 
 class HTTPArchiveReports {
-  constructor() {
-    this.config = config
+  constructor(customConfig = config) {
+    this.config = customConfig
     this.lenses = lenses
     this.lensArrayExpression = lensArrayExpression
   }
 
   listReports() {
-    const reportIds = this.config._reports
+    const reportIds = Array.isArray(this.config._reports)
+      ? this.config._reports
+      : []
 
     const reports = reportIds.map((reportId) => {
       const report = this.getReport(reportId)
@@ -3330,6 +3336,15 @@ class HTTPArchiveReports {
   }
 
   getReport(reportId) {
+    if (
+      typeof reportId !== 'string' ||
+      !reportId ||
+      reportId.startsWith('_') ||
+      !Object.prototype.hasOwnProperty.call(this.config, reportId)
+    ) {
+      throw new Error(`Unknown report ID: ${reportId}`)
+    }
+
     const report = this.config[reportId]
     return {
       id: reportId,
@@ -3363,6 +3378,14 @@ class HTTPArchiveReports {
   }
 
   getMetric(metricId) {
+    if (
+      typeof metricId !== 'string' ||
+      !metricId ||
+      !Object.prototype.hasOwnProperty.call(this.config._metrics, metricId)
+    ) {
+      throw new Error(`Unknown metric ID: ${metricId}`)
+    }
+
     const metric = this.config._metrics[metricId]
 
     return {
@@ -3373,6 +3396,7 @@ class HTTPArchiveReports {
 }
 
 module.exports = {
+  DataformTemplateBuilder,
   HTTPArchiveReports,
   lenses,
   lensArrayExpression
