@@ -250,37 +250,33 @@ crux AS (
 
 technologies AS (
   SELECT
-    tech.technology,
-    REGEXP_EXTRACT(version, r'\\d+(?:\\.\\d+)?') AS version,
-    client,
-    page
-  FROM pages,
-    UNNEST(technologies) AS tech,
-    UNNEST(tech.info) AS version
-  WHERE
-    tech.technology IS NOT NULL AND
-    REGEXP_EXTRACT(version, r'\\d+(?:\\.\\d+)?') IS NOT NULL
-
-  UNION ALL
-
-  SELECT
-    tech.technology,
-    'ALL' AS version,
-    client,
-    page
-  FROM pages,
-    UNNEST(technologies) AS tech
-  WHERE
-    tech.technology IS NOT NULL
-
-  UNION ALL
-
-  SELECT
-    'ALL' AS technology,
-    'ALL' AS version,
-    client,
-    page
+    entry.technology,
+    entry.version,
+    pages.client,
+    pages.page
   FROM pages
+  CROSS JOIN UNNEST(
+    ARRAY_CONCAT(
+      [STRUCT('ALL' AS technology, 'ALL' AS version)],
+      ARRAY(
+        SELECT AS STRUCT
+          tech.technology,
+          'ALL' AS version
+        FROM UNNEST(pages.technologies) AS tech
+        WHERE tech.technology IS NOT NULL
+      ),
+      ARRAY(
+        SELECT AS STRUCT
+          tech.technology,
+          REGEXP_EXTRACT(version, r'\\d+(?:\\.\\d+)?') AS version
+        FROM UNNEST(pages.technologies) AS tech,
+          UNNEST(tech.info) AS version
+        WHERE
+          tech.technology IS NOT NULL AND
+          REGEXP_EXTRACT(version, r'\\d+(?:\\.\\d+)?') IS NOT NULL
+      )
+    )
+  ) AS entry
 ),
 
 lab_data AS (
@@ -391,15 +387,16 @@ audits_summary AS (
     FROM (
       SELECT DISTINCT
         client,
-        page,
         root_page,
+        technology,
+        version,
         audits.category,
         audits.id
       FROM pages
       INNER JOIN UNNEST(get_passed_audits(pages.lighthouse)) AS audits
+      INNER JOIN technologies
+      USING (client, page)
     ) AS audits_data
-    INNER JOIN technologies
-    USING (client, page)
     INNER JOIN crux
     USING (client, root_page)
     GROUP BY
@@ -431,9 +428,10 @@ SELECT
   crux,
   median_lighthouse_score,
   median_page_weight_bytes,
-  audits
+  -- audits_summary temporarily disabled while reports.tech_report_audits is disabled (~88% slot/shuffle cost)
+  CAST(NULL AS ARRAY<STRUCT<category STRING, id STRING, pass_origins INT64>>) AS audits
 FROM base_summary
-LEFT JOIN audits_summary
-USING (geo, client, rank, technology, version)
+-- LEFT JOIN audits_summary
+-- USING (geo, client, rank, technology, version)
 `
   )

@@ -1,5 +1,7 @@
+// TODO(cost-optimization): Evaluate whether materialized f1.pages_latest is still needed alongside the f1.pages view.
 publish('pages_latest', {
   type: 'table',
+  disabled: true,
   schema: 'f1',
   description: 'The latest date from the crawl.pages table',
   bigquery: {

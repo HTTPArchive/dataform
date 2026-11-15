@@ -65,6 +65,29 @@ publish('pages', {
 })
   .preOps(
     (ctx) => `
+BEGIN
+  DECLARE needs_processing BOOL DEFAULT COALESCE(
+    (
+      SELECT
+        MAX(staging.last_modified_time) > COALESCE(
+          MAX(target.last_modified_time),
+          TIMESTAMP('1970-01-01')
+        ) AND SUM(staging.total_rows) > 0
+      FROM \`${dataform.projectConfig.defaultDatabase}.crawl_staging.INFORMATION_SCHEMA.PARTITIONS\` AS staging
+      LEFT JOIN \`${dataform.projectConfig.defaultDatabase}.crawl.INFORMATION_SCHEMA.PARTITIONS\` AS target
+        ON staging.partition_id = target.partition_id
+        AND target.table_name = 'pages'
+      WHERE staging.table_name = 'pages'
+        AND staging.partition_id = FORMAT_DATE('%Y%m%d', DATE('${constants.currentMonth}'))
+    ),
+    FALSE
+  );
+
+  IF NOT needs_processing THEN
+    RAISE USING MESSAGE = 'Partition ${constants.currentMonth} in crawl.pages is already up to date with crawl_staging.pages (or staging is empty).';
+  END IF;
+END;
+
 DELETE FROM ${ctx.self()}
 WHERE date = '${constants.currentMonth}' AND
   client = 'desktop';
