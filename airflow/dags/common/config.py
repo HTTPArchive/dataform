@@ -2,6 +2,7 @@
 
 from datetime import timedelta
 import os
+from typing import Any, Dict, Mapping, Optional
 from airflow.models import Variable
 
 # GCP & Dataform defaults (can be overridden via Airflow Variables or environment variables)
@@ -23,3 +24,16 @@ DEFAULT_DAG_ARGS = {
     "retries": 2,
     "retry_delay": timedelta(minutes=5),
 }
+
+
+def build_bq_labels(
+    context: Mapping[str, Any],
+    existing_labels: Optional[Dict[str, str]] = None,
+) -> Dict[str, str]:
+    """Build BigQuery job labels matching Airflow DAG and task identifiers."""
+    ti = context["task_instance"]
+    return {
+        **(existing_labels or {}),
+        "airflow-dag": ti.dag_id.lower(),
+        "airflow-task": ti.task_id.lower().replace(".", "-"),  # dots are not allowed in labels
+    }

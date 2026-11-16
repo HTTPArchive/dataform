@@ -4,6 +4,7 @@ from datetime import datetime
 import logging
 import sys
 from pathlib import Path
+from typing import Any
 from airflow import DAG
 from airflow.operators.python import ShortCircuitOperator
 from airflow.providers.google.cloud.hooks.bigquery import BigQueryHook
@@ -12,6 +13,7 @@ from airflow.providers.google.cloud.operators.dataform import (
     DataformCreateWorkflowInvocationOperator,
 )
 from airflow.providers.google.cloud.sensors.dataform import DataformWorkflowInvocationStateSensor
+from google.cloud import bigquery
 from google.cloud.dataform_v1beta1 import WorkflowInvocation
 
 # Ensure DAG directory is in sys.path for Composer environment
@@ -23,6 +25,7 @@ from common.config import (
     DATAFORM_REPOSITORY,
     DEFAULT_DAG_ARGS,
     PROJECT_ID,
+    build_bq_labels,
 )
 
 logger = logging.getLogger(__name__)
@@ -52,7 +55,7 @@ FROM crux, report;
 """
 
 
-def check_crux_readiness() -> bool:
+def check_crux_readiness(**context: Any) -> bool:
     """Execute BigQuery readiness check for Chrome UX Report data.
 
     Returns True if CrUX data is ready and needs processing, False to skip.
@@ -61,7 +64,8 @@ def check_crux_readiness() -> bool:
     hook = BigQueryHook(gcp_conn_id="google_cloud_default", use_legacy_sql=False)
     client = hook.get_client(project_id=PROJECT_ID, location="US")
 
-    query_job = client.query(CRUX_READY_QUERY)
+    job_config = bigquery.QueryJobConfig(labels=build_bq_labels(context))
+    query_job = client.query(CRUX_READY_QUERY, job_config=job_config)
     results = list(query_job.result())
 
     if not results:

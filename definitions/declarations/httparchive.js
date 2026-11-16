@@ -14,6 +14,14 @@
   })
 )
 
+// Crawl tables copied from crawl_staging via Airflow DAG (crawl_complete)
+;['pages', 'requests', 'parsed_css'].forEach((table) =>
+  declare({
+    schema: 'crawl',
+    name: table
+  })
+)
+
 // Public Suffix List synced via Airflow DAG (crawl_complete)
 declare({
   schema: 'urls',

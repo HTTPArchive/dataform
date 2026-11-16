@@ -1,12 +1,13 @@
-"""Airflow DAG to orchestrate HTTP Archive Dataform pipelines upon crawl completion."""
+"""Airflow DAG to orchestrate HTTP Archive BigQuery partition copies and Dataform pipelines."""
 
 from datetime import datetime
 import logging
 import sys
 from pathlib import Path
+from typing import Any, Dict, Optional
 from airflow import DAG
 from airflow.decorators import task
-from airflow.operators.python import ShortCircuitOperator
+from airflow.operators.python import ShortCircuitOperator, get_current_context
 from airflow.providers.google.cloud.hooks.bigquery import BigQueryHook
 from airflow.providers.google.cloud.operators.dataform import (
     DataformCreateCompilationResultOperator,
@@ -14,6 +15,7 @@ from airflow.providers.google.cloud.operators.dataform import (
 )
 from airflow.providers.google.cloud.sensors.dataform import DataformWorkflowInvocationStateSensor
 from airflow.providers.google.cloud.sensors.pubsub import PubSubPullSensor
+from google.cloud import bigquery
 from google.cloud.dataform_v1beta1 import WorkflowInvocation
 
 # Ensure DAG directory is in sys.path for Composer environment
@@ -26,6 +28,12 @@ from common.config import (
     DATAFORM_REPOSITORY,
     DEFAULT_DAG_ARGS,
     PROJECT_ID,
+    build_bq_labels,
+)
+from common.crawl_copy import (
+    assert_crawl_staging_pages,
+    clean_crawl_pages_technologies,
+    copy_crawl_partition,
 )
 from common.public_suffix import sync_public_suffix_list
 
@@ -55,7 +63,7 @@ FROM staging, prod;
 """
 
 
-def check_crawl_readiness() -> bool:
+def check_crawl_readiness(**context: Any) -> bool:
     """Check if staging crawl data is ready and newer than production.
 
     Returns True if new or updated crawl data needs processing, False to skip.
@@ -64,7 +72,8 @@ def check_crawl_readiness() -> bool:
     hook = BigQueryHook(gcp_conn_id="google_cloud_default", use_legacy_sql=False)
     client = hook.get_client(project_id=PROJECT_ID, location="US")
 
-    query_job = client.query(CRAWL_READINESS_QUERY)
+    job_config = bigquery.QueryJobConfig(labels=build_bq_labels(context))
+    query_job = client.query(CRAWL_READINESS_QUERY, job_config=job_config)
     results = list(query_job.result())
 
     if not results:
@@ -111,9 +120,70 @@ with DAG(
     @task(task_id="sync_public_suffix_list")
     def update_public_suffix_table() -> int:
         """Download latest Public Suffix List and load into BigQuery."""
-        return sync_public_suffix_list(project_id=PROJECT_ID)
+        context = get_current_context()
+        return sync_public_suffix_list(
+            project_id=PROJECT_ID,
+            labels=build_bq_labels(context),
+        )
 
     sync_psl = update_public_suffix_table()
+
+    # 3b. Verify crawl_staging.pages, copy crawl partitions (0 slots), and clean pages.technologies
+    @task(task_id="verify_crawl_staging_pages")
+    def verify_pages_staging() -> str:
+        """Run pre-copy quality assertions on crawl_staging.pages."""
+        context = get_current_context()
+        hook = BigQueryHook(gcp_conn_id="google_cloud_default", use_legacy_sql=False)
+        client = hook.get_client(project_id=PROJECT_ID, location="US")
+        return assert_crawl_staging_pages(
+            project_id=PROJECT_ID,
+            client=client,
+            labels=build_bq_labels(context),
+        )
+
+    @task
+    def copy_crawl_table(
+        table_name: str,
+        partition_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Copy latest staging partition to production crawl table via BigQuery Copy Job."""
+        context = get_current_context()
+        hook = BigQueryHook(gcp_conn_id="google_cloud_default", use_legacy_sql=False)
+        client = hook.get_client(project_id=PROJECT_ID, location="US")
+        return copy_crawl_partition(
+            project_id=PROJECT_ID,
+            table_name=table_name,
+            partition_id=partition_id,
+            client=client,
+            labels=build_bq_labels(context),
+        )
+
+    @task(task_id="clean_crawl_pages_technologies")
+    def clean_pages_technologies_task(copy_result: Dict[str, Any]) -> None:
+        """Repair corrupted technology/category entries on the copied crawl.pages partition."""
+        if not copy_result.get("copied"):
+            logger.info("crawl.pages was not copied in this run; skipping technology cleanup.")
+            return
+        context = get_current_context()
+        hook = BigQueryHook(gcp_conn_id="google_cloud_default", use_legacy_sql=False)
+        client = hook.get_client(project_id=PROJECT_ID, location="US")
+        clean_crawl_pages_technologies(
+            project_id=PROJECT_ID,
+            partition_id=copy_result["partition_id"],
+            client=client,
+            labels=build_bq_labels(context),
+        )
+
+    verify_pages = verify_pages_staging()
+    copy_pages = copy_crawl_table.override(task_id="copy_crawl_pages")(
+        "pages",
+        partition_id=verify_pages,
+    )
+    clean_pages = clean_pages_technologies_task(copy_pages)
+    copy_requests = copy_crawl_table.override(task_id="copy_crawl_requests")("requests")
+    copy_parsed_css = copy_crawl_table.override(task_id="copy_crawl_parsed_css")(
+        "parsed_css"
+    )
 
     # 4. Create compilation result from the Dataform production release configuration
     create_compilation_result = DataformCreateCompilationResultOperator(
@@ -179,7 +249,11 @@ with DAG(
     (
         wait_for_crawl_complete
         >> check_crawl_condition
-        >> sync_psl
+        >> [sync_psl, copy_requests, copy_parsed_css, verify_pages]
+    )
+    verify_pages >> copy_pages >> clean_pages
+    (
+        [sync_psl, copy_requests, copy_parsed_css, clean_pages]
         >> create_compilation_result
         >> trigger_dataform_workflow
         >> wait_for_dataform_workflow

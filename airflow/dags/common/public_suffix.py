@@ -1,6 +1,6 @@
 """Public Suffix List synchronization utilities for BigQuery."""
 
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 import urllib.request
 import idna
 from google.cloud import bigquery
@@ -68,6 +68,7 @@ def sync_public_suffix_list(
     project_id: str,
     dataset_id: str = "urls",
     table_name: str = "public_suffix_list",
+    labels: Optional[Dict[str, str]] = None,
 ) -> int:
     """Download and load the full Public Suffix List (ICANN + private) into BigQuery."""
     rules = fetch_public_suffix_list()
@@ -75,6 +76,7 @@ def sync_public_suffix_list(
     table_id = f"{project_id}.{dataset_id}.{table_name}"
 
     job_config = bigquery.LoadJobConfig(
+        labels=labels or {},
         schema=[
             bigquery.SchemaField(
                 "suffix",
