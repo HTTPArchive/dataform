@@ -1,7 +1,6 @@
 // TODO(cost-optimization): Evaluate whether materialized f1.requests_latest is still needed alongside the f1.requests view; kept as-is for now and aligned clustering with crawl.requests.
 publish('requests_latest', {
   type: 'table',
-  disabled: true,
   schema: 'f1',
   description: 'The latest date from the crawl.requests table',
   bigquery: {
