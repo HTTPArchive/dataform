@@ -113,12 +113,21 @@ tech_deprecated_gone_origins AS (
   USING (origin)
   WHERE tech_current.origin IS NULL  -- origin no longer exists in current dataset
   GROUP BY 1
+),
+all_technologies AS (
+  SELECT technology FROM tech_before_summary
+  UNION DISTINCT
+  SELECT technology FROM tech_adopted_existing_origins
+  UNION DISTINCT
+  SELECT technology FROM tech_adopted_new_origins
+  UNION DISTINCT
+  SELECT name AS technology FROM ${ctx.ref('wappalyzer', 'technologies')}
 )
 
 -- aggregation of technology adoption/deprecation metrics
 SELECT
   DATE('${constants.currentMonth}') AS date,
-  COALESCE(before_summary.technology, tech_adopted_existing_origins.technology, tech_adopted_new_origins.technology, technologies.name) AS technology,
+  all_technologies.technology AS technology,
 
   -- origins summary
   0-COALESCE(total_origins_deprecated_existing, 0) AS total_origins_deprecated_existing,
@@ -136,16 +145,16 @@ SELECT
   COALESCE(tech_adopted_existing_origins.sample_origins_adopted_existing, "") AS sample_origins_adopted_existing,
   --COALESCE(tech_adopted_new_origins.sample_origins_adopted_new, "") AS sample_origins_adopted_new
 
-FROM tech_before_summary before_summary
-FULL OUTER JOIN tech_adopted_existing_origins
-  ON before_summary.technology = tech_adopted_existing_origins.technology
-FULL OUTER JOIN tech_adopted_new_origins
-  ON before_summary.technology = tech_adopted_new_origins.technology
+FROM all_technologies
+LEFT JOIN tech_before_summary AS before_summary
+  USING (technology)
+LEFT JOIN tech_adopted_existing_origins
+  USING (technology)
+LEFT JOIN tech_adopted_new_origins
+  USING (technology)
 LEFT JOIN tech_deprecated_existing_origins
-  ON before_summary.technology = tech_deprecated_existing_origins.technology
+  USING (technology)
 LEFT JOIN tech_deprecated_gone_origins
-  ON before_summary.technology = tech_deprecated_gone_origins.technology
-FULL OUTER JOIN wappalyzer.technologies
-  ON before_summary.technology = technologies.name
+  USING (technology)
 `
   )
