@@ -1,4 +1,4 @@
-"""Airflow DAG to verify crawl copies and truncate crawl_staging tables after retention."""
+"""Airflow DAG to verify crawl copies and truncate crawl_staging and crawl_failures tables."""
 
 from datetime import datetime
 import sys
@@ -36,7 +36,7 @@ def check_cleanup_readiness_callable(**context: Any) -> bool:
 with DAG(
     dag_id="crawl_staging_cleanup",
     default_args=DEFAULT_DAG_ARGS,
-    description="Verifies crawl_staging tables were copied to crawl and truncates them 7 days after crawl finish",
+    description="Verifies crawl_staging copies and truncates crawl_failures and crawl_staging tables 7 days after crawl finish",
     # 4th Tuesday falls on 22nd-28th (+ 4 days = up to 26th-31st or 1st-4th in shorter months)
     schedule_interval="0 18 1-4,22-31 * *",
     start_date=datetime(2026, 1, 1),
@@ -51,7 +51,7 @@ with DAG(
 
     @task
     def cleanup_crawl_staging_table(table_name: str) -> Dict[str, Any]:
-        """Re-verify staging copy invariants for one table and truncate if eligible."""
+        """Re-verify staging copy invariants and truncate crawl_failures and crawl_staging."""
         context = get_current_context()
         hook = BigQueryHook(gcp_conn_id="google_cloud_default", use_legacy_sql=False)
         client = hook.get_client(project_id=PROJECT_ID, location="US")

@@ -300,7 +300,7 @@ def truncate_crawl_staging_table(
     client: Optional["bigquery.Client"] = None,
     labels: Optional[Dict[str, str]] = None,
 ) -> Dict[str, Any]:
-    """Re-verify staging copy invariants for table_name and truncate if eligible."""
+    """Re-verify staging copy invariants and truncate crawl_failures + crawl_staging."""
     from google.cloud import bigquery
 
     validate_table_name(table_name)
@@ -321,7 +321,8 @@ def truncate_crawl_staging_table(
     if status in ("empty", "waiting"):
         partition_ids = [p["partition_id"] for p in evaluation["partitions"]]
         logger.info(
-            "Skipping TRUNCATE on crawl_staging.%s (status=%s, partitions=%s).",
+            "Skipping TRUNCATE on crawl_failures.%s and crawl_staging.%s (status=%s, partitions=%s).",
+            table_name,
             table_name,
             status,
             partition_ids,
@@ -336,10 +337,16 @@ def truncate_crawl_staging_table(
         raise ValueError(evaluation["error"])
 
     partition_ids = [p["partition_id"] for p in evaluation["partitions"]]
-    truncate_sql = f"TRUNCATE TABLE `{project_id}.crawl_staging.{table_name}`;"
+    # Truncate crawl_failures first so any permission/transient error keeps crawl_staging intact for retry.
+    truncate_sql = (
+        f"TRUNCATE TABLE `{project_id}.crawl_failures.{table_name}`;\n"
+        f"TRUNCATE TABLE `{project_id}.crawl_staging.{table_name}`;"
+    )
     job_config = bigquery.QueryJobConfig(labels=labels or {})
     logger.info(
-        "Truncating %s.crawl_staging.%s (verified partitions=%s)...",
+        "Truncating %s.crawl_failures.%s and %s.crawl_staging.%s (verified partitions=%s)...",
+        project_id,
+        table_name,
         project_id,
         table_name,
         partition_ids,
@@ -347,7 +354,9 @@ def truncate_crawl_staging_table(
     job = bq_client.query(truncate_sql, job_config=job_config)
     job.result()
     logger.info(
-        "Truncated %s.crawl_staging.%s (partitions=%s, job_id=%s).",
+        "Truncated %s.crawl_failures.%s and %s.crawl_staging.%s (partitions=%s, job_id=%s).",
+        project_id,
+        table_name,
         project_id,
         table_name,
         partition_ids,

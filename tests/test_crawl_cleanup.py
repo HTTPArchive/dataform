@@ -259,7 +259,11 @@ class CrawlCleanupExecutionTests(unittest.TestCase):
         self.assertEqual(client.query.call_count, 2)
         truncate_sql = client.query.call_args_list[1].args[0]
         truncate_config = client.query.call_args_list[1].kwargs["job_config"]
-        self.assertEqual(truncate_sql, "TRUNCATE TABLE `httparchive.crawl_staging.pages`;")
+        self.assertEqual(
+            truncate_sql,
+            "TRUNCATE TABLE `httparchive.crawl_failures.pages`;\n"
+            "TRUNCATE TABLE `httparchive.crawl_staging.pages`;",
+        )
         self.assertEqual(truncate_config.labels, labels)
 
     def test_truncate_skips_without_sql_when_empty_or_waiting(self):

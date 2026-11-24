@@ -29,9 +29,9 @@ Production pipeline invocations are managed by Google Cloud Composer ([httparchi
 3. **`crawl_staging_cleanup` DAG** ([`airflow/dags/crawl_staging_cleanup.py`](../airflow/dags/crawl_staging_cleanup.py)):
    - Scheduled at 18:00 UTC during the cleanup window (days 22–31 and 1–4, covering the 4th Tuesday plus 4 days across all month lengths).
    - Queries `INFORMATION_SCHEMA.PARTITIONS` (0 bytes scanned) for `crawl_staging.{pages,requests,parsed_css}` and corresponding partitions in `crawl.*`.
-   - Short-circuits cleanly when staging is empty or all non-empty partitions are within the 7-day post-copy retention window.
-   - Once all non-empty partitions for a table are ≥ 7 days old and verified copied (partition exists in `crawl`, matching row counts, and `crawl.last_modified_time >= staging.last_modified_time`), truncates `crawl_staging.<table>`.
-   - Fails the task without truncating if a staging partition is ≥ 7 days old and unverified (missing in `crawl`, row-count mismatch, or modified after copy).
+   - Short-circuits cleanly when `crawl_staging` is empty or all non-empty partitions are within the 7-day post-copy retention window.
+   - Once all non-empty partitions for a `crawl_staging` table are ≥ 7 days old and verified copied (partition exists in `crawl`, matching row counts, and `crawl.last_modified_time >= staging.last_modified_time`), truncates both `crawl_failures.<table>` and `crawl_staging.<table>`.
+   - Fails the task without truncating either dataset if a staging partition is ≥ 7 days old and unverified (missing in `crawl`, row-count mismatch, or modified after copy).
 
 ### DAG Deployment
 
