@@ -26,6 +26,13 @@ Production pipeline invocations are managed by Google Cloud Composer ([httparchi
      - `crux_ready`
      - `crux_ready_reports`
 
+3. **`crawl_staging_cleanup` DAG** ([`airflow/dags/crawl_staging_cleanup.py`](../airflow/dags/crawl_staging_cleanup.py)):
+   - Scheduled at 18:00 UTC during the cleanup window (days 22–31 and 1–4, covering the 4th Tuesday plus 4 days across all month lengths).
+   - Queries `INFORMATION_SCHEMA.PARTITIONS` (0 bytes scanned) for `crawl_staging.{pages,requests,parsed_css}` and corresponding partitions in `crawl.*`.
+   - Short-circuits cleanly when staging is empty or all non-empty partitions are within the 7-day post-copy retention window.
+   - Once all non-empty partitions for a table are ≥ 7 days old and verified copied (partition exists in `crawl`, matching row counts, and `crawl.last_modified_time >= staging.last_modified_time`), truncates `crawl_staging.<table>`.
+   - Fails the task without truncating if a staging partition is ≥ 7 days old and unverified (missing in `crawl`, row-count mismatch, or modified after copy).
+
 ### DAG Deployment
 
 Airflow DAGs are automatically synchronized from `airflow/dags/` to the Cloud Composer Cloud Storage bucket (`gs://us-central1-httparchive-pip-77e1b883-bucket/dags`) via the [Deploy Airflow DAGs GitHub Actions workflow](../.github/workflows/deploy_dags.yaml) on merge to `main`.
@@ -50,7 +57,7 @@ _Some useful hints:_
 ## Repository Structure
 
 - `airflow/` - Cloud Composer / Apache Airflow DAG definitions and helper modules
-  - `dags/` - Production Airflow DAGs (`crawl_complete.py`, `crux_ready.py`) and shared utilities (`common/`)
+  - `dags/` - Production Airflow DAGs (`crawl_complete.py`, `crawl_staging_cleanup.py`, `crux_ready.py`) and shared utilities (`common/`)
 - `definitions/` - Contains the core Dataform SQL definitions and declarations
   - `output/` - Contains the main pipeline transformation logic
   - `declarations/` - Contains referenced tables/views declarations and external resources
@@ -70,4 +77,4 @@ GitHub PAT saved to a [Secret Manager secret](https://console.cloud.google.com/s
 
 - [Airflow Web UI](https://225068d09fdc4614b12e9aa283e4e4ab-dot-us-central1.composer.googleusercontent.com)
 - [Production Dataform workflow execution logs](https://console.cloud.google.com/bigquery/dataform/locations/us-central1/repositories/crawl-data/details/workflows?authuser=7&project=httparchive)
-- [Dataform Workflow Invocation Failed](https://console.cloud.google.com/monitoring/alerting/policies/16526940745374967367?authuser=7&project=httparchive) policy
+- [BigQuery / Airflow Workflow Failed](https://console.cloud.google.com/monitoring/alerting/policies/16526940745374967367?authuser=7&project=httparchive) policy
