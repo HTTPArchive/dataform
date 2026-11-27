@@ -1,4 +1,4 @@
-"""Airflow DAG to verify crawl copies and truncate crawl_staging and crawl_failures tables."""
+"""Airflow DAG to clean crawl_staging/crawl_failures tables and prune old response_body data."""
 
 from datetime import datetime
 import sys
@@ -15,8 +15,10 @@ sys.path.append(str(Path(__file__).parent))
 from common.config import DEFAULT_DAG_ARGS, PROJECT_ID, build_bq_labels
 from common.crawl_cleanup import (
     CRAWL_STAGING_TABLES,
-    DEFAULT_RETENTION_DAYS,
+    DEFAULT_RESPONSE_BODY_RETENTION_MONTHS,
+    DEFAULT_STAGING_RETENTION_DAYS,
     check_crawl_staging_cleanup_readiness,
+    clean_old_response_bodies,
     truncate_crawl_staging_table,
 )
 
@@ -27,7 +29,7 @@ def check_cleanup_readiness_callable(**context: Any) -> bool:
     client = hook.get_client(project_id=PROJECT_ID, location="US")
     return check_crawl_staging_cleanup_readiness(
         project_id=PROJECT_ID,
-        retention_days=DEFAULT_RETENTION_DAYS,
+        retention_days=DEFAULT_STAGING_RETENTION_DAYS,
         client=client,
         labels=build_bq_labels(context),
     )
@@ -36,7 +38,10 @@ def check_cleanup_readiness_callable(**context: Any) -> bool:
 with DAG(
     dag_id="crawl_staging_cleanup",
     default_args=DEFAULT_DAG_ARGS,
-    description="Verifies crawl_staging copies and truncates crawl_failures and crawl_staging tables 7 days after crawl finish",
+    description=(
+        f"Verifies crawl_staging copies, truncates crawl_failures/crawl_staging {DEFAULT_STAGING_RETENTION_DAYS} days after crawl "
+        f"finish, and nulls out crawl.requests.response_body older than {DEFAULT_RESPONSE_BODY_RETENTION_MONTHS} months"
+    ),
     # 4th Tuesday falls on 22nd-28th (+ 4 days = up to 26th-31st or 1st-4th in shorter months)
     schedule_interval="0 18 1-4,22-31 * *",
     start_date=datetime(2026, 1, 1),
@@ -58,7 +63,7 @@ with DAG(
         return truncate_crawl_staging_table(
             project_id=PROJECT_ID,
             table_name=table_name,
-            retention_days=DEFAULT_RETENTION_DAYS,
+            retention_days=DEFAULT_STAGING_RETENTION_DAYS,
             client=client,
             labels=build_bq_labels(context),
         )
@@ -70,4 +75,17 @@ with DAG(
         for table_name in CRAWL_STAGING_TABLES
     ]
 
-    check_cleanup_readiness >> cleanup_tasks
+    @task
+    def cleanup_old_response_bodies() -> Dict[str, Any]:
+        """Null out crawl.requests.response_body on partitions older than the retention window."""
+        context = get_current_context()
+        hook = BigQueryHook(gcp_conn_id="google_cloud_default", use_legacy_sql=False)
+        client = hook.get_client(project_id=PROJECT_ID, location="US")
+        return clean_old_response_bodies(
+            project_id=PROJECT_ID,
+            retention_months=DEFAULT_RESPONSE_BODY_RETENTION_MONTHS,
+            client=client,
+            labels=build_bq_labels(context),
+        )
+
+    check_cleanup_readiness >> [*cleanup_tasks, cleanup_old_response_bodies()]
