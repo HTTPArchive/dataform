@@ -13,10 +13,12 @@ if str(DAGS_DIR) not in sys.path:
 
 from common.crawl_cleanup import (  # noqa: E402
     CRAWL_STAGING_TABLES,
-    DEFAULT_RETENTION_DAYS,
+    DEFAULT_STAGING_RETENTION_DAYS,
     check_crawl_staging_cleanup_readiness,
+    clean_old_response_bodies,
     evaluate_all_tables,
     evaluate_table_cleanup,
+    get_response_body_cutoff_date,
     should_run_cleanup,
     truncate_crawl_staging_table,
     validate_table_name,
@@ -61,12 +63,19 @@ def make_fake_bigquery_module():
             self.array_type = array_type
             self.values = values
 
+    class FakeScalarQueryParameter:
+        def __init__(self, name, param_type, value):
+            self.name = name
+            self.param_type = param_type
+            self.value = value
+
     class FakeQueryJobConfig:
         def __init__(self, labels=None, query_parameters=None):
             self.labels = labels or {}
             self.query_parameters = query_parameters or []
 
     fake_bq.ArrayQueryParameter = FakeArrayQueryParameter
+    fake_bq.ScalarQueryParameter = FakeScalarQueryParameter
     fake_bq.QueryJobConfig = FakeQueryJobConfig
     fake_cloud.bigquery = fake_bq
     fake_google.cloud = fake_cloud
@@ -215,7 +224,7 @@ class CrawlCleanupEvaluationTests(unittest.TestCase):
             make_row(table_name="pages", staging_age_days=9.0, prod_age_days=8.0),
             make_row(table_name="requests", staging_age_days=2.0, prod_age_days=1.5),
         ]
-        evaluations = evaluate_all_tables(rows, retention_days=DEFAULT_RETENTION_DAYS)
+        evaluations = evaluate_all_tables(rows, retention_days=DEFAULT_STAGING_RETENTION_DAYS)
         self.assertEqual(set(evaluations.keys()), set(CRAWL_STAGING_TABLES))
         self.assertEqual(evaluations["pages"]["status"], "ready")
         self.assertEqual(evaluations["requests"]["status"], "waiting")
@@ -326,6 +335,49 @@ class CrawlCleanupExecutionTests(unittest.TestCase):
                     labels={"airflow-dag": "crawl_staging_cleanup"},
                 )
             )
+
+
+class ResponseBodyCleanupTests(unittest.TestCase):
+    """Tests for cleaning response_body on the cutoff partition."""
+
+    def test_cutoff_date_calculation(self):
+        self.assertEqual(
+            get_response_body_cutoff_date(14, as_of=datetime(2026, 11, 27, tzinfo=timezone.utc)),
+            "2025-09-01",
+        )
+        self.assertEqual(
+            get_response_body_cutoff_date(14, as_of=datetime(2026, 1, 25, tzinfo=timezone.utc)),
+            "2024-11-01",
+        )
+
+    def test_clean_old_response_bodies_runs_single_partition_update(self):
+        update_job = MagicMock(job_id="bqjob_clean_resp_1")
+        update_job.result.return_value = None
+        client = MagicMock()
+        client.query.return_value = update_job
+        labels = {"airflow-dag": "crawl_staging_cleanup"}
+
+        with patch.dict(sys.modules, make_fake_bigquery_module()):
+            result = clean_old_response_bodies(
+                "httparchive",
+                as_of=datetime(2026, 11, 27, tzinfo=timezone.utc),
+                client=client,
+                labels=labels,
+            )
+
+        self.assertEqual(
+            result,
+            {"partition_date": "2025-05-01", "job_id": "bqjob_clean_resp_1"},
+        )
+        self.assertEqual(client.query.call_count, 1)
+        update_sql = client.query.call_args.args[0]
+        update_cfg = client.query.call_args.kwargs["job_config"]
+        self.assertIn("UPDATE `httparchive.crawl.requests`", update_sql)
+        self.assertIn("SET response_body = NULL", update_sql)
+        self.assertIn("WHERE date = DATE(@cutoff_date)", update_sql)
+        self.assertEqual(update_cfg.labels, labels)
+        self.assertEqual(update_cfg.query_parameters[0].name, "cutoff_date")
+        self.assertEqual(update_cfg.query_parameters[0].value, "2025-05-01")
 
 
 if __name__ == "__main__":

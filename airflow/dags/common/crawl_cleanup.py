@@ -12,7 +12,8 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 CRAWL_STAGING_TABLES = ("pages", "requests", "parsed_css")
-DEFAULT_RETENTION_DAYS = 7
+DEFAULT_STAGING_RETENTION_DAYS = 7
+DEFAULT_RESPONSE_BODY_RETENTION_MONTHS = 18
 
 STAGING_CLEANUP_STATUS_QUERY = """
 WITH staging AS (
@@ -68,7 +69,7 @@ def validate_table_name(table_name: str) -> str:
 
 def evaluate_partition_cleanup(
     row: Mapping[str, Any],
-    retention_days: int = DEFAULT_RETENTION_DAYS,
+    retention_days: int = DEFAULT_STAGING_RETENTION_DAYS,
 ) -> Dict[str, Any]:
     """Evaluate copy verification and retention eligibility for one staging partition."""
     checked_at = _ensure_utc(row["checked_at"])
@@ -132,7 +133,7 @@ def evaluate_partition_cleanup(
 def evaluate_table_cleanup(
     table_name: str,
     partition_rows: Sequence[Mapping[str, Any]],
-    retention_days: int = DEFAULT_RETENTION_DAYS,
+    retention_days: int = DEFAULT_STAGING_RETENTION_DAYS,
 ) -> Dict[str, Any]:
     """Aggregate partition cleanup evaluations for a single crawl_staging table."""
     validate_table_name(table_name)
@@ -184,7 +185,7 @@ def evaluate_table_cleanup(
 def evaluate_all_tables(
     rows: Sequence[Mapping[str, Any]],
     table_names: Sequence[str] = CRAWL_STAGING_TABLES,
-    retention_days: int = DEFAULT_RETENTION_DAYS,
+    retention_days: int = DEFAULT_STAGING_RETENTION_DAYS,
 ) -> Dict[str, Dict[str, Any]]:
     """Group metadata rows by table and evaluate cleanup status for each table."""
     grouped: Dict[str, List[Mapping[str, Any]]] = {}
@@ -254,7 +255,7 @@ def fetch_staging_cleanup_rows(
 def check_crawl_staging_cleanup_readiness(
     project_id: str,
     table_names: Sequence[str] = CRAWL_STAGING_TABLES,
-    retention_days: int = DEFAULT_RETENTION_DAYS,
+    retention_days: int = DEFAULT_STAGING_RETENTION_DAYS,
     client: Optional["bigquery.Client"] = None,
     labels: Optional[Dict[str, str]] = None,
 ) -> bool:
@@ -296,7 +297,7 @@ def check_crawl_staging_cleanup_readiness(
 def truncate_crawl_staging_table(
     project_id: str,
     table_name: str,
-    retention_days: int = DEFAULT_RETENTION_DAYS,
+    retention_days: int = DEFAULT_STAGING_RETENTION_DAYS,
     client: Optional["bigquery.Client"] = None,
     labels: Optional[Dict[str, str]] = None,
 ) -> Dict[str, Any]:
@@ -369,3 +370,51 @@ def truncate_crawl_staging_table(
         "partitions": partition_ids,
         "job_id": job.job_id,
     }
+
+
+CLEAN_RESPONSE_BODY_QUERY = """
+UPDATE `{project_id}.crawl.requests`
+SET response_body = NULL
+WHERE date = DATE(@cutoff_date)
+  AND response_body IS NOT NULL;
+"""
+
+
+def get_response_body_cutoff_date(
+    retention_months: int = DEFAULT_RESPONSE_BODY_RETENTION_MONTHS,
+    as_of: Optional[datetime] = None,
+) -> str:
+    """Return YYYY-MM-01 partition date that is retention_months before as_of."""
+    ref = _ensure_utc(as_of) if as_of is not None else datetime.now(timezone.utc)
+    year, month_zero = divmod(ref.year * 12 + (ref.month - 1) - retention_months, 12)
+    return f"{year:04d}-{month_zero + 1:02d}-01"
+
+
+def clean_old_response_bodies(
+    project_id: str,
+    retention_months: int = DEFAULT_RESPONSE_BODY_RETENTION_MONTHS,
+    as_of: Optional[datetime] = None,
+    client: Optional["bigquery.Client"] = None,
+    labels: Optional[Dict[str, str]] = None,
+) -> Dict[str, Any]:
+    """Null out response_body on the crawl.requests partition at the retention cutoff."""
+    from google.cloud import bigquery
+
+    cutoff_date = get_response_body_cutoff_date(retention_months, as_of=as_of)
+    bq_client = _get_client(project_id, client)
+    job_config = bigquery.QueryJobConfig(
+        labels=labels or {},
+        query_parameters=[
+            bigquery.ScalarQueryParameter("cutoff_date", "STRING", cutoff_date),
+        ],
+    )
+    sql = CLEAN_RESPONSE_BODY_QUERY.format(project_id=project_id)
+    job = bq_client.query(sql, job_config=job_config)
+    job.result()
+    logger.info(
+        "Cleared response_body on %s.crawl.requests partition=%s (job_id=%s).",
+        project_id,
+        cutoff_date,
+        job.job_id,
+    )
+    return {"partition_date": cutoff_date, "job_id": job.job_id}
